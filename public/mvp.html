@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>OneTapDay — MVP</title>
+  <style>
+    body{ background:#071311; color:#cfe6d7; font-family:system-ui; padding:30px; }
+    .btn{ background:#21c24a; color:#022; padding:10px;border-radius:8px;border:0; cursor:pointer }
+  </style>
+</head>
+<body>
+  <h1>OneTapDay — MVP</h1>
+  <p id="welcome">Добро пожаловать</p>
+  <button id="exit" class="btn">Выход</button>
+
+<script>
+async function getUser(){
+  const email = localStorage.getItem('otd_email');
+  if(!email) { document.getElementById('welcome').textContent = 'Пожалуйста, войдите через портал'; return; }
+  const r = await fetch('/user?email=' + encodeURIComponent(email));
+  const j = await r.json();
+  if(j.user) document.getElementById('welcome').innerHTML = `Добро пожаловать, <b>${j.user.email}</b>`;
+}
+document.getElementById('exit').addEventListener('click', ()=>{ window.location.href = '/index.html'; });
+getUser();
+</script>
+</body>
+</html>

@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>OneTapDay — MVP</title>
+  <style>
+    body { background:#071311; color:#cfe6d7; font-family: system-ui, sans-serif; margin:0; padding:20px; }
+    .wrap{ max-width:1100px; margin:0 auto; display:flex; gap:20px; }
+    .card{ background:#0b1614; padding:20px; border-radius:12px; box-shadow: 0 4px 18px rgba(0,0,0,.6); flex:1;}
+    .btn{ background:#21c24a; color:#022; padding:10px 14px; border-radius:8px; border:0; cursor:pointer; }
+    .muted{ color:#9fb09a; font-size:13px }
+    header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:18px }
+    .top-actions{ display:flex; gap:8px; align-items:center }
+    input[type="email"]{ width:100%; padding:10px; border-radius:8px; border:1px solid #123; background:#071311; color:#cfe6d7 }
+    .langs{ display:flex; gap:8px }
+    button.small{ padding:6px 10px; border-radius:8px; background:#0b2a22; color:#afe5c8; border:1px solid #123; cursor:pointer }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>OneTapDay — MVP</h1>
+    <div class="top-actions">
+      <div class="langs">
+        <button class="small" data-lang="ru">RU</button>
+        <button class="small" data-lang="en">EN</button>
+        <button class="small" data-lang="pl">PL</button>
+        <button class="small" data-lang="uk">UK</button>
+      </div>
+      <button id="toMvp" class="small">MVP</button>
+      <button id="toPortal" class="small">Портал</button>
+    </div>
+  </header>
+
+  <div id="banner" style="text-align:center; margin-bottom:12px; color:#9bd19f"></div>
+
+  <div class="wrap">
+    <div class="card" id="portalCard">
+      <h2>Доступ к MVP</h2>
+      <div style="margin-bottom:8px" class="muted">Вход по Email (быстрый)</div>
+      <input id="email" placeholder="Email" type="email" />
+      <div style="height:12px"></div>
+      <button id="btnLogin" class="btn">Войти / Зарегистрироваться</button>
+      <div style="height:8px"></div>
+      <button id="btnDemo" class="btn" style="background:#0f8a66">Оплата/Демо</button>
+      <div style="height:12px"></div>
+      <div class="muted">Демо — 24 часа. Подписка — 2 месяца за 99 PLN.</div>
+    </div>
+
+    <div class="card" id="statusCard">
+      <h3>Статус</h3>
+      <div id="statusText" class="muted">Неавторизован</div>
+      <div style="height:12px"></div>
+      <div id="actions"></div>
+    </div>
+  </div>
+
+<script>
+async function api(path, method='GET', body){
+  const opts = { method, headers: {} };
+  if(body){ opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
+  const r = await fetch(path, opts);
+  return r.json();
+}
+
+let currentUser = null;
+function showStatus(){
+  const s = document.getElementById('statusText');
+  if(!currentUser){ s.textContent = 'Неавторизован'; document.getElementById('actions').innerHTML = ''; return; }
+  const now = Date.now();
+  const paid = currentUser.paid_until && currentUser.paid_until > now;
+  const demo = currentUser.demo_until && currentUser.demo_until > now;
+  s.innerHTML = `Email: <b>${currentUser.email}</b><br/>Paid: ${paid ? new Date(currentUser.paid_until).toLocaleString() : '—'}<br/>Demo: ${demo ? new Date(currentUser.demo_until).toLocaleString() : '—'}`;
+  let html = '';
+  if(paid) html += `<button class="btn" id="openMvp">Открыть MVP</button> `;
+  else html += `<button class="btn" id="payNow">Оплатить 2 месяца (99 PLN)</button> `;
+  html += `<button class="btn" id="logout" style="background:#0b2a22">Выход</button>`;
+  document.getElementById('actions').innerHTML = html;
+
+  document.getElementById('openMvp')?.addEventListener('click', ()=>{ window.location.href = './mvp.html'; });
+  document.getElementById('payNow')?.addEventListener('click', async ()=>{
+    const resp = await api('/create-checkout-session','POST',{ email: currentUser.email });
+    if(resp.url){ window.location.href = resp.url; } else alert('Ошибка создания сессии');
+  });
+  document.getElementById('logout')?.addEventListener('click', ()=>{ currentUser=null; localStorage.removeItem('otd_email'); showStatus(); })
+}
+
+document.getElementById('btnLogin').addEventListener('click', async ()=>{
+  const email = document.getElementById('email').value.trim();
+  if(!email) return alert('Введите email');
+  const resp = await api('/login','POST',{ email });
+  if(resp.user){ currentUser = resp.user; localStorage.setItem('otd_email', email); showStatus(); } else alert('Ошибка входа');
+});
+
+document.getElementById('btnDemo').addEventListener('click', async ()=>{
+  const email = document.getElementById('email').value.trim() || localStorage.getItem('otd_email');
+  if(!email) return alert('Введите email');
+  const resp = await api('/demo','POST',{ email });
+  if(resp.demo_until){ currentUser = (await api('/user?email='+encodeURIComponent(email))).user; localStorage.setItem('otd_email', email); showStatus(); } else alert('Ошибка demo');
+});
+
+(async function init(){
+  const saved = localStorage.getItem('otd_email');
+  if(saved){ try { const resp = await api('/user?email='+encodeURIComponent(saved)); currentUser = resp.user; showStatus(); } catch(e){} }
+})();
+</script>
+</body>
+</html>
