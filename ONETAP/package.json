@@ -1,0 +1,15 @@
+{
+  "name": "onetapday-mvp",
+  "version": "1.0.0",
+  "description": "OneTapDay MVP - AI accounting app (frontend + backend)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.6",
+    "crypto": "^1.0.1",
+    "express": "^4.18.2",
+    "stripe": "^8.256.0"
+  }
+}
