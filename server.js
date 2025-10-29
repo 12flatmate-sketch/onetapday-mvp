@@ -1,173 +1,203 @@
-// server.js — Paste this file in root, replace existing server.js
-require('dotenv').config();
-const path = require('path');
+// server.js — полная, готовая замена
+// Node 18+ / recommended. Put this file in repo root and deploy.
+// Uses SQLite (data.sqlite3), serves public/, uses Stripe if STRIPE_SECRET_KEY set.
+
+'use strict';
+/* minimal, robust server for OneTapDay MVP */
+try { require('dotenv').config(); } catch (e) { console.warn('dotenv not installed — skipping'); }
+
 const fs = require('fs');
+const path = require('path');
 const express = require('express');
-const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const sqlite3 = require('sqlite3').verbose();
+const crypto = require('crypto');
 
-const STRIPE_KEY = process.env.STRIPE_SECRET_KEY || '';
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
-const PUBLIC_URL = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
-const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || '1tapday@gmail.com').toLowerCase();
-
-let stripe = null;
-if (STRIPE_KEY) {
-  try { stripe = require('stripe')(STRIPE_KEY); } catch (e) {
-    console.error('Stripe init failed:', e && e.message);
-  }
-} else {
-  console.warn('No STRIPE_SECRET_KEY provided. Stripe endpoints will return 500 for create-checkout-session.');
-}
-
-const app = express();
-const PORT = process.env.PORT || 3000;
+const PUBLIC_URL = (process.env.PUBLIC_URL || '').replace(/\/$/, '') || null;
+const PORT = process.env.PORT || process.env.PORT || 3000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
 
-// --------- Middlewares ---------
-app.use((req, res, next) => {
-  console.log(new Date().toISOString(), req.method, req.url);
-  next();
-});
+const stripe = STRIPE_SECRET_KEY ? require('stripe')(STRIPE_SECRET_KEY) : null;
 
-// CORS: allow same origin or public URL. If testing from same domain, '*' is okay temporarily.
-const corsOptions = {
-  origin: PUBLIC_URL || true,
-  credentials: true
-};
-app.use(cors(corsOptions));
-app.use(cookieParser());
-app.use(express.json()); // MUST be before route handlers (important)
+const app = express();
 
-// Serve static files
-app.use(express.static(PUBLIC_DIR));
-
-// --------- DB (sqlite) ----------
+// --- DB init (SQLite) ---
 const DB_PATH = path.join(__dirname, 'data.sqlite3');
-const db = new sqlite3.Database(DB_PATH, err => {
-  if (err) console.error('DB open error', err);
-  else console.log('SQLite DB opened:', DB_PATH);
-});
+const db = new sqlite3.Database(DB_PATH);
 db.serialize(() => {
+  db.run(`PRAGMA journal_mode=WAL;`);
   db.run(`CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     email TEXT UNIQUE,
     password_hash TEXT,
-    status TEXT DEFAULT 'none',
-    start_at INTEGER DEFAULT 0,
-    end_at INTEGER DEFAULT 0,
+    is_admin INTEGER DEFAULT 0,
+    paid_until INTEGER DEFAULT 0,
     demo_until INTEGER DEFAULT 0,
-    is_admin INTEGER DEFAULT 0
+    created_at INTEGER DEFAULT (strftime('%s','now'))
+  );`);
+  db.run(`CREATE TABLE IF NOT EXISTS sessions (
+    token TEXT PRIMARY KEY,
+    email TEXT,
+    created_at INTEGER DEFAULT (strftime('%s','now'))
   );`);
 });
 
-// --------- Helpers ----------
-function nowTs(){ return Date.now(); }
-function daysFromNowMs(days){ return Date.now() + (days*24*60*60*1000); }
-
-function upsertUserIfNotExists(email, cb){
-  const el = email.toLowerCase();
-  db.run(`INSERT OR IGNORE INTO users (email, is_admin) VALUES (?, ?)`, [el, el===ADMIN_EMAIL?1:0], function(err){
-    if(err) return cb(err);
-    db.get(`SELECT * FROM users WHERE email = ?`, [el], cb);
+// --- helpers: sqlite -> promise ---
+function runAsync(sql, params=[]) {
+  return new Promise((resolve,reject)=>{
+    db.run(sql, params, function(err){
+      if(err) return reject(err);
+      resolve(this);
+    });
+  });
+}
+function getAsync(sql, params=[]) {
+  return new Promise((resolve,reject)=>{
+    db.get(sql, params, (err,row)=> err ? reject(err) : resolve(row));
+  });
+}
+function allAsync(sql, params=[]) {
+  return new Promise((resolve,reject)=>{
+    db.all(sql, params, (err,rows)=> err ? reject(err) : resolve(rows));
   });
 }
 
-// --------- Routes (note: webhook uses raw body below) ----------
+// --- middleware ---
+// IMPORTANT: webhook needs raw body. We'll register raw parser only for webhook route below.
+app.use(express.json());
+app.use(express.urlencoded({extended:true}));
+app.use(cookieParser());
+app.use(express.static(PUBLIC_DIR));
 
-// Simple health
-app.get('/health', (req,res)=> res.json({ok:true}));
+// small logger
+app.use((req,res,next)=>{
+  console.log(new Date().toISOString(), req.method, req.url);
+  next();
+});
 
-// Registration — expects { email, password }
-app.post('/register', (req,res)=>{
+// --- util ---
+function hashPassword(password){
+  return crypto.createHash('sha256').update(password || '').digest('hex');
+}
+function makeToken(){
+  return crypto.randomBytes(20).toString('hex');
+}
+async function createSession(email){
+  const token = makeToken();
+  await runAsync(`INSERT OR REPLACE INTO sessions (token,email) VALUES (?,?)`, [token,email]);
+  return token;
+}
+async function getUserByToken(token){
+  if(!token) return null;
+  const s = await getAsync(`SELECT email FROM sessions WHERE token = ?`, [token]);
+  if(!s) return null;
+  const u = await getAsync(`SELECT * FROM users WHERE email = ?`, [s.email]);
+  return u || null;
+}
+
+// --- routes ---
+
+// registration
+app.post('/register', async (req,res)=>{
   try{
     const { email, password } = req.body || {};
-    if(!email || !password) return res.status(400).json({ error: 'email and password required' });
-    const emailLc = email.toLowerCase();
-    const crypto = require('crypto');
-    const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
+    if(!email || !password) return res.status(400).json({ success:false, error: 'Missing email or password' });
+    const emailL = String(email).toLowerCase().trim();
+    const existing = await getAsync(`SELECT * FROM users WHERE email = ?`, [emailL]);
+    if(existing) return res.status(409).json({ success:false, error:'Email already registered' });
 
-    db.get(`SELECT * FROM users WHERE email = ?`, [emailLc], (err,row)=>{
-      if(err) { console.error('DB select err',err); return res.status(500).json({ error: 'db' }); }
-      if(row && row.password_hash){
-        return res.status(409).json({ error: 'Email already registered' });
-      }
-      if(row){
-        // update password_hash
-        db.run(`UPDATE users SET password_hash = ? WHERE email = ?`, [passwordHash, emailLc], function(e){
-          if(e){ console.error('DB update err', e); return res.status(500).json({ error:'db' }); }
-          return res.json({ success: true, email: emailLc });
-        });
-      } else {
-        // insert new
-        db.run(`INSERT INTO users (email, password_hash, is_admin) VALUES (?, ?, ?)`, [emailLc, passwordHash, emailLc===ADMIN_EMAIL?1:0], function(e){
-          if(e){ console.error('DB insert err', e); return res.status(500).json({ error:'db' }); }
-          return res.json({ success: true, email: emailLc });
-        });
-      }
-    });
+    const phash = hashPassword(password);
+    await runAsync(`INSERT INTO users (email,password_hash,is_admin) VALUES (?,?,?)`, [emailL, phash, emailL=== (process.env.ADMIN_EMAIL||'1tapday@gmail.com') ? 1 : 0]);
+    const token = await createSession(emailL);
+    res.cookie('session', token, { httpOnly:true, sameSite:'lax' });
+    const user = await getAsync(`SELECT email,paid_until,demo_until,is_admin,created_at FROM users WHERE email = ?`, [emailL]);
+    return res.json({ success:true, user });
   }catch(e){
     console.error('register error', e);
-    return res.status(500).json({ error: e.message || 'server' });
+    return res.status(500).json({ success:false, error: 'server' });
   }
 });
 
-// Login — expects { email, password }
-app.post('/login', (req,res)=>{
+// login
+app.post('/login', async (req,res)=>{
   try{
     const { email, password } = req.body || {};
-    if(!email || !password) return res.status(400).json({ error: 'email and password required' });
-    const emailLc = email.toLowerCase();
-    const crypto = require('crypto');
-    const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
-
-    db.get(`SELECT * FROM users WHERE email = ?`, [emailLc], (err,row)=>{
-      if(err){ console.error('DB select err', err); return res.status(500).json({ error:'db' }); }
-      if(!row || !row.password_hash) return res.status(404).json({ error:'User not found or no password set' });
-      if(row.password_hash !== passwordHash) return res.status(401).json({ error: 'Incorrect password' });
-
-      // create simple session cookie (not secure but works for MVP)
-      const token = require('crypto').randomBytes(16).toString('hex');
-      // store session in memory minimal: cookie only (for demo). For persistence, use DB.
-      // we will simply set signed cookie with token -> include email in cookie value (not safe for prod)
-      res.cookie('otd_session', Buffer.from(emailLc).toString('base64'), { httpOnly: true, sameSite: 'lax' });
-      return res.json({ success: true, email: emailLc });
-    });
-  } catch(e){
+    if(!email || !password) return res.status(400).json({ success:false, error:'Missing email or password' });
+    const emailL = String(email).toLowerCase().trim();
+    const u = await getAsync(`SELECT * FROM users WHERE email = ?`, [emailL]);
+    if(!u) return res.status(404).json({ success:false, error:'User not found' });
+    const phash = hashPassword(password);
+    if(u.password_hash !== phash) return res.status(401).json({ success:false, error:'Incorrect password' });
+    const token = await createSession(emailL);
+    res.cookie('session', token, { httpOnly:true, sameSite:'lax' });
+    const user = await getAsync(`SELECT email,paid_until,demo_until,is_admin,created_at FROM users WHERE email = ?`, [emailL]);
+    return res.json({ success:true, user });
+  }catch(e){
     console.error('login error', e);
-    return res.status(500).json({ error: e.message || 'server' });
+    return res.status(500).json({ success:false, error:'server' });
   }
 });
 
-// Demo start (must be logged-in: check cookie otd_session)
-app.post('/demo', (req,res)=>{
+// logout
+app.post('/logout', async (req,res)=>{
   try{
-    const cookie = req.cookies.otd_session;
-    if(!cookie) return res.status(401).json({ error: 'not authenticated' });
-    const email = Buffer.from(cookie, 'base64').toString('utf8');
-    const demoUntil = daysFromNowMs(1);
-    db.run(`UPDATE users SET demo_until = ? WHERE email = ?`, [demoUntil, email], function(err){
-      if(err){ console.error('demo db err', err); return res.status(500).json({ error:'db' }); }
-      return res.json({ success: true, demo_until: demoUntil });
-    });
-  } catch(e){
-    console.error('demo error', e);
-    return res.status(500).json({ error: e.message || 'server' });
+    const token = req.cookies.session;
+    if(token) await runAsync(`DELETE FROM sessions WHERE token = ?`, [token]);
+    res.clearCookie('session');
+    return res.json({ success:true });
+  }catch(e){
+    console.error('logout err', e);
+    return res.status(500).json({ success:false });
   }
 });
 
-// Create Stripe checkout session — requires stripe initialized
+// get current user by cookie
+app.get('/user', async (req,res)=>{
+  try{
+    const token = req.cookies.session;
+    const user = await getUserByToken(token);
+    if(!user) return res.json({ user: null });
+    // map fields
+    const mapped = {
+      email: user.email,
+      paid_until: user.paid_until,
+      demo_until: user.demo_until,
+      is_admin: !!user.is_admin,
+      created_at: user.created_at
+    };
+    return res.json({ user: mapped });
+  }catch(e){
+    console.error('user err', e);
+    return res.status(500).json({ error: 'server' });
+  }
+});
+
+// start 24h demo (must be logged)
+app.post('/start-demo', async (req,res)=>{
+  try{
+    const token = req.cookies.session;
+    const user = await getUserByToken(token);
+    if(!user) return res.status(401).json({ success:false, error:'not authenticated' });
+    const demoUntil = Math.floor(Date.now()/1000) + 24*60*60;
+    await runAsync(`UPDATE users SET demo_until = ? WHERE email = ?`, [demoUntil, user.email]);
+    return res.json({ success:true, demo_until: demoUntil });
+  }catch(e){
+    console.error('start-demo', e);
+    return res.status(500).json({ success:false });
+  }
+});
+
+// create stripe checkout
 app.post('/create-checkout-session', async (req,res)=>{
   try{
-    if(!stripe) return res.status(500).json({ error: 'Stripe not configured' });
-    const cookie = req.cookies.otd_session;
-    if(!cookie) return res.status(401).json({ error: 'not authenticated' });
-    const email = Buffer.from(cookie, 'base64').toString('utf8');
+    if(!stripe) return res.status(500).json({ error: 'stripe missing' });
+    const token = req.cookies.session;
+    const user = await getUserByToken(token);
+    if(!user) return res.status(401).json({ error: 'not authenticated' });
 
-    const successUrl = (PUBLIC_URL || `${req.protocol}://${req.get('host')}`) + '/?session_id={CHECKOUT_SESSION_ID}';
-    const cancelUrl = (PUBLIC_URL || `${req.protocol}://${req.get('host')}`) + '/?canceled=1';
-
+    const successBase = PUBLIC_URL || `${req.protocol}://${req.get('host')}`;
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'payment',
@@ -179,77 +209,83 @@ app.post('/create-checkout-session', async (req,res)=>{
         },
         quantity: 1
       }],
-      metadata: { email },
-      customer_email: email,
-      success_url: successUrl,
-      cancel_url: cancelUrl
+      customer_email: user.email,
+      metadata: { email: user.email },
+      success_url: `${successBase}/?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${successBase}/?canceled=1`
     });
     return res.json({ url: session.url, id: session.id });
   }catch(e){
-    console.error('create-checkout error', e && e.message);
-    return res.status(500).json({ error: e.message || 'stripe error' });
+    console.error('create-checkout error', e);
+    return res.status(500).json({ error: 'stripe error' });
   }
 });
 
-// Retrieve session after redirect (optional)
+// endpoint to fetch session after redirect
 app.get('/session', async (req,res)=>{
   try{
+    if(!stripe) return res.status(500).json({ error:'stripe missing' });
     const sid = req.query.session_id;
-    if(!sid) return res.status(400).json({ error: 'session_id required' });
-    if(!stripe) return res.status(500).json({ error: 'Stripe not configured' });
+    if(!sid) return res.status(400).json({ error:'session_id required' });
     const session = await stripe.checkout.sessions.retrieve(sid);
-    return res.json({ ok: true, session });
+    // mark user paid_until (60 days)
+    const email = (session.metadata && session.metadata.email) || session.customer_details?.email;
+    if(email){
+      const paidUntil = Math.floor(Date.now()/1000) + 60*24*60*60;
+      await runAsync(`UPDATE users SET paid_until = ? WHERE email = ?`, [paidUntil, email]);
+    }
+    return res.json({ ok:true, session });
   }catch(e){
-    console.error('session error', e);
-    return res.status(500).json({ error: e.message || 'session error' });
+    console.error('session fetch error', e);
+    return res.status(500).json({ error: 'server' });
   }
 });
 
-// Stripe webhook: use raw body to validate signature
-app.post('/webhook', express.raw({type:'application/json'}), (req,res)=>{
-  if(!stripe){
-    console.warn('Webhook received but stripe not configured');
-    return res.sendStatus(200);
-  }
-  const sig = req.headers['stripe-signature'];
-  let event;
-  try {
-    if(STRIPE_WEBHOOK_SECRET){
-      event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET);
-    } else {
-      // if no secret set (test) parse body
-      event = JSON.parse(req.body.toString());
+// webhook must use raw body to verify signature
+app.post('/webhook', express.raw({type: 'application/json'}), async (req,res)=>{
+  try{
+    if(!stripe) {
+      console.warn('Stripe not configured, ignoring webhook');
+      return res.status(200).send('no-stripe');
     }
-  } catch (err) {
-    console.error('Webhook signature check failed.', err && err.message);
-    return res.status(400).send(`Webhook Error: ${err && err.message}`);
-  }
-
-  if(event.type === 'checkout.session.completed'){
-    const session = event.data.object;
-    const email = (session.metadata && session.metadata.email) || session.customer_email;
-    if(email){
-      const end = new Date();
-      end.setMonth(end.getMonth() + 2);
-      const endTs = end.getTime();
-      db.run(`UPDATE users SET start_at = ?, end_at = ?, status = ? WHERE email = ?`, [Date.now(), endTs, 'active', email.toLowerCase()], (err)=>{
-        if(err) console.error('db webhook update err', err);
-        else console.log('Activated paid user', email, 'until', new Date(endTs).toISOString());
-      });
+    const sig = req.headers['stripe-signature'];
+    let event;
+    try {
+      if(STRIPE_WEBHOOK_SECRET) {
+        event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET);
+      } else {
+        event = JSON.parse(req.body.toString());
+      }
+    } catch (e) {
+      console.error('webhook signature failed', e && e.message);
+      return res.status(400).send(`Webhook Error: ${e && e.message}`);
     }
-  }
 
-  res.json({ received: true });
+    if(event && event.type === 'checkout.session.completed'){
+      const session = event.data.object;
+      const email = (session.metadata && session.metadata.email) || session.customer_details?.email;
+      if(email){
+        const paidUntil = Math.floor(Date.now()/1000) + 60*24*60*60;
+        await runAsync(`UPDATE users SET paid_until = ? WHERE email = ?`, [paidUntil, email]);
+        console.log(`Activated paid_until for ${email}`);
+      }
+    }
+
+    return res.json({ received:true });
+  }catch(e){
+    console.error('webhook handler error', e);
+    return res.status(500).send('err');
+  }
 });
 
 // fallback — serve index
-app.get('*', (req,res)=>{
-  const indexPath = path.join(PUBLIC_DIR, 'index.html');
-  if(fs.existsSync(indexPath)) return res.sendFile(indexPath);
+app.get('*', (req,res) => {
+  const index = path.join(PUBLIC_DIR, 'index.html');
+  if(fs.existsSync(index)) return res.sendFile(index);
   return res.status(404).send('Not found');
 });
 
-// Start server
-app.listen(PORT, ()=>{
-  console.log(`Server running on port ${PORT}`);
+// start server
+app.listen(PORT, ()=> {
+  console.log(`Server listening on ${PORT} — PID ${process.pid}`);
 });
