@@ -41,13 +41,12 @@ function getUserBySession(req) {
 // Helper: mark admin if email matches configured admin email
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "1tapday@gmail.com";
 
-
 // Registration endpoint — debug wrapper (temporary)
 app.post('/register', (req, res) => {
-  // краткая защита, лог тела запроса (без секретов)
+  // лог тела запроса (коротко, без секретов)
   try {
-    console.log('[REGISTER] incoming body:', JSON.stringify(req.body).slice(0,2000));
-  } catch(e){ console.log('[REGISTER] body stringify failed'); }
+    console.log('[REGISTER] incoming body:', typeof req.body === 'object' ? JSON.stringify(req.body).slice(0,2000) : String(req.body));
+  } catch (e) { console.log('[REGISTER] body stringify failed'); }
 
   try {
     const { email, password } = req.body || {};
@@ -56,11 +55,11 @@ app.post('/register', (req, res) => {
       return res.status(400).json({ success: false, error: "Missing email or password" });
     }
 
-    const emailLower = String(email).toLowerCase();
+    const emailLower = String(email).toLowerCase().trim();
     if (users[emailLower]) {
       console.warn('[REGISTER] already exists:', emailLower);
-      return res.status(400).json({ success: false, error: "Email already registered" });
-    
+      return res.status(409).json({ success: false, error: "Email already registered" });
+    }
 
     // Create new user
     const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
@@ -82,13 +81,11 @@ app.post('/register', (req, res) => {
     console.log('[REGISTER] success for', emailLower);
     return res.json({ success: true, user: { email: emailLower, status: "none" } });
   } catch (err) {
-    // обязательно печатаем стек — это то, чего нам не хватало
+    // печатаем стек — чтобы не гадать
     console.error('[REGISTER] ERROR stack:', err && err.stack ? err.stack : err);
-    // временно возвращаем стек в теле для отладки (удалим после починки)
-    return res.status(500).json({ success: false, error: 'internal', detail: String(err && err.stack ? err.stack : err) });
+    return res.status(500).json({ success: false, error: 'internal', detail: String(err && err.message ? err.message : err) });
   }
 });
-
 
 // Login endpoint
 app.post('/login', (req, res) => {
@@ -267,4 +264,5 @@ app.post('/reset-pilot', (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server listening on port ${PORT}`);
 });
+
 
