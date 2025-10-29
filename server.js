@@ -4,6 +4,10 @@ const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);  // Stripe secret key from env
 const app = express();
+app.use((req,res,next)=>{
+  console.log(new Date().toISOString(), req.method, req.url);
+  next();
+});
 const PORT = process.env.PORT || 3000;
 
 // In-memory "database" for user accounts and sessions
@@ -243,3 +247,4 @@ app.post('/reset-pilot', (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server listening on port ${PORT}`);
 });
+
