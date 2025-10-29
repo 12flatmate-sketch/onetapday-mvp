@@ -8,7 +8,7 @@ app.use((req,res,next)=>{
   console.log(new Date().toISOString(), req.method, req.url);
   next();
 });
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 
 // In-memory "database" for user accounts and sessions
 const users = {};       // users[email] = { email, passwordHash, status, startAt, endAt, discountUntil, isAdmin }
@@ -260,5 +260,6 @@ app.post('/reset-pilot', (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server listening on port ${PORT}`);
 });
+
 
 
