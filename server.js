@@ -1,250 +1,179 @@
-// server.js
+// server.js — minimal robust server for register/login/demo + Stripe webhook
+require('dotenv').config();
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);  // Stripe secret key from env
+const cors = require('cors');
+
+const STRIPE_KEY = process.env.STRIPE_SECRET_KEY || '';
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
+let stripe;
+try { stripe = require('stripe')(STRIPE_KEY); } catch(e){ console.warn('Stripe init failed', e && e.message); }
+
 const app = express();
-app.use((req,res,next)=>{
-  console.log(new Date().toISOString(), req.method, req.url);
-  next();
-});
 const PORT = process.env.PORT || 3000;
 
-// In-memory "database" for user accounts and sessions
-const users = {};       // users[email] = { email, passwordHash, status, startAt, endAt, discountUntil, isAdmin }
-const sessions = {};    // sessions[token] = email
+// Simple in-memory store (replace with SQLite later)
+const users = {};    // users[email] = { email, passwordHash, status, startAt, endAt, isAdmin }
+const sessions = {}; // sessions[token] = email
 
-// Middleware
-app.use(cookieParser());
-app.use(express.json());
-// Raw body parser for Stripe webhook (to verify signature)
+// Logging
 app.use((req, res, next) => {
-  if (req.originalUrl === '/webhook') {
-    // Use raw body for webhook
-    express.raw({ type: 'application/json' })(req, res, next);
-  } else {
-    next();
-  }
+  console.log(new Date().toISOString(), req.method, req.originalUrl);
+  next();
 });
 
-// Serve static files (frontend)
+// CORS — allow frontends from other origins if needed
+app.use(cors());
+
+// Parsers: JSON + urlencoded (forms)
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+// Serve static frontend (public/)
 app.use(express.static('public'));
 
-// Helper: authenticate session
+// Helper: session -> user
 function getUserBySession(req) {
-  const token = req.cookies.session;
-  if (!token || !sessions[token]) return null;
+  const token = req.cookies && req.cookies.session;
+  if (!token) return null;
   const email = sessions[token];
+  if (!email) return null;
   return users[email] || null;
 }
 
-// Helper: mark admin if email matches configured admin email
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "1tapday@gmail.com";
+// --- ROUTES ---
 
-// Registration endpoint
+// Register (accepts JSON or form)
 app.post('/register', (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.json({ success: false, error: "Missing email or password" });
+  try {
+    const email = (req.body.email || '').toString().trim().toLowerCase();
+    const password = (req.body.password || '').toString();
+    if (!email || !password) return res.status(400).json({ success:false, error:'email and password required' });
+
+    if (users[email]) return res.status(409).json({ success:false, error:'email already registered' });
+
+    const hash = crypto.createHash('sha256').update(password).digest('hex');
+    users[email] = { email, passwordHash: hash, status:'none', startAt:null, endAt:null, isAdmin:false };
+
+    const token = crypto.randomBytes(16).toString('hex');
+    sessions[token] = email;
+    res.cookie('session', token, { httpOnly:true, sameSite:'lax' });
+
+    return res.json({ success:true, user:{ email, status: users[email].status } });
+  } catch (e) {
+    console.error('register error', e);
+    return res.status(500).json({ success:false, error:'server error' });
   }
-  const emailLower = email.toLowerCase();
-  if (users[emailLower]) {
-    return res.json({ success: false, error: "Email already registered" });
-  }
-  // Create new user
-  const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
-  users[emailLower] = {
-    email: emailLower,
-    passwordHash,
-    status: "none",       // no payment yet
-    startAt: null,
-    endAt: null,
-    discountUntil: null,
-    isAdmin: (emailLower === ADMIN_EMAIL)
-  };
-  // Auto-login the user by creating a session
-  const token = crypto.randomBytes(16).toString('hex');
-  sessions[token] = emailLower;
-  // Set session cookie (HttpOnly for security)
-  res.cookie('session', token, { httpOnly: true, sameSite: 'lax' });
-  return res.json({ success: true, user: { email: emailLower, status: "none" } });
 });
 
-// Login endpoint
+// Login (accepts JSON or form)
 app.post('/login', (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.json({ success: false, error: "Missing email or password" });
+  try {
+    const email = (req.body.email || '').toString().trim().toLowerCase();
+    const password = (req.body.password || '').toString();
+    if (!email || !password) return res.status(400).json({ success:false, error:'email and password required' });
+
+    const user = users[email];
+    if (!user) return res.status(404).json({ success:false, error:'user not found' });
+
+    const hash = crypto.createHash('sha256').update(password).digest('hex');
+    if (hash !== user.passwordHash) return res.status(401).json({ success:false, error:'incorrect password' });
+
+    const token = crypto.randomBytes(16).toString('hex');
+    sessions[token] = email;
+    res.cookie('session', token, { httpOnly:true, sameSite:'lax' });
+
+    // refresh status expiry check (if needed)
+    if (user.status === 'active' && user.endAt && new Date(user.endAt) < new Date()) {
+      user.status = 'ended';
+    }
+
+    return res.json({ success:true, user:{ email, status:user.status } });
+  } catch(e){
+    console.error('login error', e);
+    return res.status(500).json({ success:false, error:'server error' });
   }
-  const emailLower = email.toLowerCase();
-  const user = users[emailLower];
-  if (!user) {
-    return res.json({ success: false, error: "User not found" });
-  }
-  const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
-  if (user.passwordHash !== passwordHash) {
-    return res.json({ success: false, error: "Incorrect password" });
-  }
-  // Create new session token
-  const token = crypto.randomBytes(16).toString('hex');
-  sessions[token] = emailLower;
-  res.cookie('session', token, { httpOnly: true, sameSite: 'lax' });
-  // Determine current status for response
-  let status = user.status;
-  // If user's pilot end date passed, mark as ended
-  if (user.status === "active" && user.endAt && new Date(user.endAt) < new Date()) {
-    user.status = "ended";
-    status = "ended";
-  }
-  // If user had discount period and it passed, also end
-  if (user.status === "discount_active" && user.discountUntil && new Date(user.discountUntil) < new Date()) {
-    user.status = "ended";
-    status = "ended";
-  }
-  return res.json({ success: true, user: { email: emailLower, status } });
 });
 
-// Logout endpoint
+// Logout
 app.post('/logout', (req, res) => {
-  const token = req.cookies.session;
-  if (token) {
-    delete sessions[token];
-    res.clearCookie('session');
-  }
-  return res.json({ success: true });
+  const token = req.cookies && req.cookies.session;
+  if (token) { delete sessions[token]; res.clearCookie('session'); }
+  return res.json({ success:true });
 });
 
-// Start 24h demo endpoint (protect to logged-in users)
+// Demo start (24h)
 app.post('/start-demo', (req, res) => {
   const user = getUserBySession(req);
-  if (!user) {
-    return res.status(401).json({ success: false, error: "Not authenticated" });
-  }
-  // Activate demo: grant 24h access
-  user.status = "active";
+  if (!user) return res.status(401).json({ success:false, error:'not authenticated' });
+  user.status = 'active';
   user.startAt = new Date().toISOString();
-  const end = new Date();
-  end.setDate(end.getDate() + 1);
-  user.endAt = end.toISOString();  // demo until 24h from now
-  return res.json({ success: true, demoUntil: user.endAt.slice(0, 10) });
+  const end = new Date(); end.setDate(end.getDate() + 1);
+  user.endAt = end.toISOString();
+  return res.json({ success:true, demoUntil: user.endAt });
 });
 
-// Create Stripe Checkout Session (for 2-month pilot deposit)
+// Create checkout session (Stripe)
 app.post('/create-checkout-session', async (req, res) => {
   const user = getUserBySession(req);
-  if (!user) {
-    return res.status(401).json({ error: "Not authenticated" });
-  }
+  if (!user) return res.status(401).json({ error:'not authenticated' });
+  if (!stripe) return res.status(500).json({ error:'stripe not configured' });
+
   try {
-    // Create a one-time Checkout Session for 99 PLN deposit
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      mode: 'payment',
-      line_items: [{
-        price_data: {
-          currency: 'pln',
-          product_data: { name: 'OneTapDay Pilot Deposit (2 months access)' },
-          unit_amount: 9900  // 99.00 PLN in grosz
+      payment_method_types:['card'],
+      mode:'payment',
+      line_items:[{
+        price_data:{
+          currency:'pln',
+          product_data:{ name: 'OneTapDay 2 months' },
+          unit_amount: 9900
         },
-        quantity: 1
+        quantity:1
       }],
       customer_email: user.email,
       metadata: { email: user.email },
       success_url: `${req.protocol}://${req.get('host')}/app.html?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.protocol}://${req.get('host')}/?cancel=1`
+      cancel_url: `${req.protocol}://${req.get('host')}/?canceled=1`,
     });
     return res.json({ sessionUrl: session.url });
-  } catch (err) {
-    console.error("Stripe session error:", err);
-    return res.status(500).json({ error: "Stripe session creation failed" });
+  } catch (e) {
+    console.error('stripe create session error', e);
+    return res.status(500).json({ error:'stripe error' });
   }
 });
 
-// Stripe webhook endpoint (to receive payment status events)
-app.post('/webhook', (req, res) => {
+// Webhook raw handler — use express.raw only here
+app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
+  if (!stripe) return res.status(500).send('stripe not configured');
   const sig = req.headers['stripe-signature'];
   let event;
   try {
-    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET);
   } catch (err) {
-    console.error("Webhook signature verification failed:", err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
+    console.error('webhook signature failed', err && err.message);
+    return res.status(400).send(`Webhook Error: ${err && err.message}`);
   }
-  // Handle completed checkout
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
-    const email = session.metadata.email || session.customer_email;
+    const email = session.metadata?.email || session.customer_email;
     if (email && users[email]) {
-      const user = users[email];
-      // Mark deposit paid and start pilot immediately (instant access)
-      user.status = "active";
-      user.startAt = new Date().toISOString();
-      const endDate = new Date();
-      endDate.setMonth(endDate.getMonth() + 2);
-      user.endAt = endDate.toISOString();
-      console.log(`✅ Pilot access activated for ${email} until ${user.endAt}`);
+      const u = users[email];
+      u.status = 'active';
+      u.startAt = new Date().toISOString();
+      const end = new Date(); end.setMonth(end.getMonth() + 2);
+      u.endAt = end.toISOString();
+      console.log('Activated pilot for', email, 'until', u.endAt);
     }
   }
-  res.sendStatus(200);
+  res.json({ received:true });
 });
 
-// Admin: mark deposit as paid manually (if payment outside Stripe)
-app.post('/mark-paid', (req, res) => {
-  const user = getUserBySession(req);
-  if (!user || !user.isAdmin) {
-    return res.status(403).json({ success: false, error: "Forbidden" });
-  }
-  // Mark current admin user's pilot as deposit paid (but not active yet)
-  user.status = "deposit_paid";
-  return res.json({ success: true });
+// Fallback to index
+app.get('*', (req, res) => {
+  res.sendFile(require('path').join(__dirname, 'public', 'index.html'));
 });
 
-// Admin: start pilot (2 months) manually
-app.post('/start-pilot', (req, res) => {
-  const user = getUserBySession(req);
-  if (!user || !user.isAdmin) {
-    return res.status(403).json({ success: false, error: "Forbidden" });
-  }
-  user.status = "active";
-  user.startAt = new Date().toISOString();
-  const end = new Date();
-  end.setMonth(end.getMonth() + 2);
-  user.endAt = end.toISOString();
-  return res.json({ success: true });
-});
-
-// Activate discount (50% off 12 months) - user or admin after pilot ended
-app.post('/activate-discount', (req, res) => {
-  const current = getUserBySession(req);
-  if (!current) return res.status(401).json({ success: false });
-  // Allow if admin or if user’s own status is ended (pilot ended)
-  if (!current.isAdmin && current.status !== "ended") {
-    return res.status(400).json({ success: false, error: "Not eligible for discount" });
-  }
-  current.status = "discount_active";
-  current.discountSince = new Date().toISOString();
-  const end = new Date();
-  end.setMonth(end.getMonth() + 12);
-  current.discountUntil = end.toISOString();
-  // Grant access for the discount period
-  current.startAt = current.startAt || new Date().toISOString();
-  current.endAt = current.discountUntil;
-  return res.json({ success: true });
-});
-
-// Reset pilot (admin only - clears subscription status)
-app.post('/reset-pilot', (req, res) => {
-  const user = getUserBySession(req);
-  if (!user || !user.isAdmin) return res.status(403).json({ success: false });
-  user.status = "none";
-  user.startAt = null;
-  user.endAt = null;
-  user.discountUntil = null;
-  return res.json({ success: true });
-});
-
-// Start the server
-app.listen(PORT, () => {
-  console.log(`✅ Server listening on port ${PORT}`);
-});
-
+app.listen(PORT, () => console.log('Server listening on', PORT));
