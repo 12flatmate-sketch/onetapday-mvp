@@ -44,22 +44,26 @@ const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "1tapday@gmail.com";
 
 // Registration endpoint — debug wrapper (temporary)
 app.post('/register', (req, res) => {
+  // краткая защита, лог тела запроса (без секретов)
   try {
-    const { email, password } = req.body;
-    if (!email) return res.status(400).json({ success: false, error: "Missing email" });
+    console.log('[REGISTER] incoming body:', JSON.stringify(req.body).slice(0,2000));
+  } catch(e){ console.log('[REGISTER] body stringify failed'); }
 
-    const emailLower = email.toLowerCase();
-
-    if (users[emailLower]) {
-      const token = crypto.randomBytes(16).toString('hex');
-      sessions[token] = emailLower;
-      res.cookie('session', token, { httpOnly: true, sameSite: 'lax' });
-      return res.json({ success: true, user: { email: emailLower, status: users[emailLower].status || 'none' } });
+  try {
+    const { email, password } = req.body || {};
+    if (!email || !password) {
+      console.error('[REGISTER] missing email/password');
+      return res.status(400).json({ success: false, error: "Missing email or password" });
     }
 
-    const pwd = (password && password.length) ? password : crypto.randomBytes(8).toString('hex');
-    const passwordHash = crypto.createHash('sha256').update(pwd).digest('hex');
+    const emailLower = String(email).toLowerCase();
+    if (users[emailLower]) {
+      console.warn('[REGISTER] already exists:', emailLower);
+      return res.status(400).json({ success: false, error: "Email already registered" });
+    }
 
+    // Create new user
+    const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
     users[emailLower] = {
       email: emailLower,
       passwordHash,
@@ -70,15 +74,18 @@ app.post('/register', (req, res) => {
       isAdmin: (emailLower === ADMIN_EMAIL)
     };
 
+    // Auto-login
     const token = crypto.randomBytes(16).toString('hex');
     sessions[token] = emailLower;
     res.cookie('session', token, { httpOnly: true, sameSite: 'lax' });
 
+    console.log('[REGISTER] success for', emailLower);
     return res.json({ success: true, user: { email: emailLower, status: "none" } });
-
   } catch (err) {
-    console.error('REGISTER ERROR:', err && err.stack ? err.stack : err);
-    return res.status(500).json({ success: false, error: 'server_error', detail: (err && err.message) ? err.message : String(err) });
+    // обязательно печатаем стек — это то, чего нам не хватало
+    console.error('[REGISTER] ERROR stack:', err && err.stack ? err.stack : err);
+    // временно возвращаем стек в теле для отладки (удалим после починки)
+    return res.status(500).json({ success: false, error: 'internal', detail: String(err && err.stack ? err.stack : err) });
   }
 });
 
@@ -260,6 +267,7 @@ app.post('/reset-pilot', (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server listening on port ${PORT}`);
 });
+
 
 
 
