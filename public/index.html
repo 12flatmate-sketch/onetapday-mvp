@@ -2,44 +2,359 @@
 <html lang="pl">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>OneTapDay — MVP</title>
-  <link rel="stylesheet" href="/styles.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OneTapDay — Доступ к MVP</title>
+  <style>
+    :root{
+      --bg:#f7f9fa; --card:#fff; --text:#111;
+      --muted:#6c757d; --green:#35D36B; --chip:#eef6f2; --stroke:#ced4da;
+      --radius:12px; --shadow: 0 10px 20px rgba(0,0,0,0.06);
+    }
+    *{box-sizing:border-box}
+    body{font-family:Inter, Arial, Helvetica, sans-serif; margin:0; background:var(--bg); color:var(--text)}
+    .wrap{max-width:980px; margin:28px auto; padding:18px}
+    header{display:flex; align-items:center; gap:12px; margin-bottom:18px}
+    .brand{font-weight:700; color:var(--green); font-size:20px}
+    .lang{margin-left:auto; display:flex; gap:6px}
+    .lang button{padding:6px 10px;border-radius:999px;border:1px solid var(--stroke);background:var(--chip);cursor:pointer;font-weight:600;opacity:.8}
+    .lang button.on{background:var(--green); color:#fff; opacity:1}
+    .grid{display:grid; grid-template-columns:1fr 360px; gap:20px}
+    @media(max-width:900px){ .grid{grid-template-columns:1fr} }
+    .card{background:var(--card); border-radius:var(--radius); padding:18px; box-shadow:var(--shadow); border:1px solid var(--stroke)}
+    .tabs{display:flex; gap:8px; margin-bottom:12px}
+    .tabs button{flex:1;padding:10px;border-radius:10px;border:1px solid var(--stroke);background:var(--chip);cursor:pointer}
+    .tabs button.on{background:var(--green); color:#fff}
+    .input{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+    .input input{padding:12px;border-radius:10px;border:1px solid var(--stroke);outline:none}
+    .row{display:flex;gap:10px}
+    .btn{padding:10px 14px;border-radius:10px;border:0;cursor:pointer;background:var(--green);color:#fff;font-weight:700}
+    .btn.secondary{background:transparent;color:var(--green);border:2px solid var(--green)}
+    .btn.ghost{background:transparent;border:1px dashed var(--stroke);color:var(--muted)}
+    .muted{color:var(--muted);font-size:13px;margin-top:8px}
+    .status-pill{padding:8px 12px;border-radius:999px;border:1px solid var(--stroke);background:#fff;display:inline-block}
+    #apiBox{display:none}
+    .small{font-size:13px;color:var(--muted)}
+  </style>
 </head>
 <body>
-  <header style="display:flex;align-items:center;justify-content:space-between;padding:16px;">
-    <div>
-      <!-- Языки слева→право -->
-      <button data-lang="pl">PL</button>
-      <button data-lang="en">EN</button>
-      <button data-lang="ua">UA</button>
-      <button data-lang="ru">RU</button>
+  <div class="wrap">
+    <header>
+      <div class="brand">OneTapDay</div>
+
+      <!-- Dev API box (hidden unless ?dev=1) -->
+      <div id="apiBox" style="margin-left:12px; align-items:center;">
+        <input id="apiInput" style="padding:8px;border-radius:8px;border:1px solid var(--stroke)" placeholder="https://api.example.com" />
+        <button id="saveApi" class="btn secondary" style="margin-left:8px">Save</button>
+      </div>
+
+      <!-- Language switch (order: PL, EN, UK, RU) -->
+      <div class="lang" id="langBar">
+        <button data-lang="pl" class="on">PL</button>
+        <button data-lang="en">EN</button>
+        <button data-lang="uk">UK</button>
+        <button data-lang="ru">RU</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- LEFT: Login / Register -->
+      <section class="card" id="authCard">
+        <h3 id="accessTitle">Dostęp do MVP</h3>
+
+        <div class="tabs" role="tablist">
+          <button data-tab="login" class="on">Logowanie</button>
+          <button data-tab="reg">Rejestracja</button>
+        </div>
+
+        <div class="input">
+          <input id="email" type="email" placeholder="Email" autocomplete="email" />
+          <input id="pass" type="password" placeholder="Hasło / Пароль" autocomplete="current-password" />
+        </div>
+
+        <div class="row">
+          <button id="doLogin" class="btn">Zaloguj</button>
+          <button id="doPay" class="btn secondary">Opłata / Demo</button>
+        </div>
+
+        <div class="muted">Po logowaniu możesz zapłacić lub włączyć demo.</div>
+      </section>
+
+      <!-- RIGHT: Status & Actions -->
+      <aside class="card">
+        <h3 id="statusTitle">Status</h3>
+        <div style="margin-bottom:12px">
+          <div id="statusText" class="status-pill">Nieznany użytkownik. Zaloguj się lub zarejestruj.</div>
+        </div>
+
+        <div>
+          <h4>Dostęp</h4>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">
+            <a id="payStripe" class="btn" href="#" target="_blank">Opłacić 2 miesiące (Stripe)</a>
+            <button id="demoBtn" class="btn ghost">Demo 24 godziny</button>
+          </div>
+          <div class="muted" style="margin-top:12px">Opłata daje natychmiastowy dostęp. Demo — 24 godziny.</div>
+        </div>
+      </aside>
     </div>
-    <div><img src="/assets/logo.png" alt="OneTapDay" style="height:32px"></div>
-  </header>
+  </div>
 
-  <main style="max-width:720px;margin:32px auto;padding:16px;">
-    <h1 id="title">OneTapDay — регистрация</h1>
+  <!-- Clean client script: вставь этот скрипт как единственный блок JS -->
+  <script>
+  (function(){
+    // ---------- CONFIG ----------
+    const DEV_PARAM = new URLSearchParams(location.search).get('dev') === '1';
 
-    <div id="msg" style="color:red;margin-bottom:12px;"></div>
+    // I18N (PL, EN, UK, RU) — минимальный набор текстов
+    const T = {
+      pl: {
+        access_title: "Dostęp do MVP",
+        login_btn: "Zaloguj",
+        reg_btn: "Rejestracja",
+        pay_or_demo: "Opłata / Demo",
+        after_login_hint: "Po zalogowaniu możesz zapłacić lub włączyć demo.",
+        status_guest: "Nieznany użytkownik. Zaloguj się lub zarejestruj.",
+        stripe_2m: "Opłacić 2 miesiące (Stripe)",
+        demo_24: "Demo 24 godziny"
+      },
+      en: {
+        access_title: "MVP Access",
+        login_btn: "Sign in",
+        reg_btn: "Sign up",
+        pay_or_demo: "Pay / Demo",
+        after_login_hint: "After signing in you can pay or start a demo.",
+        status_guest: "Guest. Please sign in or register.",
+        stripe_2m: "Pay 2 months (Stripe)",
+        demo_24: "24h Demo"
+      },
+      uk: {
+        access_title: "Доступ до MVP",
+        login_btn: "Увійти",
+        reg_btn: "Реєстрація",
+        pay_or_demo: "Оплата / Демо",
+        after_login_hint: "Після входу можна оплатити або увімкнути демо.",
+        status_guest: "Гість. Увійдіть або зареєструйтесь.",
+        stripe_2m: "Оплатити 2 місяці (Stripe)",
+        demo_24: "Демо 24 години"
+      },
+      ru: {
+        access_title: "Доступ к MVP",
+        login_btn: "Войти",
+        reg_btn: "Регистрация",
+        pay_or_demo: "Оплата / Демо",
+        after_login_hint: "После входа можно оплатить или включить демо.",
+        status_guest: "Неизвестный пользователь. Войдите или зарегистрируйтесь.",
+        stripe_2m: "Оплатить 2 месяца (Stripe)",
+        demo_24: "Демо 24 часа"
+      }
+    };
 
-    <label>Email<br>
-      <input id="email" type="email" placeholder="email" style="width:100%;padding:8px"/>
-    </label>
-    <label>Пароль<br>
-      <input id="password" type="password" placeholder="пароль" style="width:100%;padding:8px"/>
-    </label>
+    // ------- helpers -------
+    const $ = id => document.getElementById(id);
+    function getApiBase(){
+      // priority: saved in localStorage -> dev input -> same origin (empty)
+      const saved = localStorage.getItem('otd_api') || '';
+      if(saved) return saved.replace(/\/$/,'');
+      if(DEV_PARAM && $('apiInput') && $('apiInput').value) return $('apiInput').value.replace(/\/$/,'');
+      return '';
+    }
+    function apiUrl(path){
+      const base = getApiBase();
+      return (base ? base : '') + path;
+    }
 
-    <div style="margin-top:12px;">
-      <button id="btnRegister">Зарегистрироваться</button>
-      <button id="btnLogin">Войти</button>
-      <button id="btnDemo">Демо 24ч</button>
-      <button id="btnPay">Оплатить 99 PLN</button>
-    </div>
+    async function postJson(path, body){
+      try {
+        const res = await fetch(apiUrl(path), {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          credentials: 'include',
+          body: JSON.stringify(body || {})
+        });
+        const text = await res.text();
+        try { return { ok: res.ok, status: res.status, json: JSON.parse(text) }; }
+        catch(e){ return { ok: res.ok, status: res.status, text }; }
+      } catch(e){
+        return { ok:false, error: e.message || String(e) };
+      }
+    }
 
-    <p style="margin-top:20px;color:#666">Тестовый режим. Вопросы — в логах.</p>
-  </main>
+    async function getJson(path){
+      try {
+        const res = await fetch(apiUrl(path), { credentials: 'include' });
+        const text = await res.text();
+        try { return { ok: res.ok, status: res.status, json: JSON.parse(text) }; }
+        catch(e){ return { ok: res.ok, status: res.status, text }; }
+      } catch(e){
+        return { ok:false, error: e.message || String(e) };
+      }
+    }
 
-  <script src="/main.js"></script>
+    function setLang(lang){
+      if(!T[lang]) lang='pl';
+      localStorage.setItem('otd_lang', lang);
+      // apply translations
+      $('accessTitle').textContent = T[lang].access_title;
+      const loginBtn = $('doLogin'); if(loginBtn) loginBtn.textContent = T[lang].login_btn;
+      const payAnchor = $('payStripe'); if(payAnchor) payAnchor.textContent = T[lang].stripe_2m;
+      const demoBtn = $('demoBtn'); if(demoBtn) demoBtn.textContent = T[lang].demo_24;
+      const statusText = $('statusText'); if(statusText && (!statusText.dataset.user)) statusText.textContent = T[lang].status_guest;
+      // swap tab labels if present
+      document.querySelectorAll('.tabs button').forEach(b=>{
+        if(b.dataset.tab === 'login') b.textContent = T[lang].login_btn;
+        else if(b.dataset.tab === 'reg') b.textContent = T[lang].reg_btn;
+      });
+      // language buttons UI
+      document.querySelectorAll('#langBar button').forEach(btn=>{
+        btn.classList.toggle('on', btn.dataset.lang === lang);
+      });
+    }
+
+    // ------- UI actions -------
+    // Tab switching
+    document.querySelectorAll('.tabs button').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('on'));
+        btn.classList.add('on');
+        // main action text updated in setLang already
+      });
+    });
+
+    // Save API (dev)
+    if($('saveApi')) $('saveApi').addEventListener('click', ()=>{
+      if($('apiInput') && $('apiInput').value.trim()){
+        localStorage.setItem('otd_api', $('apiInput').value.trim().replace(/\/$/,''));
+        alert('API saved');
+      }
+    });
+
+    // Logout handler (delegated)
+    document.addEventListener('click', (e)=>{
+      if(e.target && e.target.id === 'logoutBtn'){
+        fetch(apiUrl('/logout'), { method:'POST', credentials:'include' }).finally(()=>{
+          localStorage.removeItem('otd_user');
+          location.reload();
+        });
+      }
+    });
+
+    // AUTH action (login or register)
+    async function authAction(){
+      const activeTab = document.querySelector('.tabs button.on') || document.querySelector('.tabs button[data-tab="login"]');
+      const mode = (activeTab && activeTab.dataset.tab) ? activeTab.dataset.tab : (activeTab && activeTab.textContent.toLowerCase().includes('reg') ? 'reg' : 'login');
+      const email = ($('email') && $('email').value || '').trim();
+      const pass = ($('pass') && $('pass').value || '');
+      if(!email || !pass){ alert('Введите email и пароль'); return; }
+      const endpoint = mode === 'reg' ? '/register' : '/login';
+      const res = await postJson(endpoint, { email, password: pass });
+      if(!res.ok){
+        const msg = (res.json && res.json.error) ? res.json.error : (res.text || res.error || 'Ошибка');
+        alert('Ошибка: ' + msg);
+        console.warn('Auth err', res);
+        return;
+      }
+      // success - server returns user object at res.json.user
+      const user = res.json && res.json.user ? res.json.user : { email };
+      localStorage.setItem('otd_user', user.email);
+      populateUser(user);
+      alert((mode==='reg'? 'Регистрация' : 'Вход') + ' успешно');
+    }
+
+    if($('doLogin')) $('doLogin').addEventListener('click', authAction);
+
+    // Pay button scroll
+    if($('doPay')) $('doPay').addEventListener('click', ()=>{
+      const el = $('payStripe');
+      if(el){ el.scrollIntoView({behavior:'smooth', block:'center'}); el.focus(); }
+    });
+
+    // Create checkout session and redirect
+    if($('payStripe')) $('payStripe').addEventListener('click', async (e)=>{
+      e.preventDefault();
+      // create session
+      const res = await postJson('/create-checkout-session', {});
+      if(!res.ok){
+        const msg = res.json?.error || res.text || res.error || 'Ошибка создания сессии';
+        alert('Ошибка: ' + msg);
+        return;
+      }
+      const url = res.json && (res.json.sessionUrl || res.json.url) ? (res.json.sessionUrl || res.json.url) : null;
+      if(!url){ alert('Не удалось получить ссылку на оплату'); return; }
+      window.location = url;
+    });
+
+    // Demo activation - try start-demo then fallback to /demo
+    if($('demoBtn')) $('demoBtn').addEventListener('click', async ()=>{
+      if(!localStorage.getItem('otd_user')){ alert('Сначала войдите или зарегистрируйтесь'); return; }
+      if(!confirm('Активировать демо на 24 часа?')) return;
+      // try /start-demo
+      let res = await postJson('/start-demo', {});
+      if(!res.ok){
+        // fallback to /demo endpoint (older versions)
+        res = await postJson('/demo', { email: localStorage.getItem('otd_user') });
+      }
+      if(!res.ok){ alert('Не удалось активировать демо: ' + (res.json?.error || res.text || res.error || 'Ошибка')); return; }
+      alert('Демо включено. Перенаправление в приложение...');
+      location.href = '/app.html';
+    });
+
+    // Populate user UI
+    function populateUser(user){
+      if(!user || !user.email){ $('statusText').textContent = T[localStorage.getItem('otd_lang')||'pl'].status_guest; return; }
+      const lang = localStorage.getItem('otd_lang') || 'pl';
+      let statusText = '';
+      switch(user.status){
+        case 'none': statusText = 'Ожидается оплата'; break;
+        case 'deposit_paid': statusText = 'Депозит оплачен'; break;
+        case 'active': statusText = 'Pилот активен'; break;
+        case 'ended': statusText = 'Пилот завершён'; break;
+        case 'discount_active': statusText = 'Скидка активна'; break;
+        default: statusText = user.status || '';
+      }
+      $('statusText').innerHTML = `${user.email} – ${statusText} <button id="logoutBtn" class="btn ghost" style="margin-left:8px;padding:6px 8px">Logout</button>`;
+      // hide pay/demo if active
+      if(user.status === 'active' || user.status === 'discount_active'){
+        if($('payStripe')) $('payStripe').style.display = 'none';
+        if($('demoBtn')) $('demoBtn').style.display = 'none';
+      }
+    }
+
+    // On page load: set language and try to refresh stored user
+    (async function init(){
+      // show apiBox when ?dev=1
+      if(DEV_PARAM && $('apiBox')) $('apiBox').style.display = 'inline-flex';
+
+      const lang = localStorage.getItem('otd_lang') || 'pl';
+      setLang(lang); // initial UI labels
+
+      // Try refresh user from server if we have saved email
+      const saved = localStorage.getItem('otd_user');
+      if(saved){
+        const res = await getJson('/user?email=' + encodeURIComponent(saved));
+        if(res.ok && res.json && res.json.user) populateUser(res.json.user);
+        else {
+          // clear if server says not found
+          console.warn('User refresh failed', res);
+        }
+      }
+      // If page was loaded with ?session_id=..., call /session to finalize (some servers implement it)
+      try {
+        const p = new URLSearchParams(location.search);
+        const sid = p.get('session_id');
+        if(sid){
+          await getJson('/session?session_id=' + encodeURIComponent(sid));
+          // small delay then reload to show updated state
+          setTimeout(()=>location.href='/', 800);
+        }
+      } catch(e){}
+    })();
+
+    // language buttons click
+    document.getElementById('langBar').addEventListener('click', (e)=>{
+      const lang = e.target && e.target.dataset && e.target.dataset.lang;
+      if(lang) setLang(lang);
+    });
+
+  })();
+  </script>
 </body>
 </html>
