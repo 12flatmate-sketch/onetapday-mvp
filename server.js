@@ -60,7 +60,7 @@ app.post('/register', (req, res) => {
     if (users[emailLower]) {
       console.warn('[REGISTER] already exists:', emailLower);
       return res.status(400).json({ success: false, error: "Email already registered" });
-    }
+    
 
     // Create new user
     const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
@@ -267,6 +267,7 @@ app.post('/reset-pilot', (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server listening on port ${PORT}`);
 });
+
 
 
 
