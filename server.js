@@ -1,265 +1,255 @@
-// server.js
+// server.js — Paste this file in root, replace existing server.js
+require('dotenv').config();
+const path = require('path');
+const fs = require('fs');
 const express = require('express');
+const cors = require('cors');
 const cookieParser = require('cookie-parser');
-const crypto = require('crypto');
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);  // Stripe secret key from env
+const sqlite3 = require('sqlite3').verbose();
+
+const STRIPE_KEY = process.env.STRIPE_SECRET_KEY || '';
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
+const PUBLIC_URL = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || '1tapday@gmail.com').toLowerCase();
+
+let stripe = null;
+if (STRIPE_KEY) {
+  try { stripe = require('stripe')(STRIPE_KEY); } catch (e) {
+    console.error('Stripe init failed:', e && e.message);
+  }
+} else {
+  console.warn('No STRIPE_SECRET_KEY provided. Stripe endpoints will return 500 for create-checkout-session.');
+}
+
 const app = express();
-app.use((req,res,next)=>{
+const PORT = process.env.PORT || 3000;
+const PUBLIC_DIR = path.join(__dirname, 'public');
+
+// --------- Middlewares ---------
+app.use((req, res, next) => {
   console.log(new Date().toISOString(), req.method, req.url);
   next();
 });
-const PORT = process.env.PORT || 10000;
 
-// In-memory "database" for user accounts and sessions
-const users = {};       // users[email] = { email, passwordHash, status, startAt, endAt, discountUntil, isAdmin }
-const sessions = {};    // sessions[token] = email
-
-// Middleware
+// CORS: allow same origin or public URL. If testing from same domain, '*' is okay temporarily.
+const corsOptions = {
+  origin: PUBLIC_URL || true,
+  credentials: true
+};
+app.use(cors(corsOptions));
 app.use(cookieParser());
-app.use(express.json());
-// Raw body parser for Stripe webhook (to verify signature)
-app.use((req, res, next) => {
-  if (req.originalUrl === '/webhook') {
-    // Use raw body for webhook
-    express.raw({ type: 'application/json' })(req, res, next);
-  } else {
-    next();
-  }
+app.use(express.json()); // MUST be before route handlers (important)
+
+// Serve static files
+app.use(express.static(PUBLIC_DIR));
+
+// --------- DB (sqlite) ----------
+const DB_PATH = path.join(__dirname, 'data.sqlite3');
+const db = new sqlite3.Database(DB_PATH, err => {
+  if (err) console.error('DB open error', err);
+  else console.log('SQLite DB opened:', DB_PATH);
+});
+db.serialize(() => {
+  db.run(`CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT UNIQUE,
+    password_hash TEXT,
+    status TEXT DEFAULT 'none',
+    start_at INTEGER DEFAULT 0,
+    end_at INTEGER DEFAULT 0,
+    demo_until INTEGER DEFAULT 0,
+    is_admin INTEGER DEFAULT 0
+  );`);
 });
 
-// Serve static files (frontend)
-app.use(express.static('public'));
+// --------- Helpers ----------
+function nowTs(){ return Date.now(); }
+function daysFromNowMs(days){ return Date.now() + (days*24*60*60*1000); }
 
-// Helper: authenticate session
-function getUserBySession(req) {
-  const token = req.cookies.session;
-  if (!token || !sessions[token]) return null;
-  const email = sessions[token];
-  return users[email] || null;
+function upsertUserIfNotExists(email, cb){
+  const el = email.toLowerCase();
+  db.run(`INSERT OR IGNORE INTO users (email, is_admin) VALUES (?, ?)`, [el, el===ADMIN_EMAIL?1:0], function(err){
+    if(err) return cb(err);
+    db.get(`SELECT * FROM users WHERE email = ?`, [el], cb);
+  });
 }
 
-// Helper: mark admin if email matches configured admin email
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "1tapday@gmail.com";
+// --------- Routes (note: webhook uses raw body below) ----------
 
+// Simple health
+app.get('/health', (req,res)=> res.json({ok:true}));
 
-// Registration endpoint — debug wrapper (temporary)
-app.post('/register', (req, res) => {
-  try {
-    const { email, password } = req.body;
-    if (!email) return res.status(400).json({ success: false, error: "Missing email" });
+// Registration — expects { email, password }
+app.post('/register', (req,res)=>{
+  try{
+    const { email, password } = req.body || {};
+    if(!email || !password) return res.status(400).json({ error: 'email and password required' });
+    const emailLc = email.toLowerCase();
+    const crypto = require('crypto');
+    const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
 
-    const emailLower = email.toLowerCase();
-
-    if (users[emailLower]) {
-      const token = crypto.randomBytes(16).toString('hex');
-      sessions[token] = emailLower;
-      res.cookie('session', token, { httpOnly: true, sameSite: 'lax' });
-      return res.json({ success: true, user: { email: emailLower, status: users[emailLower].status || 'none' } });
-    }
-
-    const pwd = (password && password.length) ? password : crypto.randomBytes(8).toString('hex');
-    const passwordHash = crypto.createHash('sha256').update(pwd).digest('hex');
-
-    users[emailLower] = {
-      email: emailLower,
-      passwordHash,
-      status: "none",
-      startAt: null,
-      endAt: null,
-      discountUntil: null,
-      isAdmin: (emailLower === ADMIN_EMAIL)
-    };
-
-    const token = crypto.randomBytes(16).toString('hex');
-    sessions[token] = emailLower;
-    res.cookie('session', token, { httpOnly: true, sameSite: 'lax' });
-
-    return res.json({ success: true, user: { email: emailLower, status: "none" } });
-
-  } catch (err) {
-    console.error('REGISTER ERROR:', err && err.stack ? err.stack : err);
-    return res.status(500).json({ success: false, error: 'server_error', detail: (err && err.message) ? err.message : String(err) });
+    db.get(`SELECT * FROM users WHERE email = ?`, [emailLc], (err,row)=>{
+      if(err) { console.error('DB select err',err); return res.status(500).json({ error: 'db' }); }
+      if(row && row.password_hash){
+        return res.status(409).json({ error: 'Email already registered' });
+      }
+      if(row){
+        // update password_hash
+        db.run(`UPDATE users SET password_hash = ? WHERE email = ?`, [passwordHash, emailLc], function(e){
+          if(e){ console.error('DB update err', e); return res.status(500).json({ error:'db' }); }
+          return res.json({ success: true, email: emailLc });
+        });
+      } else {
+        // insert new
+        db.run(`INSERT INTO users (email, password_hash, is_admin) VALUES (?, ?, ?)`, [emailLc, passwordHash, emailLc===ADMIN_EMAIL?1:0], function(e){
+          if(e){ console.error('DB insert err', e); return res.status(500).json({ error:'db' }); }
+          return res.json({ success: true, email: emailLc });
+        });
+      }
+    });
+  }catch(e){
+    console.error('register error', e);
+    return res.status(500).json({ error: e.message || 'server' });
   }
 });
 
+// Login — expects { email, password }
+app.post('/login', (req,res)=>{
+  try{
+    const { email, password } = req.body || {};
+    if(!email || !password) return res.status(400).json({ error: 'email and password required' });
+    const emailLc = email.toLowerCase();
+    const crypto = require('crypto');
+    const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
 
-// Login endpoint
-app.post('/login', (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.json({ success: false, error: "Missing email or password" });
+    db.get(`SELECT * FROM users WHERE email = ?`, [emailLc], (err,row)=>{
+      if(err){ console.error('DB select err', err); return res.status(500).json({ error:'db' }); }
+      if(!row || !row.password_hash) return res.status(404).json({ error:'User not found or no password set' });
+      if(row.password_hash !== passwordHash) return res.status(401).json({ error: 'Incorrect password' });
+
+      // create simple session cookie (not secure but works for MVP)
+      const token = require('crypto').randomBytes(16).toString('hex');
+      // store session in memory minimal: cookie only (for demo). For persistence, use DB.
+      // we will simply set signed cookie with token -> include email in cookie value (not safe for prod)
+      res.cookie('otd_session', Buffer.from(emailLc).toString('base64'), { httpOnly: true, sameSite: 'lax' });
+      return res.json({ success: true, email: emailLc });
+    });
+  } catch(e){
+    console.error('login error', e);
+    return res.status(500).json({ error: e.message || 'server' });
   }
-  const emailLower = email.toLowerCase();
-  const user = users[emailLower];
-  if (!user) {
-    return res.json({ success: false, error: "User not found" });
-  }
-  const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
-  if (user.passwordHash !== passwordHash) {
-    return res.json({ success: false, error: "Incorrect password" });
-  }
-  // Create new session token
-  const token = crypto.randomBytes(16).toString('hex');
-  sessions[token] = emailLower;
-  res.cookie('session', token, { httpOnly: true, sameSite: 'lax' });
-  // Determine current status for response
-  let status = user.status;
-  // If user's pilot end date passed, mark as ended
-  if (user.status === "active" && user.endAt && new Date(user.endAt) < new Date()) {
-    user.status = "ended";
-    status = "ended";
-  }
-  // If user had discount period and it passed, also end
-  if (user.status === "discount_active" && user.discountUntil && new Date(user.discountUntil) < new Date()) {
-    user.status = "ended";
-    status = "ended";
-  }
-  return res.json({ success: true, user: { email: emailLower, status } });
 });
 
-// Logout endpoint
-app.post('/logout', (req, res) => {
-  const token = req.cookies.session;
-  if (token) {
-    delete sessions[token];
-    res.clearCookie('session');
+// Demo start (must be logged-in: check cookie otd_session)
+app.post('/demo', (req,res)=>{
+  try{
+    const cookie = req.cookies.otd_session;
+    if(!cookie) return res.status(401).json({ error: 'not authenticated' });
+    const email = Buffer.from(cookie, 'base64').toString('utf8');
+    const demoUntil = daysFromNowMs(1);
+    db.run(`UPDATE users SET demo_until = ? WHERE email = ?`, [demoUntil, email], function(err){
+      if(err){ console.error('demo db err', err); return res.status(500).json({ error:'db' }); }
+      return res.json({ success: true, demo_until: demoUntil });
+    });
+  } catch(e){
+    console.error('demo error', e);
+    return res.status(500).json({ error: e.message || 'server' });
   }
-  return res.json({ success: true });
 });
 
-// Start 24h demo endpoint (protect to logged-in users)
-app.post('/start-demo', (req, res) => {
-  const user = getUserBySession(req);
-  if (!user) {
-    return res.status(401).json({ success: false, error: "Not authenticated" });
-  }
-  // Activate demo: grant 24h access
-  user.status = "active";
-  user.startAt = new Date().toISOString();
-  const end = new Date();
-  end.setDate(end.getDate() + 1);
-  user.endAt = end.toISOString();  // demo until 24h from now
-  return res.json({ success: true, demoUntil: user.endAt.slice(0, 10) });
-});
+// Create Stripe checkout session — requires stripe initialized
+app.post('/create-checkout-session', async (req,res)=>{
+  try{
+    if(!stripe) return res.status(500).json({ error: 'Stripe not configured' });
+    const cookie = req.cookies.otd_session;
+    if(!cookie) return res.status(401).json({ error: 'not authenticated' });
+    const email = Buffer.from(cookie, 'base64').toString('utf8');
 
-// Create Stripe Checkout Session (for 2-month pilot deposit)
-app.post('/create-checkout-session', async (req, res) => {
-  const user = getUserBySession(req);
-  if (!user) {
-    return res.status(401).json({ error: "Not authenticated" });
-  }
-  try {
-    // Create a one-time Checkout Session for 99 PLN deposit
+    const successUrl = (PUBLIC_URL || `${req.protocol}://${req.get('host')}`) + '/?session_id={CHECKOUT_SESSION_ID}';
+    const cancelUrl = (PUBLIC_URL || `${req.protocol}://${req.get('host')}`) + '/?canceled=1';
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'payment',
       line_items: [{
         price_data: {
           currency: 'pln',
-          product_data: { name: 'OneTapDay Pilot Deposit (2 months access)' },
-          unit_amount: 9900  // 99.00 PLN in grosz
+          product_data: { name: 'OneTapDay — 2 months access' },
+          unit_amount: 9900
         },
         quantity: 1
       }],
-      customer_email: user.email,
-      metadata: { email: user.email },
-      success_url: `${req.protocol}://${req.get('host')}/app.html?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.protocol}://${req.get('host')}/?cancel=1`
+      metadata: { email },
+      customer_email: email,
+      success_url: successUrl,
+      cancel_url: cancelUrl
     });
-    return res.json({ sessionUrl: session.url });
-  } catch (err) {
-    console.error("Stripe session error:", err);
-    return res.status(500).json({ error: "Stripe session creation failed" });
+    return res.json({ url: session.url, id: session.id });
+  }catch(e){
+    console.error('create-checkout error', e && e.message);
+    return res.status(500).json({ error: e.message || 'stripe error' });
   }
 });
 
-// Stripe webhook endpoint (to receive payment status events)
-app.post('/webhook', (req, res) => {
+// Retrieve session after redirect (optional)
+app.get('/session', async (req,res)=>{
+  try{
+    const sid = req.query.session_id;
+    if(!sid) return res.status(400).json({ error: 'session_id required' });
+    if(!stripe) return res.status(500).json({ error: 'Stripe not configured' });
+    const session = await stripe.checkout.sessions.retrieve(sid);
+    return res.json({ ok: true, session });
+  }catch(e){
+    console.error('session error', e);
+    return res.status(500).json({ error: e.message || 'session error' });
+  }
+});
+
+// Stripe webhook: use raw body to validate signature
+app.post('/webhook', express.raw({type:'application/json'}), (req,res)=>{
+  if(!stripe){
+    console.warn('Webhook received but stripe not configured');
+    return res.sendStatus(200);
+  }
   const sig = req.headers['stripe-signature'];
   let event;
   try {
-    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    if(STRIPE_WEBHOOK_SECRET){
+      event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET);
+    } else {
+      // if no secret set (test) parse body
+      event = JSON.parse(req.body.toString());
+    }
   } catch (err) {
-    console.error("Webhook signature verification failed:", err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
+    console.error('Webhook signature check failed.', err && err.message);
+    return res.status(400).send(`Webhook Error: ${err && err.message}`);
   }
-  // Handle completed checkout
-  if (event.type === 'checkout.session.completed') {
+
+  if(event.type === 'checkout.session.completed'){
     const session = event.data.object;
-    const email = session.metadata.email || session.customer_email;
-    if (email && users[email]) {
-      const user = users[email];
-      // Mark deposit paid and start pilot immediately (instant access)
-      user.status = "active";
-      user.startAt = new Date().toISOString();
-      const endDate = new Date();
-      endDate.setMonth(endDate.getMonth() + 2);
-      user.endAt = endDate.toISOString();
-      console.log(`✅ Pilot access activated for ${email} until ${user.endAt}`);
+    const email = (session.metadata && session.metadata.email) || session.customer_email;
+    if(email){
+      const end = new Date();
+      end.setMonth(end.getMonth() + 2);
+      const endTs = end.getTime();
+      db.run(`UPDATE users SET start_at = ?, end_at = ?, status = ? WHERE email = ?`, [Date.now(), endTs, 'active', email.toLowerCase()], (err)=>{
+        if(err) console.error('db webhook update err', err);
+        else console.log('Activated paid user', email, 'until', new Date(endTs).toISOString());
+      });
     }
   }
-  res.sendStatus(200);
+
+  res.json({ received: true });
 });
 
-// Admin: mark deposit as paid manually (if payment outside Stripe)
-app.post('/mark-paid', (req, res) => {
-  const user = getUserBySession(req);
-  if (!user || !user.isAdmin) {
-    return res.status(403).json({ success: false, error: "Forbidden" });
-  }
-  // Mark current admin user's pilot as deposit paid (but not active yet)
-  user.status = "deposit_paid";
-  return res.json({ success: true });
+// fallback — serve index
+app.get('*', (req,res)=>{
+  const indexPath = path.join(PUBLIC_DIR, 'index.html');
+  if(fs.existsSync(indexPath)) return res.sendFile(indexPath);
+  return res.status(404).send('Not found');
 });
 
-// Admin: start pilot (2 months) manually
-app.post('/start-pilot', (req, res) => {
-  const user = getUserBySession(req);
-  if (!user || !user.isAdmin) {
-    return res.status(403).json({ success: false, error: "Forbidden" });
-  }
-  user.status = "active";
-  user.startAt = new Date().toISOString();
-  const end = new Date();
-  end.setMonth(end.getMonth() + 2);
-  user.endAt = end.toISOString();
-  return res.json({ success: true });
+// Start server
+app.listen(PORT, ()=>{
+  console.log(`Server running on port ${PORT}`);
 });
-
-// Activate discount (50% off 12 months) - user or admin after pilot ended
-app.post('/activate-discount', (req, res) => {
-  const current = getUserBySession(req);
-  if (!current) return res.status(401).json({ success: false });
-  // Allow if admin or if user’s own status is ended (pilot ended)
-  if (!current.isAdmin && current.status !== "ended") {
-    return res.status(400).json({ success: false, error: "Not eligible for discount" });
-  }
-  current.status = "discount_active";
-  current.discountSince = new Date().toISOString();
-  const end = new Date();
-  end.setMonth(end.getMonth() + 12);
-  current.discountUntil = end.toISOString();
-  // Grant access for the discount period
-  current.startAt = current.startAt || new Date().toISOString();
-  current.endAt = current.discountUntil;
-  return res.json({ success: true });
-});
-
-// Reset pilot (admin only - clears subscription status)
-app.post('/reset-pilot', (req, res) => {
-  const user = getUserBySession(req);
-  if (!user || !user.isAdmin) return res.status(403).json({ success: false });
-  user.status = "none";
-  user.startAt = null;
-  user.endAt = null;
-  user.discountUntil = null;
-  return res.json({ success: true });
-});
-
-// Start the server
-app.listen(PORT, () => {
-  console.log(`✅ Server listening on port ${PORT}`);
-});
-
-
-
