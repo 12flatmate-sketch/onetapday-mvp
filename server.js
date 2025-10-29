@@ -41,40 +41,45 @@ function getUserBySession(req) {
 // Helper: mark admin if email matches configured admin email
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "1tapday@gmail.com";
 
-// require crypto вверху файла: const crypto = require('crypto');
 
+// Registration endpoint — debug wrapper (temporary)
 app.post('/register', (req, res) => {
-  const { email, password } = req.body;
-  if (!email) return res.status(400).json({ success:false, error:'email required' });
+  try {
+    const { email, password } = req.body;
+    if (!email) return res.status(400).json({ success: false, error: "Missing email" });
 
-  const emailLower = email.toLowerCase();
+    const emailLower = email.toLowerCase();
 
-  // если пользователь уже есть — вернуть ошибку или логинить
-  db.get(`SELECT * FROM users WHERE email = ?`, [emailLower], (err,row) => {
-    if (err) return res.status(500).json({ success:false, error:err.message });
-    if (row) {
-      // уже существует — просто логинить
+    if (users[emailLower]) {
       const token = crypto.randomBytes(16).toString('hex');
-      // sessions[token] = emailLower; // если у вас есть sessions map
-      res.cookie('session', token, { httpOnly:true, sameSite:'lax' });
-      return res.json({ success:true, user: row });
+      sessions[token] = emailLower;
+      res.cookie('session', token, { httpOnly: true, sameSite: 'lax' });
+      return res.json({ success: true, user: { email: emailLower, status: users[emailLower].status || 'none' } });
     }
-    // если пароля нет — сгенерировать временный
-    const pwd = password && password.length ? password : crypto.randomBytes(8).toString('hex');
-    const pwdHash = crypto.createHash('sha256').update(pwd).digest('hex');
 
-    db.run(`INSERT INTO users (email, password_hash, paid_until, demo_until, owner) VALUES (?, ?, 0, 0, 0)`, [emailLower, pwdHash], function(insertErr){
-      if (insertErr) return res.status(500).json({ success:false, error: insertErr.message });
-      // получить созданную запись
-      db.get(`SELECT * FROM users WHERE id = ?`, [this.lastID], (gErr, newUser) => {
-        if (gErr) return res.status(500).json({ success:false, error: gErr.message });
-        const token = crypto.randomBytes(16).toString('hex');
-        // sessions[token] = emailLower; // если используете in-memory sessions
-        res.cookie('session', token, { httpOnly:true, sameSite:'lax' });
-        return res.json({ success:true, user: newUser });
-      });
-    });
-  });
+    const pwd = (password && password.length) ? password : crypto.randomBytes(8).toString('hex');
+    const passwordHash = crypto.createHash('sha256').update(pwd).digest('hex');
+
+    users[emailLower] = {
+      email: emailLower,
+      passwordHash,
+      status: "none",
+      startAt: null,
+      endAt: null,
+      discountUntil: null,
+      isAdmin: (emailLower === ADMIN_EMAIL)
+    };
+
+    const token = crypto.randomBytes(16).toString('hex');
+    sessions[token] = emailLower;
+    res.cookie('session', token, { httpOnly: true, sameSite: 'lax' });
+
+    return res.json({ success: true, user: { email: emailLower, status: "none" } });
+
+  } catch (err) {
+    console.error('REGISTER ERROR:', err && err.stack ? err.stack : err);
+    return res.status(500).json({ success: false, error: 'server_error', detail: (err && err.message) ? err.message : String(err) });
+  }
 });
 
 
@@ -255,4 +260,5 @@ app.post('/reset-pilot', (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server listening on port ${PORT}`);
 });
+
 
