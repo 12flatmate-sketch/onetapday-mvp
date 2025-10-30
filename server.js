@@ -131,12 +131,33 @@ app.post('/logout', (req, res) => {
   return res.json({ success: true });
 });
 
-// Start 24h demo endpoint (protect to logged-in users)
+// === /start-demo ===
 app.post('/start-demo', (req, res) => {
   const user = getUserBySession(req);
   if (!user) {
     return res.status(401).json({ success: false, error: "Not authenticated" });
   }
+
+  // activate demo: 24 hours from now
+  user.status = "active";
+  user.startAt = new Date().toISOString();
+  const end = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  user.endAt = end.toISOString();
+
+  // For clarity return demo_until ISO string and redirect hint
+  return res.json({ success: true, demo_until: user.endAt, message: 'Demo started', redirect: '/app.html' });
+});
+
+// === /me ===
+app.get('/me', (req, res) => {
+  const user = getUserBySession(req);
+  if (!user) return res.status(401).json({ success:false, error: 'Not authenticated' });
+  // Don't leak passwordHash
+  const safe = Object.assign({}, user);
+  delete safe.passwordHash;
+  res.json({ success:true, user: safe });
+});
+
   // Activate demo: grant 24h access
   user.status = "active";
   user.startAt = new Date().toISOString();
@@ -264,5 +285,6 @@ app.post('/reset-pilot', (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server listening on port ${PORT}`);
 });
+
 
 
