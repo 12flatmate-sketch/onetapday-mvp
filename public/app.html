@@ -1521,6 +1521,74 @@
       // Initial render of 30-day forecast and summary:
       render30();
     })();
-  </script>
+  </script><script>
+(async function(){
+  // helper: format remaining time
+  function fmtTime(ms){
+    if(ms <= 0) return '00:00:00';
+    const h = Math.floor(ms/3600000), m = Math.floor(ms%3600000/60000), s = Math.floor(ms%60000/1000);
+    return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  }
+
+  // fetch current user & status
+  async function whoami(){
+    try {
+      const r = await fetch('/me', { credentials: 'include' });
+      if (!r.ok) return null;
+      const json = await r.json();
+      return json.user || null;
+    } catch(e){ return null; }
+  }
+
+  const user = await whoami();
+  if (!user) {
+    // Not authenticated — go back to landing to login/register
+    alert('Вам нужно войти. Перенаправляю на страницу входа.');
+    window.location.href = '/';
+    return;
+  }
+
+  // Put user info in header/status
+  const statusEl = document.getElementById('mvp-status') || (function(){ const e = document.createElement('div'); e.id='mvp-status'; e.style.margin='8px'; document.body.prepend(e); return e; })();
+
+  // If user has active endAt/demo_until — start countdown
+  const endISO = user.endAt || user.demo_until || user.demoUntil;
+  if (endISO) {
+    let until = Date.parse(endISO);
+    if (isNaN(until)) until = Date.now() + 24*60*60*1000;
+    statusEl.textContent = 'Демо активировано — осталось ' + fmtTime(until - Date.now());
+    const t = setInterval(()=>{
+      const diff = until - Date.now();
+      if (diff <= 0) {
+        clearInterval(t);
+        // demo expired — show pay CTA
+        statusEl.innerHTML = 'Демо завершено. <button id="payAfterDemo">Оплатить сейчас</button>';
+        document.getElementById('payAfterDemo').addEventListener('click', async ()=>{
+          // initiate checkout
+          const r = await fetch('/create-checkout-session', { method: 'POST', credentials: 'include' });
+          const j = await r.json().catch(()=>null);
+          const redirect = (j && (j.url || j.sessionUrl || j.session && j.session.url)) || null;
+          if (redirect) window.location.href = redirect;
+          else alert('Не удалось создать платежную сессию. Смотри логи.');
+        });
+      } else {
+        statusEl.textContent = 'Демо активировано — осталось ' + fmtTime(diff) + ' (после окончания будет предложена оплата)';
+      }
+    }, 1000);
+  } else {
+    // No active demo — show Pay CTA
+    statusEl.innerHTML = 'Нет доступа. <button id="payNow">Оплатить 2 месяца</button>';
+    document.getElementById('payNow').addEventListener('click', async ()=>{
+      const r = await fetch('/create-checkout-session', { method: 'POST', credentials: 'include' });
+      const j = await r.json().catch(()=>null);
+      const redirect = (j && (j.url || j.sessionUrl || j.session && j.session.url)) || null;
+      if (redirect) window.location.href = redirect;
+      else alert('Не удалось создать Stripe-сессию.');
+    });
+  }
+})();
+</script>
+
 </body>
 </html>
+
