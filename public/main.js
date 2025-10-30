@@ -1,3 +1,20 @@
+// Вставь/замени это в начале main.js (если postJSON уже есть — убедись, что credentials: 'include')
+async function postJSON(url, body = {}) {
+  try {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(body)
+    });
+    let parsed;
+    try { parsed = await r.json(); } catch(e) { parsed = await r.text().catch(()=>null); }
+    return { ok: r.ok, status: r.status, body: parsed };
+  } catch (err) {
+    return { ok: false, status: 0, body: String(err) };
+  }
+}
+
 // public/main.js (updated) — вставить вместо старого main.js
 (() => {
   const LANG_ORDER = ['pl','en','uk','ru'];
@@ -104,9 +121,31 @@
 
   // try to call start-demo (authenticated); fallback to /demo
   async function tryStartDemo(){
-    // first try /start-demo
-    let resp = await postJSON('/start-demo', {});
-    if(resp.ok && resp.body && (resp.body.demoUntil || resp.body.demo_until || resp.body.success)){
+    
+  // first try /start-demo
+  let resp = await postJSON('/start-demo', {});
+  if (resp.ok && resp.body && (resp.body.demoUntil || resp.body.demo_until || resp.body.success)) {
+    const until = resp.body.demoUntil || resp.body.demo_until || resp.body.demoUntilISO || null;
+    const ts = until ? (isNaN(Number(until)) ? Date.parse(until) : Number(until)) : (Date.now() + 24*60*60*1000);
+    localStorage.setItem('otd_demo_until', String(ts));
+    startDemoCountdown(ts);
+    return { ok:true };
+  }
+
+  // fallback to /demo (older API)
+  resp = await postJSON('/demo', {});
+  if (resp.ok && resp.body && (resp.body.demo_until || resp.body.success)) {
+    const until = resp.body.demo_until || resp.body.demoUntil || null;
+    const ts = until ? (isNaN(Number(until)) ? Date.parse(until) : Number(until)) : (Date.now() + 24*60*60*1000);
+    localStorage.setItem('otd_demo_until', String(ts));
+    startDemoCountdown(ts);
+    return { ok:true };
+  }
+
+  // return failure including status/body for diagnostics
+  return { ok:false, status: resp.status, body: resp.body };
+}
+
       // server might return demoUntil or demo_until; normalize
       const until = resp.body.demoUntil || resp.body.demo_until || null;
       if(until) startDemoCountdown(until);
@@ -141,18 +180,62 @@
     const emailEl = $('email'), passEl = $('pass'), loginBtn = $('doLogin'), doPayBtn = $('doPay'), stripeBtn = $('payStripe'), demoBtn = $('demoBtn');
 
     // registration / login
-    loginBtn.addEventListener('click', async ()=>{
-      const email = (emailEl.value||'').trim(), pass = passEl.value || '';
-      if(!email || !pass) return alert('Введите email и пароль');
-      const activeTab = document.querySelector('.tabs button.on');
-      const isReg = activeTab && activeTab.dataset.tab === 'reg';
-      const endpoint = isReg ? '/register' : '/login';
+loginBtn.addEventListener('click', async ()=>{
+  const email = (emailEl.value||'').trim(), pass = passEl.value || '';
+  if(!email || !pass) return alert('Введите email и пароль');
 
-      const resp = await postJSON(endpoint, { email, password: pass });
-      if(!resp.ok){
-        const err = (resp.body && (resp.body.error||resp.body.message||JSON.stringify(resp.body))) || `HTTP ${resp.status}`;
-        return alert('Ошибка: ' + err);
+  const activeTab = document.querySelector('.tabs button.on');
+  const isReg = activeTab && activeTab.dataset.tab === 'reg';
+  const endpoint = isReg ? '/register' : '/login';
+
+  // call register/login
+  const resp = await postJSON(endpoint, { email, password: pass });
+
+  if(!resp.ok) {
+    const err = (resp.body && (resp.body.error||resp.body.message||JSON.stringify(resp.body))) || `HTTP ${resp.status}`;
+    return alert('Ошибка: ' + err);
+  }
+
+  // Successful auth — server should return { success:true, user: { ... } } or user object
+  const data = resp.body;
+  const user = data && (data.user || data);
+  if (user && user.email) {
+    localStorage.setItem('otd_user', user.email);
+  }
+  // Update UI - your existing function
+  if (typeof setStatusAfterAuth === 'function') setStatusAfterAuth(user);
+
+  // If it was registration, try auto-start demo
+  if (isReg) {
+    const sd = await tryStartDemo();
+    if (sd.ok) {
+      // demo started — user now has demo access; redirect to app
+      // give tiny delay to allow countdown to render
+      setTimeout(()=>{ window.location.href = '/app.html'; }, 300);
+      return;
+    } else {
+      // diagnose: if 401 — server didn't set cookie (session); notify
+      if (sd.status === 401) {
+        console.warn('/start-demo returned 401 — server may not have created session cookie after register. Check server Set-Cookie.');
+        alert('Регистрация прошла, но автоматическое включение демо не удалось (несохранена сессия). Войдите вручную.');
+        return;
+      } else {
+        console.warn('start-demo failed', sd);
+        // still proceed: redirect to app (may still have login) or show message
+        alert('Регистрация прошла. Демо не активировано автоматически, можно включить демо вручную.');
+        // optional: still redirect to app.html to let user try demo button there
+        setTimeout(()=>{ window.location.href = '/app.html'; }, 300);
+        return;
       }
+    }
+  } else {
+    // normal login
+    alert('Вход успешен');
+    // redirect user to app (if they have active access or to allow manual demo)
+    setTimeout(()=>{ window.location.href = '/app.html'; }, 300);
+  }
+});
+
       // server may return { success: true, user: {...} } or raw user object
       const data = resp.body;
       const user = data.user || data;
