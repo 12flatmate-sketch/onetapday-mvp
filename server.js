@@ -237,6 +237,22 @@ app.post('/create-checkout-session', async (req, res) => {
       success_url: `${req.protocol}://${req.get('host')}/app.html?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.protocol}://${req.get('host')}/?cancel=1`
     });
+    // --- helpers: expire statuses ---
+function expireStatuses(user){
+  if(!user) return false;
+  const now = new Date();
+  let changed = false;
+  if(user.status === 'active' && user.endAt && new Date(user.endAt) < now){
+    user.status = 'ended';
+    changed = true;
+  }
+  if(user.status === 'discount_active' && user.discountUntil && new Date(user.discountUntil) < now){
+    user.status = 'ended';
+    changed = true;
+  }
+  return changed;
+}
+
     return res.json({ sessionUrl: session.url, id: session.id });
   } catch(err){
     console.error('[STRIPE] create session error', err && err.stack ? err.stack : err);
@@ -304,3 +320,4 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`✅ Server listening on port ${PORT}`);
 });
+
