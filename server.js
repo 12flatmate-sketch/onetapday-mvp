@@ -158,15 +158,6 @@ app.get('/me', (req, res) => {
   res.json({ success:true, user: safe });
 });
 
-  // Activate demo: grant 24h access
-  user.status = "active";
-  user.startAt = new Date().toISOString();
-  const end = new Date();
-  end.setDate(end.getDate() + 1);
-  user.endAt = end.toISOString();  // demo until 24h from now
-  return res.json({ success: true, demoUntil: user.endAt.slice(0, 10) });
-});
-
 // Create Stripe Checkout Session (for 2-month pilot deposit)
 app.post('/create-checkout-session', async (req, res) => {
   const user = getUserBySession(req);
@@ -285,6 +276,7 @@ app.post('/reset-pilot', (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server listening on port ${PORT}`);
 });
+
 
 
 
