@@ -1,21 +1,4 @@
-// Вставь/замени это в начале main.js (если postJSON уже есть — убедись, что credentials: 'include')
-async function postJSON(url, body = {}) {
-  try {
-    const r = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(body)
-    });
-    let parsed;
-    try { parsed = await r.json(); } catch(e) { parsed = await r.text().catch(()=>null); }
-    return { ok: r.ok, status: r.status, body: parsed };
-  } catch (err) {
-    return { ok: false, status: 0, body: String(err) };
-  }
-}
-
-// public/main.js (updated) — вставить вместо старого main.js
+// public/main.js (замени целиком этим)
 (() => {
   const LANG_ORDER = ['pl','en','uk','ru'];
   const DEFAULT_LANG = 'pl';
@@ -49,47 +32,45 @@ async function postJSON(url, body = {}) {
   };
 
   const $ = id => document.getElementById(id);
-  function applyLang(lang){
+
+  // Универсальная POST-обёртка: всегда include cookies
+  async function postJSON(path, body = {}) {
+    try {
+      const r = await fetch((apiBase||'') + path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body || {})
+      });
+      let parsed;
+      try { parsed = await r.json(); } catch(e) { parsed = { _raw: await r.text().catch(()=>'') }; }
+      return { ok: r.ok, status: r.status, body: parsed };
+    } catch (err) {
+      return { ok: false, status: 0, body: { error: String(err) } };
+    }
+  }
+
+  function applyLang(lang) {
     const dict = T[lang] || T[DEFAULT_LANG];
-    document.querySelectorAll('[data-i]').forEach(el=>{
+    document.querySelectorAll('[data-i]').forEach(el => {
       const k = el.getAttribute('data-i');
-      if(dict[k]) el.textContent = dict[k];
+      if (dict[k]) el.textContent = dict[k];
     });
     document.querySelectorAll('.tabs button').forEach(b=>{
-      if(b.dataset.tab === 'login') b.textContent = dict.login_tab;
-      if(b.dataset.tab === 'reg') b.textContent = dict.reg_tab;
+      if (b.dataset.tab === 'login') b.textContent = dict.login_tab;
+      if (b.dataset.tab === 'reg') b.textContent = dict.reg_tab;
     });
-    document.querySelectorAll('#langBar button').forEach(btn=>btn.classList.toggle('on', btn.dataset.lang===lang));
+    document.querySelectorAll('#langBar button').forEach(btn=>btn.classList.toggle('on', btn.dataset.lang === lang));
     localStorage.setItem('otd_lang', lang);
   }
 
-  async function postJSON(path, body){
-    try {
-      const r = await fetch((apiBase||'') + path, {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        credentials:'include',
-        body: JSON.stringify(body || {})
-      });
-      let json = null;
-      try{ json = await r.json(); }catch(e){ json = { _raw: await r.text().catch(()=>'') } }
-      return { ok: r.ok, status: r.status, body: json };
-    } catch(e){
-      return { ok:false, status:0, body:{ error: String(e) } };
-    }
-  }
-
-  // demo timer management
+  // Demo timer
   let demoTimerInterval = null;
   function startDemoCountdown(untilTimestamp){
     clearInterval(demoTimerInterval);
-    if(!untilTimestamp) return;
-    // normalize: untilTimestamp might be ISO string, number ms, or seconds
-    let until = typeof untilTimestamp === 'number' ? untilTimestamp : Date.parse(String(untilTimestamp));
-    if(!until || isNaN(until)) {
-      // fallback to 24 hours from now
-      until = Date.now() + 24*60*60*1000;
-    }
+    if (!untilTimestamp) return;
+    let until = (typeof untilTimestamp === 'number') ? untilTimestamp : Date.parse(String(untilTimestamp));
+    if (!until || isNaN(until)) until = Date.now() + 24*60*60*1000;
     localStorage.setItem('otd_demo_until', String(until));
     updateDemoUI(until);
     demoTimerInterval = setInterval(()=>updateDemoUI(until), 1000);
@@ -97,78 +78,46 @@ async function postJSON(url, body = {}) {
   function stopDemoCountdown(){
     clearInterval(demoTimerInterval);
     localStorage.removeItem('otd_demo_until');
-    // reset status pill
     const lang = localStorage.getItem('otd_lang') || DEFAULT_LANG;
-    $('statusText').textContent = T[lang].status_none || 'No access';
+    if ($('statusText')) $('statusText').textContent = T[lang].status_guest || 'No access';
   }
   function updateDemoUI(until){
     const now = Date.now();
     const diff = until - now;
-    if(diff <= 0){
-      stopDemoCountdown();
-      return;
-    }
+    if (diff <= 0) { stopDemoCountdown(); return; }
     const hours = Math.floor(diff/3600000);
     const mins = Math.floor((diff%3600000)/60000);
     const secs = Math.floor((diff%60000)/1000);
-    const hh = String(hours).padStart(2,'0');
-    const mm = String(mins).padStart(2,'0');
-    const ss = String(secs).padStart(2,'0');
+    const hh = String(hours).padStart(2,'0'), mm = String(mins).padStart(2,'0'), ss = String(secs).padStart(2,'0');
     const lang = localStorage.getItem('otd_lang') || DEFAULT_LANG;
-    // keep pay button visible always
-    $('statusText').textContent = `${localStorage.getItem('otd_user')||'User'} — DEMO ${hh}:${mm}:${ss} (оплатить)`;
+    if ($('statusText')) $('statusText').textContent = `${localStorage.getItem('otd_user')||'User'} — DEMO ${hh}:${mm}:${ss} (оплатить)`;
   }
 
-  // try to call start-demo (authenticated); fallback to /demo
+  // Try start demo: /start-demo preferred, fallback /demo
   async function tryStartDemo(){
-    
-  // first try /start-demo
-  let resp = await postJSON('/start-demo', {});
-  if (resp.ok && resp.body && (resp.body.demoUntil || resp.body.demo_until || resp.body.success)) {
-    const until = resp.body.demoUntil || resp.body.demo_until || resp.body.demoUntilISO || null;
-    const ts = until ? (isNaN(Number(until)) ? Date.parse(until) : Number(until)) : (Date.now() + 24*60*60*1000);
-    localStorage.setItem('otd_demo_until', String(ts));
-    startDemoCountdown(ts);
-    return { ok:true };
-  }
-
-  // fallback to /demo (older API)
-  resp = await postJSON('/demo', {});
-  if (resp.ok && resp.body && (resp.body.demo_until || resp.body.success)) {
-    const until = resp.body.demo_until || resp.body.demoUntil || null;
-    const ts = until ? (isNaN(Number(until)) ? Date.parse(until) : Number(until)) : (Date.now() + 24*60*60*1000);
-    localStorage.setItem('otd_demo_until', String(ts));
-    startDemoCountdown(ts);
-    return { ok:true };
-  }
-
-  // return failure including status/body for diagnostics
-  return { ok:false, status: resp.status, body: resp.body };
-}
-
-      // server might return demoUntil or demo_until; normalize
-      const until = resp.body.demoUntil || resp.body.demo_until || null;
-      if(until) startDemoCountdown(until);
-      else startDemoCountdown(Date.now() + 24*60*60*1000);
-      return { ok:true };
+    // 1) /start-demo (authenticated)
+    let resp = await postJSON('/start-demo', {});
+    if (resp.ok && resp.body && (resp.body.demoUntil || resp.body.demo_until || resp.body.success)) {
+      const until = resp.body.demoUntil || resp.body.demo_until || resp.body.demoUntilISO || null;
+      const ts = until ? (isNaN(Number(until)) ? Date.parse(until) : Number(until)) : (Date.now() + 24*60*60*1000);
+      startDemoCountdown(ts);
+      return { ok: true };
     }
-    // fallback to /demo (older)
+    // 2) fallback /demo
     resp = await postJSON('/demo', {});
-    if(resp.ok && resp.body && (resp.body.demo_until || resp.body.success)){
+    if (resp.ok && resp.body && (resp.body.demo_until || resp.body.demoUntil || resp.body.success)) {
       const until = resp.body.demo_until || resp.body.demoUntil || null;
-      if(until) startDemoCountdown(until);
-      else startDemoCountdown(Date.now() + 24*60*60*1000);
-      return { ok:true };
+      const ts = until ? (isNaN(Number(until)) ? Date.parse(until) : Number(until)) : (Date.now() + 24*60*60*1000);
+      startDemoCountdown(ts);
+      return { ok: true };
     }
-    // if server returned 401 — user isn't logged in; caller should handle
     return { ok:false, status: resp.status, body: resp.body };
   }
 
-  document.addEventListener('DOMContentLoaded', ()=>{
-    applyLang(localStorage.getItem('otd_lang') || LANG_ORDER[0] || DEFAULT_LANG);
-
-    document.querySelectorAll('#langBar button').forEach(b=>b.addEventListener('click', ()=>applyLang(b.dataset.lang)));
-
+  document.addEventListener('DOMContentLoaded', () => {
+    // initial language
+    applyLang(localStorage.getItem('otd_lang') || DEFAULT_LANG);
+    document.querySelectorAll('#langBar button').forEach(b => b.addEventListener('click', ()=>applyLang(b.dataset.lang)));
     document.querySelectorAll('.tabs button').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('on'));
@@ -179,162 +128,113 @@ async function postJSON(url, body = {}) {
 
     const emailEl = $('email'), passEl = $('pass'), loginBtn = $('doLogin'), doPayBtn = $('doPay'), stripeBtn = $('payStripe'), demoBtn = $('demoBtn');
 
-    // registration / login
-loginBtn.addEventListener('click', async ()=>{
-  const email = (emailEl.value||'').trim(), pass = passEl.value || '';
-  if(!email || !pass) return alert('Введите email и пароль');
+    // Registration / Login
+    loginBtn.addEventListener('click', async ()=>{
+      const email = (emailEl.value||'').trim(), pass = passEl.value || '';
+      if (!email || !pass) return alert('Введите email и пароль');
 
-  const activeTab = document.querySelector('.tabs button.on');
-  const isReg = activeTab && activeTab.dataset.tab === 'reg';
-  const endpoint = isReg ? '/register' : '/login';
+      const activeTab = document.querySelector('.tabs button.on');
+      const isReg = activeTab && activeTab.dataset.tab === 'reg';
+      const endpoint = isReg ? '/register' : '/login';
 
-  // call register/login
-  const resp = await postJSON(endpoint, { email, password: pass });
-
-  if(!resp.ok) {
-    const err = (resp.body && (resp.body.error||resp.body.message||JSON.stringify(resp.body))) || `HTTP ${resp.status}`;
-    return alert('Ошибка: ' + err);
-  }
-
-  // Successful auth — server should return { success:true, user: { ... } } or user object
-  const data = resp.body;
-  const user = data && (data.user || data);
-  if (user && user.email) {
-    localStorage.setItem('otd_user', user.email);
-  }
-  // Update UI - your existing function
-  if (typeof setStatusAfterAuth === 'function') setStatusAfterAuth(user);
-
-  // If it was registration, try auto-start demo
-  if (isReg) {
-    const sd = await tryStartDemo();
-    if (sd.ok) {
-      // demo started — user now has demo access; redirect to app
-      // give tiny delay to allow countdown to render
-      setTimeout(()=>{ window.location.href = '/app.html'; }, 300);
-      return;
-    } else {
-      // diagnose: if 401 — server didn't set cookie (session); notify
-      if (sd.status === 401) {
-        console.warn('/start-demo returned 401 — server may not have created session cookie after register. Check server Set-Cookie.');
-        alert('Регистрация прошла, но автоматическое включение демо не удалось (несохранена сессия). Войдите вручную.');
-        return;
-      } else {
-        console.warn('start-demo failed', sd);
-        // still proceed: redirect to app (may still have login) or show message
-        alert('Регистрация прошла. Демо не активировано автоматически, можно включить демо вручную.');
-        // optional: still redirect to app.html to let user try demo button there
-        setTimeout(()=>{ window.location.href = '/app.html'; }, 300);
-        return;
+      const resp = await postJSON(endpoint, { email, password: pass });
+      if (!resp.ok) {
+        const err = (resp.body && (resp.body.error || resp.body.message || JSON.stringify(resp.body))) || `HTTP ${resp.status}`;
+        return alert('Ошибка: ' + err);
       }
-    }
-  } else {
-    // normal login
-    alert('Вход успешен');
-    // redirect user to app (if they have active access or to allow manual demo)
-    setTimeout(()=>{ window.location.href = '/app.html'; }, 300);
-  }
-});
 
-      // server may return { success: true, user: {...} } or raw user object
       const data = resp.body;
-      const user = data.user || data;
-      if(user && user.email) localStorage.setItem('otd_user', user.email);
-      setStatusAfterAuth(user);
+      const user = data && (data.user || data);
+      if (user && user.email) localStorage.setItem('otd_user', user.email);
+      if (typeof setStatusAfterAuth === 'function') setStatusAfterAuth(user);
 
-      // If this was registration — try to start demo automatically
-      if(isReg){
+      if (isReg) {
         const sd = await tryStartDemo();
-        if(sd.ok) { /* demo started and timer runs */ }
-        else {
-          if(sd.status === 401) {
-            // not authenticated by server despite registration — maybe server didn't set cookie; notify
-            console.warn('/start-demo returned 401 — server may not have created session cookie');
-          } else {
-            console.warn('start-demo failed', sd);
-          }
+        if (sd.ok) { setTimeout(()=>{ window.location.href = '/app.html'; }, 300); return; }
+        if (sd.status === 401) {
+          alert('Регистрация прошла, но сессия не установлена автоматически. Войдите вручную.');
+          return;
+        } else {
+          alert('Регистрация прошла. Демо не активировано автоматически, можно включить демо вручную.');
+          setTimeout(()=>{ window.location.href = '/app.html'; }, 300);
+          return;
         }
+      } else {
+        alert('Вход успешен');
+        setTimeout(()=>{ window.location.href = '/app.html'; }, 300);
       }
-
-      alert(isReg ? 'Регистрация прошла успешно' : 'Вход успешен');
     });
 
-    // demo button manual
+    // Demo button manual
     demoBtn.addEventListener('click', async ()=>{
       const md = await tryStartDemo();
-      if(md.ok) { alert('Демо активировано — 24 часа'); }
+      if (md.ok) { alert('Демо активировано — 24 часа'); }
       else {
-        if(md.status === 401) alert('Сначала войдите в систему.');
+        if (md.status === 401) alert('Сначала войдите в систему.');
         else alert('Не удалось включить демо. Посмотри логи.');
       }
     });
 
-    // stripe
+    // Stripe
     stripeBtn.addEventListener('click', async (e)=>{
       e.preventDefault();
       const resp = await postJSON('/create-checkout-session', {});
-      if(!resp.ok) {
-        const err = (resp.body && (resp.body.error||JSON.stringify(resp.body))) || `HTTP ${resp.status}`;
+      if (!resp.ok) {
+        const err = (resp.body && (resp.body.error || JSON.stringify(resp.body))) || `HTTP ${resp.status}`;
         return alert('Ошибка платежа: ' + err);
       }
       const body = resp.body || {};
       const redirect = body.url || body.sessionUrl || (body.session && body.session.url);
-      if(redirect) { window.location.href = redirect; return; }
-      // otherwise show for debug
+      if (redirect) { window.location.href = redirect; return; }
       alert('Неожиданный ответ сервера платежа: ' + JSON.stringify(body));
     });
 
     doPayBtn.addEventListener('click', ()=>{ stripeBtn.scrollIntoView({behavior:'smooth', block:'center'}); });
 
-    // on load: if demo_until was stored — restore timer
+    // restore demo timer if present
     const savedUntil = localStorage.getItem('otd_demo_until');
-    if(savedUntil) {
+    if (savedUntil) {
       const n = Number(savedUntil);
-      if(n && !isNaN(n)) startDemoCountdown(n);
+      if (n && !isNaN(n)) startDemoCountdown(n);
       else startDemoCountdown(savedUntil);
     }
 
-    // finalize session_id from stripe redirect (if present)
+    // finalize stripe session_id return
     (async ()=>{
       try {
         const params = new URLSearchParams(location.search);
         const sid = params.get('session_id');
-        if(!sid) return;
-        const r = await fetch('/session?session_id=' + encodeURIComponent(sid), { credentials:'include' });
-        // reload (webhook may do server-side anyway)
+        if (!sid) return;
+        await fetch('/session?session_id=' + encodeURIComponent(sid), { credentials: 'include' });
         setTimeout(()=> location.href = location.pathname, 900);
       } catch(e){ console.warn('session finalize failed', e); }
     })();
 
-    // small whoami try
+    // whoami
     (async ()=>{
       try {
         const saved = localStorage.getItem('otd_user') || '';
-        if(!saved) return;
+        if (!saved) return;
         const r = await fetch('/user?email=' + encodeURIComponent(saved), { credentials:'include' });
-        if(r.ok){ const j = await r.json().catch(()=>null); if(j && j.user) setStatusAfterAuth(j.user); }
+        if (r.ok){ const j = await r.json().catch(()=>null); if (j && j.user) setStatusAfterAuth(j.user); }
       } catch(e){}
     })();
 
-    function setStatusAfterAuth(user) {
+    // helper to update UI after auth; keep simple
+    window.setStatusAfterAuth = function(user){
       const lang = localStorage.getItem('otd_lang') || DEFAULT_LANG;
-      if(!user){ $('statusText').textContent = T[lang].status_guest; return; }
+      if (!user) { if ($('statusText')) $('statusText').textContent = T[lang].status_guest; return; }
       const status = user.status || (user.demo_until ? 'active' : 'none');
-      if(status === 'active' || status === 'discount_active') {
-        // If server included end time, start countdown
+      if (status === 'active' || status === 'discount_active') {
         const until = user.demo_until || user.demoUntil || user.endAt || user.end_at;
-        if(until) startDemoCountdown(until);
-        else {
-          // if active but no end — don't start timer, just show active
-          $('statusText').textContent = `${user.email} — ${T[lang].status_active}`;
-        }
-        // keep pay available always as requested
+        if (until) startDemoCountdown(until);
+        else if ($('statusText')) $('statusText').textContent = `${user.email} — ${T[lang].status_active}`;
         $('payStripe').style.display = '';
       } else {
-        $('statusText').textContent = `${user.email} — ${T[lang].status_none}`;
+        if ($('statusText')) $('statusText').textContent = `${user.email} — ${T[lang].status_none}`;
         $('payStripe').style.display = '';
       }
-    }
+    };
 
   }); // DOMContentLoaded end
 
