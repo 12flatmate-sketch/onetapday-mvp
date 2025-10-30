@@ -30,7 +30,7 @@ app.use(express.static('public'));
 const sessions = {}; // token -> email
 
 // Load or init users persistence
-let users = {}; // users[email] = { email, salt, hash, status, startAt, endAt, discountUntil, isAdmin }
+let users = {}; // users[email] = { email, salt, hash, status, startAt, endAt, discountUntil, isAdmin, demoUsed }
 try {
   if (fs.existsSync(USERS_FILE)) {
     users = JSON.parse(fs.readFileSync(USERS_FILE,'utf8') || '{}');
@@ -66,6 +66,23 @@ function verifyPassword(password, salt, storedHash){
   const keylen = Number(keylenStr) || 64;
   const candidate = crypto.pbkdf2Sync(String(password), salt, iter, keylen, digest || 'sha512').toString('hex');
   return candidate === derivedHex;
+}
+
+// --- moveable helper: expire statuses and persist if changed
+function expireStatuses(user){
+  if(!user) return false;
+  const now = new Date();
+  let changed = false;
+  if(user.status === 'active' && user.endAt && new Date(user.endAt) < now){
+    user.status = 'ended';
+    changed = true;
+  }
+  if(user.status === 'discount_active' && user.discountUntil && new Date(user.discountUntil) < now){
+    user.status = 'ended';
+    changed = true;
+  }
+  if(changed) saveUsers();
+  return changed;
 }
 
 function normalizeEmail(e){
@@ -123,7 +140,8 @@ app.post('/register', (req, res) => {
       startAt: null,
       endAt: null,
       discountUntil: null,
-      isAdmin: email === ADMIN_EMAIL
+      isAdmin: email === ADMIN_EMAIL,
+      demoUsed: false   // <- одноразовое демо флаг
     };
 
     saveUsers();
@@ -134,7 +152,7 @@ app.post('/register', (req, res) => {
     res.cookie('session', token, { httpOnly:true, sameSite:'lax', secure: (process.env.NODE_ENV === 'production') });
 
     console.log('[REGISTER] success', email);
-    return res.json({ success:true, user: { email, status: 'none' }});
+    return res.json({ success:true, user: { email, status: 'none', demoUsed: false }});
   } catch(err){
     console.error('[REGISTER] error', err && err.stack ? err.stack : err);
     return res.status(500).json({ success:false, error:'internal', detail: String(err && err.message ? err.message : err) });
@@ -161,12 +179,12 @@ app.post('/login', (req, res) => {
     sessions[token] = email;
     res.cookie('session', token, { httpOnly:true, sameSite:'lax', secure: (process.env.NODE_ENV === 'production') });
 
-    // expire statuses if needed
-    let status = user.status;
-    if(user.status === 'active' && user.endAt && new Date(user.endAt) < new Date()) { user.status = 'ended'; status = 'ended'; }
-    if(user.status === 'discount_active' && user.discountUntil && new Date(user.discountUntil) < new Date()) { user.status = 'ended'; status = 'ended'; }
+    // expire statuses if needed (centralized)
+    expireStatuses(user);
 
-    return res.json({ success:true, user: { email, status } });
+    const status = user.status;
+
+    return res.json({ success:true, user: { email, status, demoUsed: !!user.demoUsed } });
   } catch(err){
     console.error('[LOGIN] error', err && err.stack ? err.stack : err);
     return res.status(500).json({ success:false, error:'internal' });
@@ -183,14 +201,21 @@ app.post('/logout', (req, res) => {
   return res.json({ success:true });
 });
 
-// Start demo (authenticated)
+// Start demo (authenticated) — одноразовое
 app.post('/start-demo', (req, res) => {
   const user = getUserBySession(req);
   if(!user) return res.status(401).json({ success:false, error:'Not authenticated' });
 
+  // запрещаем повторный запуск демо
+  if(user.demoUsed) {
+    return res.status(400).json({ success:false, error:'Demo already used' });
+  }
+
+  // activate demo: 24 hours from now
+  user.demoUsed = true;
   user.status = 'active';
   user.startAt = new Date().toISOString();
-  user.endAt = new Date(Date.now() + 24*60*60*1000).toISOString();
+  user.endAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
   saveUsers();
 
   return res.json({ success:true, demo_until: user.endAt, message:'Demo started' });
@@ -200,6 +225,10 @@ app.post('/start-demo', (req, res) => {
 app.get('/me', (req, res) => {
   const user = getUserBySession(req);
   if(!user) return res.status(401).json({ success:false, error:'Not authenticated' });
+
+  // обновляем статус перед ответом
+  expireStatuses(user);
+
   const safe = Object.assign({}, user); delete safe.hash; delete safe.salt;
   return res.json({ success:true, user: safe });
 });
@@ -210,6 +239,10 @@ app.get('/user', (req, res) => {
   if(!emailQ) return res.status(400).json({ success:false, error:'missing email' });
   const u = users[emailQ];
   if(!u) return res.status(404).json({ success:false, error:'user not found' });
+
+  // обновляем статус перед ответом
+  expireStatuses(u);
+
   const safe = Object.assign({}, u); delete safe.hash; delete safe.salt;
   return res.json({ success:true, user: safe });
 });
@@ -221,6 +254,9 @@ app.post('/create-checkout-session', async (req, res) => {
   if(!stripe) return res.status(500).json({ success:false, error:'Stripe not configured' });
 
   try {
+    // ensure statuses are fresh
+    expireStatuses(user);
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'payment',
@@ -237,21 +273,6 @@ app.post('/create-checkout-session', async (req, res) => {
       success_url: `${req.protocol}://${req.get('host')}/app.html?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.protocol}://${req.get('host')}/?cancel=1`
     });
-    // --- helpers: expire statuses ---
-function expireStatuses(user){
-  if(!user) return false;
-  const now = new Date();
-  let changed = false;
-  if(user.status === 'active' && user.endAt && new Date(user.endAt) < now){
-    user.status = 'ended';
-    changed = true;
-  }
-  if(user.status === 'discount_active' && user.discountUntil && new Date(user.discountUntil) < now){
-    user.status = 'ended';
-    changed = true;
-  }
-  return changed;
-}
 
     return res.json({ sessionUrl: session.url, id: session.id });
   } catch(err){
@@ -284,6 +305,8 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
       const end = new Date();
       end.setMonth(end.getMonth() + 2);
       u.endAt = end.toISOString();
+      // if they paid, we can mark demoUsed true (so they can't "re-use" demo later) — optional
+      u.demoUsed = true;
       saveUsers();
       console.log(`[WEBHOOK] activated pilot for ${email} until ${u.endAt}`);
     }
@@ -320,4 +343,3 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`✅ Server listening on port ${PORT}`);
 });
-
