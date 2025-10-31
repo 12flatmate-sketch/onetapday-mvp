@@ -10,7 +10,7 @@
          status_title:"Status", status_guest:"Gość — zaloguj się lub zarejestruj",
          stripe_2m:"Zapłać 2 miesiące (Stripe)", demo_24:"Demo 24 godziny", access_note:"Płatność daje natychmiastowy dostęp. Demo trwa 24h.",
          status_none:"Oczekuje płatności depozytu", status_deposit_paid:"Depozyt opłacony", status_active:"Pilot aktywny",
-         status_ended:"Pilot zakończony", status_discount_active:"Zniżka aktywna" },
+         status_ended:"Pilot zakońчony", status_discount_active:"Zniżka aktywna" },
     en:{ access_title:"MVP Access", login_tab:"Login", reg_tab:"Sign Up", login_btn:"Sign In",
          pay_or_demo:"Pay/Demo", after_login_hint:"After signing in, you can pay or start a demo.",
          status_title:"Status", status_guest:"Guest — sign in or register",
@@ -32,6 +32,17 @@
   };
 
   const $ = id => document.getElementById(id);
+
+  // Fetch helper (GET)
+  async function getJSON(path) {
+    try {
+      const r = await fetch((apiBase||'') + path, { credentials: 'include' });
+      const body = await r.json().catch(()=>null);
+      return { ok: r.ok, status: r.status, body };
+    } catch(e) {
+      return { ok:false, status:0, body: { error: String(e) } };
+    }
+  }
 
   // Универсальная POST-обёртка: всегда include cookies
   async function postJSON(path, body = {}) {
@@ -93,6 +104,59 @@
     if ($('statusText')) $('statusText').textContent = `${localStorage.getItem('otd_user')||'User'} — DEMO ${hh}:${mm}:${ss} (оплатить)`;
   }
 
+  // Local app-state utils (stored in localStorage under 'otd_app_state')
+  function readLocalState() {
+    try { return JSON.parse(localStorage.getItem('otd_app_state') || '{}'); } catch(e){ return {}; }
+  }
+  function writeLocalState(state) {
+    try { localStorage.setItem('otd_app_state', JSON.stringify(state || {})); } catch(e){}
+  }
+
+  // Merge transactions arrays by id (incoming overrides)
+  function mergeTransactions(existing = [], incoming = []) {
+    const map = {};
+    existing.forEach(t => { if (t && t.id) map[t.id] = t; });
+    incoming.forEach(t => { if (t && t.id) map[t.id] = t; });
+    // preserve original order of existing IDs then append new ones without id
+    return Object.values(map);
+  }
+
+  // Merge remote state into local state (shallow merge, transactions merged by id)
+  function mergeRemoteIntoLocal(remote) {
+    if (!remote || typeof remote !== 'object') return;
+    const local = readLocalState() || {};
+    // transactions special-case
+    if (Array.isArray(remote.transactions)) {
+      local.transactions = mergeTransactions(Array.isArray(local.transactions)?local.transactions:[], remote.transactions);
+    }
+    // merge other keys (remote wins)
+    for (const k of Object.keys(remote)) {
+      if (k === 'transactions') continue;
+      local[k] = remote[k];
+    }
+    writeLocalState(local);
+    return local;
+  }
+
+  // Merge local state into server (use merge endpoint)
+  async function pushLocalStateToServer() {
+    const state = readLocalState();
+    if (!state || Object.keys(state).length === 0) return { ok:true };
+    const r = await postJSON('/app-state/merge', { state });
+    return r;
+  }
+
+  // Fetch server state and merge to local (called after auth)
+  async function syncStateFromServerToLocal() {
+    const r = await getJSON('/app-state');
+    if (!r.ok) return r;
+    const remote = r.body && r.body.state;
+    const merged = mergeRemoteIntoLocal(remote || {});
+    // push merged back to server to unify both sides
+    const push = await postJSON('/app-state', { state: merged });
+    return push.ok ? { ok:true } : { ok:false, status: push.status, body: push.body };
+  }
+
   // Try start demo: /start-demo preferred, fallback /demo
   async function tryStartDemo(){
     // 1) /start-demo (authenticated)
@@ -102,6 +166,10 @@
       const ts = until ? (isNaN(Number(until)) ? Date.parse(until) : Number(until)) : (Date.now() + 24*60*60*1000);
       startDemoCountdown(ts);
       return { ok: true };
+    }
+    // if server replies 400 for demoUsed or 409 etc, return informative
+    if(resp && resp.status === 400 && resp.body && resp.body.error) {
+      return { ok:false, status:400, body: resp.body };
     }
     // 2) fallback /demo
     resp = await postJSON('/demo', {});
@@ -148,11 +216,26 @@
       if (user && user.email) localStorage.setItem('otd_user', user.email);
       if (typeof setStatusAfterAuth === 'function') setStatusAfterAuth(user);
 
+      // After successful auth — sync state before redirecting to app
+      try {
+        // Attempt to fetch remote state and merge it into local, then push merged state back
+        const syncRes = await syncStateFromServerToLocal();
+        if (!syncRes.ok) {
+          console.warn('State sync warning', syncRes);
+        }
+      } catch(e){
+        console.warn('State sync failed', e);
+      }
+
       if (isReg) {
         const sd = await tryStartDemo();
         if (sd.ok) { setTimeout(()=>{ window.location.href = '/app.html'; }, 300); return; }
         if (sd.status === 401) {
           alert('Регистрация прошла, но сессия не установлена автоматически. Войдите вручную.');
+          return;
+        } else if (sd.status === 400 && sd.body && sd.body.error === 'Demo already used') {
+          alert('Демо уже использовано для этого аккаунта.');
+          setTimeout(()=>{ window.location.href = '/app.html'; }, 300);
           return;
         } else {
           alert('Регистрация прошла. Демо не активировано автоматически, можно включить демо вручную.');
@@ -171,6 +254,7 @@
       if (md.ok) { alert('Демо активировано — 24 часа'); }
       else {
         if (md.status === 401) alert('Сначала войдите в систему.');
+        else if (md.status === 400 && md.body && md.body.error) alert('Демо недоступно: ' + md.body.error);
         else alert('Не удалось включить демо. Посмотри логи.');
       }
     });
@@ -210,14 +294,28 @@
       } catch(e){ console.warn('session finalize failed', e); }
     })();
 
-    // whoami
+    // whoami / try to restore session-based user and sync state
     (async ()=>{
       try {
-        const saved = localStorage.getItem('otd_user') || '';
-        if (!saved) return;
-        const r = await fetch('/user?email=' + encodeURIComponent(saved), { credentials:'include' });
-        if (r.ok){ const j = await r.json().catch(()=>null); if (j && j.user) setStatusAfterAuth(j.user); }
-      } catch(e){}
+        // Prefer /me which uses cookie/session
+        const r = await getJSON('/me');
+        if (r.ok && r.body && r.body.user) {
+          const user = r.body.user;
+          if (user && user.email) localStorage.setItem('otd_user', user.email);
+          if (typeof setStatusAfterAuth === 'function') setStatusAfterAuth(user);
+          // sync remote app state into local
+          await syncStateFromServerToLocal();
+        } else {
+          // fallback to old user? try local stored email
+          const saved = localStorage.getItem('otd_user') || '';
+          if (!saved) return;
+          const r2 = await getJSON('/user?email=' + encodeURIComponent(saved));
+          if (r2.ok && r2.body && r2.body.user) {
+            setStatusAfterAuth(r2.body.user);
+            await syncStateFromServerToLocal();
+          }
+        }
+      } catch(e){ console.warn('whoami failed', e); }
     })();
 
     // helper to update UI after auth; keep simple
@@ -236,6 +334,23 @@
       }
     };
 
+    // Expose small API to app page to trigger saving local state and syncing to server.
+    window.OTD = window.OTD || {};
+    window.OTD.saveLocalState = async function(state) {
+      // caller provides state object (partial) — merge shallowly into local and push to server
+      const cur = readLocalState();
+      const merged = Object.assign({}, cur, state || {});
+      // merge transactions specially if provided
+      if (Array.isArray(state && state.transactions)) {
+        merged.transactions = mergeTransactions(cur.transactions||[], state.transactions);
+      }
+      writeLocalState(merged);
+      // try push
+      try { await pushLocalStateToServer(); } catch(e){ console.warn('pushLocalStateToServer failed', e); }
+      return merged;
+    };
+    window.OTD.getLocalState = readLocalState;
+
   }); // DOMContentLoaded end
 
-})();
+})(); 
