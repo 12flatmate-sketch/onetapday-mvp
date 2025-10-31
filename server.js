@@ -1,11 +1,10 @@
-// server.js — working backend with compatibility for legacy users (sha256), no external jwt dependency
+// server.js — single-file backend with HMAC-signed tokens (no jsonwebtoken required)
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
-// stripe is optional but kept
 let stripe = null;
 try {
   stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || '');
@@ -16,79 +15,25 @@ try {
 const app = express();
 const PORT = process.env.PORT || 10000;
 const USERS_FILE = path.join(__dirname, 'users.json');
+const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-secret'; // set real secret in env
 
 app.use((req, res, next) => {
   console.log(new Date().toISOString(), req.method, req.url);
   next();
 });
-
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.static('public'));
 
-// volatile sessions map kept for backward compatibility with old random tokens
-const sessions = {}; // token -> email
+// In-memory session index (optional helper)
+const sessions = {}; // token -> email (not required for JWT flow, but we keep for compatibility)
 
-// --- Lightweight JWT-like session functions (no dependency on jsonwebtoken) ---
-const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-secret-change-me';
-
-function base64urlEncode(input) {
-  return Buffer.from(input).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-}
-function base64urlDecode(input) {
-  const b = input.replace(/-/g, '+').replace(/_/g, '/');
-  return Buffer.from(b, 'base64').toString();
-}
-function hmacSha256(data) {
-  return crypto.createHmac('sha256', SESSION_SECRET).update(data).digest('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-}
-function timingSafeEqualStr(a, b) {
-  try {
-    const A = Buffer.from(a);
-    const B = Buffer.from(b);
-    if (A.length !== B.length) return false;
-    return crypto.timingSafeEqual(A, B);
-  } catch (e) { return false; }
-}
-function createSessionToken(email) {
-  const header = base64urlEncode(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-  const exp = Math.floor(Date.now() / 1000) + 7 * 24 * 3600; // 7 days
-  const payload = base64urlEncode(JSON.stringify({ email, exp }));
-  const sig = hmacSha256(header + '.' + payload);
-  return `${header}.${payload}.${sig}`;
-}
-function verifySessionToken(token) {
-  if (!token || typeof token !== 'string') return null;
-  const parts = token.split('.');
-  if (parts.length !== 3) return null;
-  const [header, payload, sig] = parts;
-  const expected = hmacSha256(header + '.' + payload);
-  if (!timingSafeEqualStr(expected, sig)) return null;
-  try {
-    const obj = JSON.parse(base64urlDecode(payload));
-    if (obj.exp && Math.floor(Date.now() / 1000) > Number(obj.exp)) return null;
-    return obj;
-  } catch (e) {
-    return null;
-  }
-}
-function setSessionCookie(res, email) {
-  const token = createSessionToken(email);
-  // set cookie; secure in production
-  res.cookie('session', token, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: (process.env.NODE_ENV === 'production')
-  });
-  // also keep mapping for backwards compatibility if needed
-  sessions[token] = email;
-}
-
-// Load or init users persistence
-let users = {}; // users[email] = { email, salt, hash, maybe passwordHash (legacy), status, startAt, endAt, discountUntil, isAdmin, demoUsed }
+// --- persistence helpers ---
+let users = {}; // email -> { email, salt, hash, status, startAt, endAt, discountUntil, isAdmin, demoUsed }
 try {
   if (fs.existsSync(USERS_FILE)) {
-    users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8') || '{}');
+    const raw = fs.readFileSync(USERS_FILE, 'utf8') || '{}';
+    users = JSON.parse(raw || '{}');
     console.log(`[BOOT] loaded ${Object.keys(users).length} users`);
   }
 } catch (e) {
@@ -98,17 +43,15 @@ try {
 function saveUsers() {
   try {
     fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf8');
-  } catch (e) { console.error('[SAVE] failed to write users.json', e && e.stack ? e.stack : e); }
+  } catch (e) {
+    console.error('[SAVE] failed to write users.json', e && e.stack ? e.stack : e);
+  }
 }
 
-// crypto helpers (pbkdf2)
-function genSalt(len = 16) {
-  return crypto.randomBytes(len).toString('hex');
-}
+// --- crypto password helpers (pbkdf2) ---
+function genSalt(len = 16) { return crypto.randomBytes(len).toString('hex'); }
 function hashPassword(password, salt) {
-  const iter = 100000;
-  const keylen = 64;
-  const digest = 'sha512';
+  const iter = 100000, keylen = 64, digest = 'sha512';
   const derived = crypto.pbkdf2Sync(String(password), salt, iter, keylen, digest);
   return derived.toString('hex') + `:${iter}:${keylen}:${digest}`;
 }
@@ -117,106 +60,104 @@ function verifyPassword(password, salt, storedHash) {
   const [derivedHex, iterStr, keylenStr, digest] = (storedHash || '').split(':');
   const iter = Number(iterStr) || 100000;
   const keylen = Number(keylenStr) || 64;
-  const candidate = crypto.pbkdf2Sync(String(password), salt, iter, keylen, digest || 'sha512').toString('hex');
-  return candidate === derivedHex;
+  const cand = crypto.pbkdf2Sync(String(password), salt, iter, keylen, digest || 'sha512').toString('hex');
+  return cand === derivedHex;
 }
 
-// Legacy SHA256 helper (older deployments used sha256(password) maybe stored under passwordHash)
-function sha256hex(s) {
-  return crypto.createHash('sha256').update(String(s)).digest('hex');
+// --- simple HMAC-signed token (JWT-like) ---
+function base64url(input) {
+  return Buffer.from(input).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+}
+function hmacSha256(key, msg) {
+  return crypto.createHmac('sha256', key).update(msg).digest('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+}
+function createSessionToken(email, ttlSeconds = 7 * 24 * 3600) {
+  const header = { alg: 'HS256', typ: 'JWT' };
+  const iat = Math.floor(Date.now() / 1000);
+  const payload = { email, iat, exp: iat + Math.floor(ttlSeconds) };
+  const headerB = base64url(JSON.stringify(header));
+  const payloadB = base64url(JSON.stringify(payload));
+  const sig = hmacSha256(SESSION_SECRET, headerB + '.' + payloadB);
+  return `${headerB}.${payloadB}.${sig}`;
+}
+function verifySessionToken(token) {
+  if (!token || typeof token !== 'string') return null;
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  const [hB, pB, s] = parts;
+  const expected = hmacSha256(SESSION_SECRET, `${hB}.${pB}`);
+  if (expected !== s) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(pB, 'base64').toString('utf8'));
+    const now = Math.floor(Date.now() / 1000);
+    if (payload.exp && payload.exp < now) return null;
+    return payload;
+  } catch (e) {
+    return null;
+  }
 }
 
-// expire statuses helper (updates and persists if changed)
+// Helper: set cookie and optionally return token to client
+function setSessionCookie(res, email) {
+  const token = createSessionToken(email);
+  // httpOnly cookie for convenience
+  res.cookie('session', token, { httpOnly: true, sameSite: 'lax', secure: (process.env.NODE_ENV === 'production') });
+  return token;
+}
+
+// Helper: get token from cookie or Authorization header
+function getTokenFromReq(req) {
+  // 1. Authorization header Bearer
+  const auth = (req.headers && (req.headers.authorization || req.headers.Authorization)) || '';
+  if (auth && auth.toLowerCase().startsWith('bearer ')) return auth.split(' ')[1].trim();
+  // 2. Cookie
+  if (req.cookies && req.cookies.session) return req.cookies.session;
+  return null;
+}
+
+// Helper: get user by token or cookie
+function getUserBySession(req) {
+  const token = getTokenFromReq(req);
+  if (!token) return null;
+  const payload = verifySessionToken(token);
+  if (!payload || !payload.email) return null;
+  const email = String(payload.email).toLowerCase();
+  const u = users[email];
+  if (!u) return null;
+  // expire statuses if needed
+  expireStatuses(u);
+  return u;
+}
+
+// expire statuses helper (persist if changed)
 function expireStatuses(user) {
   if (!user) return false;
   const now = new Date();
   let changed = false;
-  if (user.status === 'active' && user.endAt && new Date(user.endAt) < now) {
-    user.status = 'ended';
-    changed = true;
-  }
-  if (user.status === 'discount_active' && user.discountUntil && new Date(user.discountUntil) < now) {
-    user.status = 'ended';
-    changed = true;
-  }
+  if (user.status === 'active' && user.endAt && new Date(user.endAt) < now) { user.status = 'ended'; changed = true; }
+  if (user.status === 'discount_active' && user.discountUntil && new Date(user.discountUntil) < now) { user.status = 'ended'; changed = true; }
   if (changed) saveUsers();
   return changed;
 }
 
-function normalizeEmail(e) {
-  return String(e || '').toLowerCase().trim();
-}
-function okPassword(p) {
-  return typeof p === 'string' && p.length >= 8;
-}
-
-// Compatibility: try to find user by key or by scanning values (case where key schema changed)
-function findUserByEmail(email) {
-  if (!email) return null;
-  const e = normalizeEmail(email);
-  if (users[e]) return users[e];
-  // fallback: search values for a user where user.email matches normalized email
-  const vals = Object.values(users);
-  for (let i = 0; i < vals.length; i++) {
-    const u = vals[i];
-    if (!u) continue;
-    if (normalizeEmail(u.email) === e) return u;
-  }
-  return null;
-}
-
-// Helper: get user by session cookie — supports new JWT-like cookie and old sessions map
-function getUserBySession(req) {
-  const t = req.cookies && req.cookies.session;
-  if (!t) return null;
-  // 1) try JWT-like
-  const payload = verifySessionToken(t);
-  if (payload && payload.email) {
-    const u = findUserByEmail(payload.email);
-    if (u) {
-      if (typeof expireStatuses === 'function') expireStatuses(u);
-      return u;
-    }
-  }
-  // 2) fallback: old random token stored in sessions map
-  if (sessions[t]) {
-    const e = sessions[t];
-    const u = findUserByEmail(e);
-    if (u) {
-      if (typeof expireStatuses === 'function') expireStatuses(u);
-      return u;
-    }
-  }
-  return null;
-}
+function normalizeEmail(e) { return String(e || '').toLowerCase().trim(); }
+function okPassword(p) { return typeof p === 'string' && p.length >= 8; }
 
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || '1tapday@gmail.com').toLowerCase();
 
-// ROUTES
+// ---------------- ROUTES ----------------
 
 // Register
 app.post('/register', (req, res) => {
   try {
-    console.log('[REGISTER] body preview:', JSON.stringify(req.body || {}).slice(0, 2000));
-  } catch (e) { }
-
-  try {
-    const emailRaw = req.body && (req.body.email || req.body.mail || req.body.login || '');
-    const passRaw = req.body && (req.body.password || req.body.pass || req.body.pwd || '');
+    const emailRaw = req.body && (req.body.email || req.body.mail || req.body.login);
+    const passRaw = req.body && (req.body.password || req.body.pass || req.body.pwd);
     const email = normalizeEmail(emailRaw);
     const password = passRaw;
 
-    if (!email || !password) {
-      console.error('[REGISTER] missing email or password');
-      return res.status(400).json({ success: false, error: 'Missing email or password' });
-    }
-    if (!okPassword(password)) {
-      return res.status(400).json({ success: false, error: 'Password too short (min 8 chars)' });
-    }
-    if (findUserByEmail(email)) {
-      console.warn('[REGISTER] exists', email);
-      return res.status(409).json({ success: false, error: 'Email already registered' });
-    }
+    if (!email || !password) return res.status(400).json({ success: false, error: 'Missing email or password' });
+    if (!okPassword(password)) return res.status(400).json({ success: false, error: 'Password too short (min 8 chars)' });
+    if (users[email]) return res.status(409).json({ success: false, error: 'Email already registered' });
 
     const salt = genSalt(16);
     const storedHash = hashPassword(password, salt);
@@ -225,23 +166,19 @@ app.post('/register', (req, res) => {
       email,
       salt,
       hash: storedHash,
-      // legacy field kept for compatibility if needed (not used for new users)
-      // passwordHash: null,
       status: 'none',
       startAt: null,
       endAt: null,
       discountUntil: null,
-      demoUsed: false,           // demo not used
+      demoUsed: false,           // demo not used yet
       isAdmin: email === ADMIN_EMAIL
     };
-
     saveUsers();
 
-    // create session cookie (JWT-like)
-    setSessionCookie(res, email);
+    // create session cookie and return token so client can store/use across devices
+    const token = setSessionCookie(res, email);
 
-    console.log('[REGISTER] success', email);
-    return res.json({ success: true, user: { email, status: 'none', demoUsed: false } });
+    return res.json({ success: true, user: { email, status: 'none', demoUsed: false }, token });
   } catch (err) {
     console.error('[REGISTER] error', err && err.stack ? err.stack : err);
     return res.status(500).json({ success: false, error: 'internal', detail: String(err && err.message ? err.message : err) });
@@ -251,50 +188,26 @@ app.post('/register', (req, res) => {
 // Login
 app.post('/login', (req, res) => {
   try {
-    const emailRaw = req.body && (req.body.email || req.body.mail || req.body.login || '');
-    const passRaw = req.body && (req.body.password || req.body.pass || req.body.pwd || '');
+    const emailRaw = req.body && (req.body.email || req.body.mail || req.body.login);
+    const passRaw = req.body && (req.body.password || req.body.pass || req.body.pwd);
     const email = normalizeEmail(emailRaw);
     const password = passRaw;
 
     if (!email || !password) return res.status(400).json({ success: false, error: 'Missing email or password' });
 
-    let user = findUserByEmail(email);
-    if (!user) {
-      return res.status(401).json({ success: false, error: 'User not found' });
-    }
+    const user = users[email];
+    if (!user) return res.status(401).json({ success: false, error: 'User not found' });
 
-    // 1) If user has modern PBKDF2 hash -> verify
-    if (user.hash && user.salt) {
-      if (!verifyPassword(password, user.salt, user.hash)) {
-        return res.status(401).json({ success: false, error: 'Incorrect password' });
-      }
-    } else if (user.passwordHash) {
-      // 2) legacy sha256 — verify and migrate to PBKDF2
-      const candidate = sha256hex(password);
-      if (candidate !== user.passwordHash) {
-        return res.status(401).json({ success: false, error: 'Incorrect password' });
-      }
-      // successful legacy auth -> upgrade password storage
-      const newSalt = genSalt(16);
-      const newHash = hashPassword(password, newSalt);
-      user.salt = newSalt;
-      user.hash = newHash;
-      // remove legacy field to avoid confusion
-      delete user.passwordHash;
-      saveUsers();
-      console.log(`[MIGRATE] upgraded legacy password for ${user.email}`);
-    } else {
-      // nothing to verify against
-      return res.status(500).json({ success: false, error: 'No password data available for this account' });
-    }
+    const ok = verifyPassword(password, user.salt, user.hash);
+    if (!ok) return res.status(401).json({ success: false, error: 'Incorrect password' });
 
-    // set cookie session
-    setSessionCookie(res, user.email);
+    // create session cookie & token
+    const token = setSessionCookie(res, email);
 
-    // refresh statuses if needed
+    // expire statuses if needed
     expireStatuses(user);
 
-    return res.json({ success: true, user: { email: user.email, status: user.status, demoUsed: !!user.demoUsed } });
+    return res.json({ success: true, user: { email, status: user.status || 'none', demoUsed: !!user.demoUsed }, token });
   } catch (err) {
     console.error('[LOGIN] error', err && err.stack ? err.stack : err);
     return res.status(500).json({ success: false, error: 'internal' });
@@ -303,8 +216,7 @@ app.post('/login', (req, res) => {
 
 // Logout
 app.post('/logout', (req, res) => {
-  const token = req.cookies && req.cookies.session;
-  if (token && sessions[token]) delete sessions[token];
+  // Clear cookie (client should also drop stored token if any)
   res.clearCookie('session');
   return res.json({ success: true });
 });
@@ -314,9 +226,7 @@ app.post('/start-demo', (req, res) => {
   const user = getUserBySession(req);
   if (!user) return res.status(401).json({ success: false, error: 'Not authenticated' });
 
-  if (user.demoUsed) {
-    return res.status(400).json({ success: false, error: 'Demo already used' });
-  }
+  if (user.demoUsed) return res.status(400).json({ success: false, error: 'Demo already used' });
 
   user.demoUsed = true;
   user.status = 'active';
@@ -327,31 +237,30 @@ app.post('/start-demo', (req, res) => {
   return res.json({ success: true, demo_until: user.endAt, message: 'Demo started' });
 });
 
-// whoami / me
+// me
 app.get('/me', (req, res) => {
   const user = getUserBySession(req);
   if (!user) return res.status(401).json({ success: false, error: 'Not authenticated' });
 
   expireStatuses(user);
-
-  const safe = Object.assign({}, user); delete safe.hash; delete safe.salt;
+  const safe = Object.assign({}, user);
+  delete safe.hash; delete safe.salt;
   return res.json({ success: true, user: safe });
 });
 
 // get user by email (used by frontend)
 app.get('/user', (req, res) => {
-  const emailQ = normalizeEmail(req.query && req.query.email || '');
+  const emailQ = normalizeEmail(req.query && req.query.email);
   if (!emailQ) return res.status(400).json({ success: false, error: 'missing email' });
-  const u = findUserByEmail(emailQ);
+  const u = users[emailQ];
   if (!u) return res.status(404).json({ success: false, error: 'user not found' });
 
   expireStatuses(u);
-
   const safe = Object.assign({}, u); delete safe.hash; delete safe.salt;
   return res.json({ success: true, user: safe });
 });
 
-// Stripe checkout creation route (requires stripe configured)
+// Create Stripe Checkout Session (optional)
 app.post('/create-checkout-session', async (req, res) => {
   const user = getUserBySession(req);
   if (!user) return res.status(401).json({ success: false, error: 'Not authenticated' });
@@ -359,7 +268,6 @@ app.post('/create-checkout-session', async (req, res) => {
 
   try {
     expireStatuses(user);
-
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'payment',
@@ -376,7 +284,6 @@ app.post('/create-checkout-session', async (req, res) => {
       success_url: `${req.protocol}://${req.get('host')}/app.html?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.protocol}://${req.get('host')}/?cancel=1`
     });
-
     return res.json({ sessionUrl: session.url, id: session.id });
   } catch (err) {
     console.error('[STRIPE] create session error', err && err.stack ? err.stack : err);
@@ -384,7 +291,7 @@ app.post('/create-checkout-session', async (req, res) => {
   }
 });
 
-// Stripe webhook — use express.raw to verify signature
+// Stripe webhook
 app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
   if (!stripe) {
     console.warn('[WEBHOOK] stripe not configured');
@@ -401,24 +308,22 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
     const email = (session.metadata && session.metadata.email) || (session.customer_details && session.customer_details.email);
-    if (email) {
-      const u = findUserByEmail(email);
-      if (u) {
-        u.status = 'active';
-        u.startAt = new Date().toISOString();
-        const end = new Date();
-        end.setMonth(end.getMonth() + 2);
-        u.endAt = end.toISOString();
-        u.demoUsed = true; // they paid — treat demo as used
-        saveUsers();
-        console.log(`[WEBHOOK] activated pilot for ${u.email} until ${u.endAt}`);
-      }
+    if (email && users[email]) {
+      const u = users[email];
+      u.status = 'active';
+      u.startAt = new Date().toISOString();
+      const end = new Date();
+      end.setMonth(end.getMonth() + 2);
+      u.endAt = end.toISOString();
+      u.demoUsed = true; // make paid users not eligible for demo again
+      saveUsers();
+      console.log(`[WEBHOOK] activated pilot for ${email} until ${u.endAt}`);
     }
   }
   return res.json({ received: true });
 });
 
-// Admin helpers
+// Admin endpoints (mark-paid/start-pilot)
 app.post('/mark-paid', (req, res) => {
   const user = getUserBySession(req);
   if (!user || !user.isAdmin) return res.status(403).json({ success: false, error: 'Forbidden' });
@@ -431,14 +336,13 @@ app.post('/start-pilot', (req, res) => {
   if (!user || !user.isAdmin) return res.status(403).json({ success: false, error: 'Forbidden' });
   user.status = 'active';
   user.startAt = new Date().toISOString();
-  const end = new Date();
-  end.setMonth(end.getMonth() + 2);
+  const end = new Date(); end.setMonth(end.getMonth() + 2);
   user.endAt = end.toISOString();
   saveUsers();
   return res.json({ success: true });
 });
 
-// catch-all
+// catch-all error handler
 app.use((err, req, res, next) => {
   console.error('Unhandled error', err && err.stack ? err.stack : err);
   res.status(500).json({ success: false, error: 'internal' });
