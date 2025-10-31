@@ -1,11 +1,11 @@
-// server.js — single-file working backend (no external jwt dependency)
+// server.js — working backend with compatibility for legacy users (sha256), no external jwt dependency
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
-// stripe is optional but kept (ensure STRIPE_SECRET_KEY in Render env if you use it)
+// stripe is optional but kept
 let stripe = null;
 try {
   stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || '');
@@ -23,14 +23,13 @@ app.use((req, res, next) => {
 });
 
 app.use(cookieParser());
-// Note: keep express.json globally; webhook route uses express.raw explicitly
 app.use(express.json());
 app.use(express.static('public'));
 
-// In-memory session store (kept for compatibility; primary sessions use signed cookie)
+// volatile sessions map kept for backward compatibility with old random tokens
 const sessions = {}; // token -> email
 
-// --- SESSION (lightweight JWT-like) support (no external deps) ---
+// --- Lightweight JWT-like session functions (no dependency on jsonwebtoken) ---
 const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-secret-change-me';
 
 function base64urlEncode(input) {
@@ -75,16 +74,18 @@ function verifySessionToken(token) {
 }
 function setSessionCookie(res, email) {
   const token = createSessionToken(email);
-  // For Render/prod set secure cookie; local dev it will be non-secure
+  // set cookie; secure in production
   res.cookie('session', token, {
     httpOnly: true,
     sameSite: 'lax',
     secure: (process.env.NODE_ENV === 'production')
   });
+  // also keep mapping for backwards compatibility if needed
+  sessions[token] = email;
 }
 
 // Load or init users persistence
-let users = {}; // users[email] = { email, salt, hash, status, startAt, endAt, discountUntil, isAdmin, demoUsed }
+let users = {}; // users[email] = { email, salt, hash, maybe passwordHash (legacy), status, startAt, endAt, discountUntil, isAdmin, demoUsed }
 try {
   if (fs.existsSync(USERS_FILE)) {
     users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8') || '{}');
@@ -120,6 +121,11 @@ function verifyPassword(password, salt, storedHash) {
   return candidate === derivedHex;
 }
 
+// Legacy SHA256 helper (older deployments used sha256(password) maybe stored under passwordHash)
+function sha256hex(s) {
+  return crypto.createHash('sha256').update(String(s)).digest('hex');
+}
+
 // expire statuses helper (updates and persists if changed)
 function expireStatuses(user) {
   if (!user) return false;
@@ -144,16 +150,44 @@ function okPassword(p) {
   return typeof p === 'string' && p.length >= 8;
 }
 
-// Helper: get user by session cookie (uses our JWT-like cookie)
+// Compatibility: try to find user by key or by scanning values (case where key schema changed)
+function findUserByEmail(email) {
+  if (!email) return null;
+  const e = normalizeEmail(email);
+  if (users[e]) return users[e];
+  // fallback: search values for a user where user.email matches normalized email
+  const vals = Object.values(users);
+  for (let i = 0; i < vals.length; i++) {
+    const u = vals[i];
+    if (!u) continue;
+    if (normalizeEmail(u.email) === e) return u;
+  }
+  return null;
+}
+
+// Helper: get user by session cookie — supports new JWT-like cookie and old sessions map
 function getUserBySession(req) {
   const t = req.cookies && req.cookies.session;
   if (!t) return null;
+  // 1) try JWT-like
   const payload = verifySessionToken(t);
-  if (!payload || !payload.email) return null;
-  const u = users[payload.email];
-  if (!u) return null;
-  if (typeof expireStatuses === 'function') expireStatuses(u);
-  return u;
+  if (payload && payload.email) {
+    const u = findUserByEmail(payload.email);
+    if (u) {
+      if (typeof expireStatuses === 'function') expireStatuses(u);
+      return u;
+    }
+  }
+  // 2) fallback: old random token stored in sessions map
+  if (sessions[t]) {
+    const e = sessions[t];
+    const u = findUserByEmail(e);
+    if (u) {
+      if (typeof expireStatuses === 'function') expireStatuses(u);
+      return u;
+    }
+  }
+  return null;
 }
 
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || '1tapday@gmail.com').toLowerCase();
@@ -167,8 +201,8 @@ app.post('/register', (req, res) => {
   } catch (e) { }
 
   try {
-    const emailRaw = req.body && (req.body.email || req.body.mail || req.body.login);
-    const passRaw = req.body && (req.body.password || req.body.pass || req.body.pwd);
+    const emailRaw = req.body && (req.body.email || req.body.mail || req.body.login || '');
+    const passRaw = req.body && (req.body.password || req.body.pass || req.body.pwd || '');
     const email = normalizeEmail(emailRaw);
     const password = passRaw;
 
@@ -179,7 +213,7 @@ app.post('/register', (req, res) => {
     if (!okPassword(password)) {
       return res.status(400).json({ success: false, error: 'Password too short (min 8 chars)' });
     }
-    if (users[email]) {
+    if (findUserByEmail(email)) {
       console.warn('[REGISTER] exists', email);
       return res.status(409).json({ success: false, error: 'Email already registered' });
     }
@@ -191,6 +225,8 @@ app.post('/register', (req, res) => {
       email,
       salt,
       hash: storedHash,
+      // legacy field kept for compatibility if needed (not used for new users)
+      // passwordHash: null,
       status: 'none',
       startAt: null,
       endAt: null,
@@ -201,7 +237,7 @@ app.post('/register', (req, res) => {
 
     saveUsers();
 
-    // create JWT-like session cookie
+    // create session cookie (JWT-like)
     setSessionCookie(res, email);
 
     console.log('[REGISTER] success', email);
@@ -215,28 +251,50 @@ app.post('/register', (req, res) => {
 // Login
 app.post('/login', (req, res) => {
   try {
-    const emailRaw = req.body && (req.body.email || req.body.mail || req.body.login);
-    const passRaw = req.body && (req.body.password || req.body.pass || req.body.pwd);
+    const emailRaw = req.body && (req.body.email || req.body.mail || req.body.login || '');
+    const passRaw = req.body && (req.body.password || req.body.pass || req.body.pwd || '');
     const email = normalizeEmail(emailRaw);
     const password = passRaw;
 
     if (!email || !password) return res.status(400).json({ success: false, error: 'Missing email or password' });
 
-    const user = users[email];
-    if (!user) return res.status(401).json({ success: false, error: 'User not found' });
+    let user = findUserByEmail(email);
+    if (!user) {
+      return res.status(401).json({ success: false, error: 'User not found' });
+    }
 
-    const ok = verifyPassword(password, user.salt, user.hash);
-    if (!ok) return res.status(401).json({ success: false, error: 'Incorrect password' });
+    // 1) If user has modern PBKDF2 hash -> verify
+    if (user.hash && user.salt) {
+      if (!verifyPassword(password, user.salt, user.hash)) {
+        return res.status(401).json({ success: false, error: 'Incorrect password' });
+      }
+    } else if (user.passwordHash) {
+      // 2) legacy sha256 — verify and migrate to PBKDF2
+      const candidate = sha256hex(password);
+      if (candidate !== user.passwordHash) {
+        return res.status(401).json({ success: false, error: 'Incorrect password' });
+      }
+      // successful legacy auth -> upgrade password storage
+      const newSalt = genSalt(16);
+      const newHash = hashPassword(password, newSalt);
+      user.salt = newSalt;
+      user.hash = newHash;
+      // remove legacy field to avoid confusion
+      delete user.passwordHash;
+      saveUsers();
+      console.log(`[MIGRATE] upgraded legacy password for ${user.email}`);
+    } else {
+      // nothing to verify against
+      return res.status(500).json({ success: false, error: 'No password data available for this account' });
+    }
 
-    // set session cookie
-    setSessionCookie(res, email);
+    // set cookie session
+    setSessionCookie(res, user.email);
 
-    // expire statuses if needed (centralized)
+    // refresh statuses if needed
     expireStatuses(user);
 
-    const status = user.status;
-
-    return res.json({ success: true, user: { email, status, demoUsed: !!user.demoUsed } });
+    return res.json({ success: true, user: { email: user.email, status: user.status, demoUsed: !!user.demoUsed } });
   } catch (err) {
     console.error('[LOGIN] error', err && err.stack ? err.stack : err);
     return res.status(500).json({ success: false, error: 'internal' });
@@ -246,24 +304,20 @@ app.post('/login', (req, res) => {
 // Logout
 app.post('/logout', (req, res) => {
   const token = req.cookies && req.cookies.session;
-  if (token && sessions[token]) {
-    delete sessions[token];
-  }
+  if (token && sessions[token]) delete sessions[token];
   res.clearCookie('session');
   return res.json({ success: true });
 });
 
-// Start demo (authenticated) — одноразовое
+// Start demo (authenticated) — one-time
 app.post('/start-demo', (req, res) => {
   const user = getUserBySession(req);
   if (!user) return res.status(401).json({ success: false, error: 'Not authenticated' });
 
-  // запрещаем повторный запуск демо
   if (user.demoUsed) {
     return res.status(400).json({ success: false, error: 'Demo already used' });
   }
 
-  // activate demo: 24 hours from now
   user.demoUsed = true;
   user.status = 'active';
   user.startAt = new Date().toISOString();
@@ -278,7 +332,6 @@ app.get('/me', (req, res) => {
   const user = getUserBySession(req);
   if (!user) return res.status(401).json({ success: false, error: 'Not authenticated' });
 
-  // обновляем статус перед ответом
   expireStatuses(user);
 
   const safe = Object.assign({}, user); delete safe.hash; delete safe.salt;
@@ -287,12 +340,11 @@ app.get('/me', (req, res) => {
 
 // get user by email (used by frontend)
 app.get('/user', (req, res) => {
-  const emailQ = normalizeEmail(req.query && req.query.email);
+  const emailQ = normalizeEmail(req.query && req.query.email || '');
   if (!emailQ) return res.status(400).json({ success: false, error: 'missing email' });
-  const u = users[emailQ];
+  const u = findUserByEmail(emailQ);
   if (!u) return res.status(404).json({ success: false, error: 'user not found' });
 
-  // обновляем статус перед ответом
   expireStatuses(u);
 
   const safe = Object.assign({}, u); delete safe.hash; delete safe.salt;
@@ -306,7 +358,6 @@ app.post('/create-checkout-session', async (req, res) => {
   if (!stripe) return res.status(500).json({ success: false, error: 'Stripe not configured' });
 
   try {
-    // ensure statuses are fresh
     expireStatuses(user);
 
     const session = await stripe.checkout.sessions.create({
@@ -350,23 +401,24 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
     const email = (session.metadata && session.metadata.email) || (session.customer_details && session.customer_details.email);
-    if (email && users[email]) {
-      const u = users[email];
-      u.status = 'active';
-      u.startAt = new Date().toISOString();
-      const end = new Date();
-      end.setMonth(end.getMonth() + 2);
-      u.endAt = end.toISOString();
-      // mark demoUsed true if they paid (so they can't re-use demo)
-      u.demoUsed = true;
-      saveUsers();
-      console.log(`[WEBHOOK] activated pilot for ${email} until ${u.endAt}`);
+    if (email) {
+      const u = findUserByEmail(email);
+      if (u) {
+        u.status = 'active';
+        u.startAt = new Date().toISOString();
+        const end = new Date();
+        end.setMonth(end.getMonth() + 2);
+        u.endAt = end.toISOString();
+        u.demoUsed = true; // they paid — treat demo as used
+        saveUsers();
+        console.log(`[WEBHOOK] activated pilot for ${u.email} until ${u.endAt}`);
+      }
     }
   }
   return res.json({ received: true });
 });
 
-// Admin helpers (mark-paid/start-pilot) — keep simple, auth via isAdmin flag
+// Admin helpers
 app.post('/mark-paid', (req, res) => {
   const user = getUserBySession(req);
   if (!user || !user.isAdmin) return res.status(403).json({ success: false, error: 'Forbidden' });
@@ -386,7 +438,7 @@ app.post('/start-pilot', (req, res) => {
   return res.json({ success: true });
 });
 
-// catch-all for debugging
+// catch-all
 app.use((err, req, res, next) => {
   console.error('Unhandled error', err && err.stack ? err.stack : err);
   res.status(500).json({ success: false, error: 'internal' });
