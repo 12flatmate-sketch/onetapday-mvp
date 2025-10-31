@@ -29,6 +29,26 @@ app.use(express.static('public'));
 // In-memory session store (volatile)
 const sessions = {}; // token -> email
 
+// --- SESSION (JWT) support + helpers ---
+const jwt = require('jsonwebtoken');
+const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-secret'; // Заменить в Render на реальную строку
+
+function createSessionToken(email){
+  return jwt.sign({ email }, SESSION_SECRET, { expiresIn: '7d' }); // срок 7 дней
+}
+function verifySessionToken(token){
+  try { return jwt.verify(token, SESSION_SECRET); } catch(e) { return null; }
+}
+// Устанавливаем cookie-сессию
+function setSessionCookie(res, email){
+  const token = createSessionToken(email);
+  res.cookie('session', token, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: (process.env.NODE_ENV === 'production')
+  });
+}
+
 // Load or init users persistence
 let users = {}; // users[email] = { email, salt, hash, status, startAt, endAt, discountUntil, isAdmin, demoUsed }
 try {
@@ -94,12 +114,17 @@ function okPassword(p){
 
 // Helper: get user by session cookie
 function getUserBySession(req){
-  const token = req.cookies && req.cookies.session;
-  if(!token) return null;
-  const email = sessions[token];
-  if(!email) return null;
-  return users[email] || null;
+  const t = req.cookies && req.cookies.session;
+  if(!t) return null;
+  const payload = verifySessionToken(t);
+  if(!payload || !payload.email) return null;
+  const u = users[payload.email];
+  if(!u) return null;
+  // expire statuses если нужно (если у тебя такая функция уже объявлена выше)
+  if (typeof expireStatuses === 'function') expireStatuses(u);
+  return u;
 }
+
 
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || '1tapday@gmail.com').toLowerCase();
 
@@ -132,6 +157,7 @@ app.post('/register', (req, res) => {
     const salt = genSalt(16);
     const storedHash = hashPassword(password, salt);
 
+       // Create user record
     users[email] = {
       email,
       salt,
@@ -140,11 +166,18 @@ app.post('/register', (req, res) => {
       startAt: null,
       endAt: null,
       discountUntil: null,
-      isAdmin: email === ADMIN_EMAIL,
-      demoUsed: false   // <- одноразовое демо флаг
+      demoUsed: false,           // <-- важно: демо ещё не использовано
+      isAdmin: email === ADMIN_EMAIL
     };
 
     saveUsers();
+
+    // create JWT session cookie
+    setSessionCookie(res, email);
+
+    console.log('[REGISTER] success', email);
+    return res.json({ success:true, user: { email, status: 'none' }});
+
 
     // create session token and set cookie
     const token = crypto.randomBytes(16).toString('hex');
@@ -174,10 +207,8 @@ app.post('/login', (req, res) => {
 
     const ok = verifyPassword(password, user.salt, user.hash);
     if(!ok) return res.status(401).json({ success:false, error:'Incorrect password' });
+setSessionCookie(res, email);
 
-    const token = crypto.randomBytes(16).toString('hex');
-    sessions[token] = email;
-    res.cookie('session', token, { httpOnly:true, sameSite:'lax', secure: (process.env.NODE_ENV === 'production') });
 
     // expire statuses if needed (centralized)
     expireStatuses(user);
@@ -343,3 +374,4 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`✅ Server listening on port ${PORT}`);
 });
+
