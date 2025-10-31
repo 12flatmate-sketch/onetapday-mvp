@@ -232,8 +232,8 @@ app.post('/register', (req, res) => {
       endAt: null,
       discountUntil: null,
       demoUsed: false,           // demo not used
-      isAdmin: email === ADMIN_EMAIL,
-      appState: {}               // empty per-user app state by default
+      appState: {},              // per-user persisted app state
+      isAdmin: email === ADMIN_EMAIL
     };
 
     saveUsers();
@@ -352,72 +352,53 @@ app.get('/user', (req, res) => {
   return res.json({ success: true, user: safe });
 });
 
-/* ============================================================
-   New: App-state endpoints — store per-user UI data on server
-   Stored under users[email].appState (arbitrary JSON)
-   ============================================================ */
+// --- app-state endpoints (per-user persisted state) ---
+function shallowMergeServerState(existing, incoming) {
+  if (!existing || typeof existing !== 'object') existing = {};
+  if (!incoming || typeof incoming !== 'object') return existing;
+  const out = Object.assign({}, existing);
+  // merge transactions by id (avoid duplicates)
+  if (Array.isArray(existing.transactions) || Array.isArray(incoming.transactions)) {
+    const map = {};
+    (existing.transactions||[]).forEach(t => { if (t && t.id) map[t.id] = t; });
+    (incoming.transactions||[]).forEach(t => { if (t && t.id) map[t.id] = t; });
+    out.transactions = Object.values(map);
+  }
+  Object.keys(incoming).forEach(k => {
+    if (k === 'transactions') return;
+    out[k] = incoming[k];
+  });
+  return out;
+}
 
-// GET current app-state
+// GET /app-state -> returns user's saved state
 app.get('/app-state', (req, res) => {
   const user = getUserBySession(req);
-  if (!user) return res.status(401).json({ success: false, error: 'Not authenticated' });
+  if (!user) return res.status(401).json({ success:false, error:'Not authenticated' });
   if (typeof expireStatuses === 'function') expireStatuses(user);
-  const state = user.appState || {};
-  return res.json({ success: true, state });
+  return res.json({ success:true, state: (user.appState || {}) });
 });
 
-// Replace entire app-state (trusted overwrite)
+// POST /app-state -> overwrite user's state
 app.post('/app-state', (req, res) => {
   const user = getUserBySession(req);
-  if (!user) return res.status(401).json({ success: false, error: 'Not authenticated' });
-  const body = req.body && req.body.state;
-  if (!body || typeof body !== 'object') return res.status(400).json({ success: false, error: 'missing state' });
-
-  user.appState = body;
+  if (!user) return res.status(401).json({ success:false, error:'Not authenticated' });
+  const incoming = req.body && req.body.state || {};
+  user.appState = incoming;
   saveUsers();
-  return res.json({ success: true });
+  return res.json({ success:true });
 });
 
-// Merge incoming state into existing state (transactions merging, shallow merge for other fields)
+// POST /app-state/merge -> server merges incoming into stored state and returns merged
 app.post('/app-state/merge', (req, res) => {
   const user = getUserBySession(req);
-  if (!user) return res.status(401).json({ success: false, error: 'Not authenticated' });
-  const incoming = req.body && req.body.state;
-  if (!incoming || typeof incoming !== 'object') return res.status(400).json({ success: false, error: 'missing state' });
-
-  user.appState = user.appState || {};
-
-  try {
-    // If transactions present and are arrays, merge by id (incoming overrides)
-    if (Array.isArray(incoming.transactions)) {
-      const srv = Array.isArray(user.appState.transactions) ? user.appState.transactions.slice() : [];
-      const map = {};
-      srv.forEach(t => { if (t && t.id) map[t.id] = t; else if (t) srv.push(t); });
-      incoming.transactions.forEach(t => {
-        if (!t) return;
-        if (t.id) map[t.id] = t;
-        else srv.push(t);
-      });
-      user.appState.transactions = Object.values(map).concat(srv.filter(x => !x.id));
-    }
-
-    // shallow merge of other top-level keys (incoming wins)
-    Object.keys(incoming).forEach(k => {
-      if (k === 'transactions') return;
-      user.appState[k] = incoming[k];
-    });
-
-    saveUsers();
-    return res.json({ success: true });
-  } catch (e) {
-    console.error('[APP-STATE MERGE] error', e && e.stack ? e.stack : e);
-    return res.status(500).json({ success: false, error: 'merge failed' });
-  }
+  if (!user) return res.status(401).json({ success:false, error:'Not authenticated' });
+  const incoming = req.body && req.body.state || {};
+  const merged = shallowMergeServerState(user.appState || {}, incoming);
+  user.appState = merged;
+  saveUsers();
+  return res.json({ success:true, state: merged });
 });
-
-/* ============================================================
-   End of App-state endpoints
-   ============================================================ */
 
 // Stripe checkout creation route (requires stripe configured)
 app.post('/create-checkout-session', async (req, res) => {
