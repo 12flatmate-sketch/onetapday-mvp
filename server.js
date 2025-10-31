@@ -85,7 +85,7 @@ function setSessionCookie(res, email) {
 }
 
 // Load or init users persistence
-let users = {}; // users[email] = { email, salt, hash, maybe passwordHash (legacy), status, startAt, endAt, discountUntil, isAdmin, demoUsed }
+let users = {}; // users[email] = { email, salt, hash, maybe passwordHash (legacy), status, startAt, endAt, discountUntil, isAdmin, demoUsed, appState }
 try {
   if (fs.existsSync(USERS_FILE)) {
     users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8') || '{}');
@@ -232,7 +232,8 @@ app.post('/register', (req, res) => {
       endAt: null,
       discountUntil: null,
       demoUsed: false,           // demo not used
-      isAdmin: email === ADMIN_EMAIL
+      isAdmin: email === ADMIN_EMAIL,
+      appState: {}               // empty per-user app state by default
     };
 
     saveUsers();
@@ -350,6 +351,73 @@ app.get('/user', (req, res) => {
   const safe = Object.assign({}, u); delete safe.hash; delete safe.salt;
   return res.json({ success: true, user: safe });
 });
+
+/* ============================================================
+   New: App-state endpoints — store per-user UI data on server
+   Stored under users[email].appState (arbitrary JSON)
+   ============================================================ */
+
+// GET current app-state
+app.get('/app-state', (req, res) => {
+  const user = getUserBySession(req);
+  if (!user) return res.status(401).json({ success: false, error: 'Not authenticated' });
+  if (typeof expireStatuses === 'function') expireStatuses(user);
+  const state = user.appState || {};
+  return res.json({ success: true, state });
+});
+
+// Replace entire app-state (trusted overwrite)
+app.post('/app-state', (req, res) => {
+  const user = getUserBySession(req);
+  if (!user) return res.status(401).json({ success: false, error: 'Not authenticated' });
+  const body = req.body && req.body.state;
+  if (!body || typeof body !== 'object') return res.status(400).json({ success: false, error: 'missing state' });
+
+  user.appState = body;
+  saveUsers();
+  return res.json({ success: true });
+});
+
+// Merge incoming state into existing state (transactions merging, shallow merge for other fields)
+app.post('/app-state/merge', (req, res) => {
+  const user = getUserBySession(req);
+  if (!user) return res.status(401).json({ success: false, error: 'Not authenticated' });
+  const incoming = req.body && req.body.state;
+  if (!incoming || typeof incoming !== 'object') return res.status(400).json({ success: false, error: 'missing state' });
+
+  user.appState = user.appState || {};
+
+  try {
+    // If transactions present and are arrays, merge by id (incoming overrides)
+    if (Array.isArray(incoming.transactions)) {
+      const srv = Array.isArray(user.appState.transactions) ? user.appState.transactions.slice() : [];
+      const map = {};
+      srv.forEach(t => { if (t && t.id) map[t.id] = t; else if (t) srv.push(t); });
+      incoming.transactions.forEach(t => {
+        if (!t) return;
+        if (t.id) map[t.id] = t;
+        else srv.push(t);
+      });
+      user.appState.transactions = Object.values(map).concat(srv.filter(x => !x.id));
+    }
+
+    // shallow merge of other top-level keys (incoming wins)
+    Object.keys(incoming).forEach(k => {
+      if (k === 'transactions') return;
+      user.appState[k] = incoming[k];
+    });
+
+    saveUsers();
+    return res.json({ success: true });
+  } catch (e) {
+    console.error('[APP-STATE MERGE] error', e && e.stack ? e.stack : e);
+    return res.status(500).json({ success: false, error: 'merge failed' });
+  }
+});
+
+/* ============================================================
+   End of App-state endpoints
+   ============================================================ */
 
 // Stripe checkout creation route (requires stripe configured)
 app.post('/create-checkout-session', async (req, res) => {
