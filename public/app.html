@@ -944,18 +944,183 @@
     }
 
     // Bind handlers for new image inputs (multiple files)
-    document.addEventListener('DOMContentLoaded', () => {
-      const txImage = document.getElementById('txImage');
-      if (txImage) {
-        txImage.addEventListener('change', async e => {
-          const files = Array.from(e.target.files || []);
-          if (!files.length) return;
-          for (const f of files) {
-            await processImageFileFor('tx', f);
-          }
-          document.getElementById("lastSync").textContent = "Синхронизация: " + new Date().toLocaleString();
-          render();
-        });
+  <!-- >>> ЗАМЕНИТЬ НА ЭТО: обработчики + client-side preprocessing + ocr.space (вариант A) -->
+<script>
+/* Клиентская предобработка: resize + простая бинаризация (возвращает Blob PNG) */
+async function preprocessImageToBlob(file, maxWidth = 2000) {
+  let bitmap;
+  try { bitmap = await createImageBitmap(file); }
+  catch (e) {
+    bitmap = await new Promise((res, rej) => {
+      const img = new Image();
+      img.onload = () => {
+        const c = document.createElement('canvas');
+        c.width = img.naturalWidth; c.height = img.naturalHeight;
+        c.getContext('2d').drawImage(img, 0, 0);
+        createImageBitmap(c).then(res).catch(rej);
+      };
+      img.onerror = rej;
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  const scale = Math.min(1, maxWidth / Math.max(bitmap.width, bitmap.height));
+  const w = Math.round(bitmap.width * scale);
+  const h = Math.round(bitmap.height * scale);
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(bitmap, 0, 0, w, h);
+
+  // простая адаптивная бинаризация / контраст
+  const imgd = ctx.getImageData(0, 0, w, h);
+  const d = imgd.data;
+  let sum = 0;
+  for (let i = 0; i < d.length; i += 4) {
+    const l = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+    sum += l;
+  }
+  const avg = sum / (d.length / 4);
+  const threshold = Math.max(100, avg * 0.9);
+  for (let i = 0; i < d.length; i += 4) {
+    const l = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+    const t = l > threshold ? 255 : 0;
+    d[i] = d[i + 1] = d[i + 2] = t;
+  }
+  ctx.putImageData(imgd, 0, 0);
+
+  return await new Promise(res => canvas.toBlob(res, 'image/png'));
+}
+
+/* OCR.space POST (demo ключ helloworld) */
+async function ocrSpaceApiImageBlob(blob, apiKey = 'helloworld', lang = 'pol') {
+  const form = new FormData();
+  form.append('apikey', apiKey);
+  form.append('language', lang);
+  form.append('isOverlayRequired', 'false');
+  form.append('file', blob, 'img.png');
+
+  const resp = await fetch('https://api.ocr.space/parse/image', {
+    method: 'POST',
+    body: form
+  });
+  const j = await resp.json();
+  if (!j || !j.ParsedResults || !j.ParsedResults.length) throw new Error('OCR.space: пустой ответ');
+  return j.ParsedResults.map(p => p.ParsedText).join('\n\n');
+}
+
+/* Парсер текста OCR -> простая структура (date, amount, invoice, supplier) */
+function parseOcrToTx(text) {
+  const t = String(text || '');
+  const dateMatch = t.match(/(\d{2}[.\-/]\d{2}[.\-/]\d{2,4})/);
+  const amountMatch = t.replace(/\s+/g, ' ').match(/(-?\d{1,3}(?:[ ,.\u00A0]\d{3})*(?:[.,]\d{2})|\d+[.,]\d{2})\s*(PLN|zł|zl|EUR|USD)?/i);
+  const invoiceMatch = t.match(/(faktura|fv|nr[:\s]*)([A-Za-z0-9\-\/]+)/i);
+  const supplier = t.split('\n').map(l => l.trim()).filter(Boolean)[0] || '';
+
+  let amt = null;
+  if (amountMatch) {
+    let s = amountMatch[1];
+    s = s.replace(/\u00A0/g,'').replace(/\s/g, '').replace(/\./g, '').replace(',', '.');
+    const n = Number(s);
+    if (!isNaN(n)) amt = n;
+  }
+
+  const outWords = /(wydatek|wydano|zapłacono|оплачено|przelew do|paid to|transfer to)/i;
+  const inWords = /(wpłata|otrzymano|przelew od|received|przyjęcie)/i;
+  let sign = null;
+  if (outWords.test(t)) sign = -1;
+  if (inWords.test(t)) sign = 1;
+  if (amt != null && sign === -1) amt = -Math.abs(amt);
+
+  return {
+    date: dateMatch ? (function(m){
+      const parts = m[1].split(/[.\-/]/);
+      if (parts[2].length === 2) parts[2] = '20' + parts[2];
+      return parts[2] + '-' + parts[1].padStart(2,'0') + '-' + parts[0].padStart(2,'0');
+    })(dateMatch) : (new Date().toISOString().slice(0,10)),
+    amount: amt,
+    invoice: invoiceMatch ? invoiceMatch[2] : null,
+    supplier,
+    raw: t
+  };
+}
+
+/* pushParsedTx — добавляет нормализованную строку в tx или bills (использует normalizeRowKeys и render) */
+function pushParsedTx(parsed, target = 'tx') {
+  const baseObj = {
+    "ID transakcji": "IMG-" + Date.now() + "-" + Math.floor(Math.random()*9999),
+    "Data księgowania": parsed.date || new Date().toISOString().slice(0,10),
+    "ID konta": "UNKNOWN",
+    "Kontrahent": parsed.supplier || "",
+    "Tytuł/Opis": ("OCR: " + (parsed.raw || '')).slice(0, 400),
+    "Kwota": (parsed.amount != null ? parsed.amount.toFixed(2) : ""),
+    "Waluta": "PLN",
+    "Status transakcji": "imported"
+  };
+  const normalized = normalizeRowKeys(baseObj);
+  if (target === 'tx') {
+    tx.unshift(normalized);
+    try { localStorage.setItem('tx_manual_import', JSON.stringify(tx)); } catch(e){}
+    inferAccounts();
+  } else if (target === 'bills') {
+    const billRow = {
+      "Termin płatności": normalized["Data księgowania"],
+      "Numer faktury": parsed.invoice || ("IMG-FV-" + Date.now()),
+      "Dostawca": normalized["Kontrahent"] || parsed.supplier,
+      "Kwota do zapłaty": Math.abs(asNum(normalized["Kwota"]) || 0).toFixed(2),
+      "Waluta": normalized["Waluta"] || "PLN",
+      "Status faktury": "do zapłaty",
+      "Kandydat (AI)": "",
+      "AI score": ""
+    };
+    bills.unshift(billRow);
+    try { localStorage.setItem('bills_manual_import', JSON.stringify(bills)); } catch(e){}
+  }
+  render();
+}
+
+/* Теперь — обработчики файлов (txImage, billImage) */
+document.addEventListener('DOMContentLoaded', () => {
+  const txImage = document.getElementById('txImage');
+  if (txImage) {
+    txImage.addEventListener('change', async e => {
+      const files = Array.from(e.target.files || []);
+      if (!files.length) return;
+      document.getElementById("lastSync").textContent = "Синхронизация: " + new Date().toLocaleString();
+      for (const f of files) {
+        try {
+          const blob = await preprocessImageToBlob(f, 2000);
+          const txt = await ocrSpaceApiImageBlob(blob, 'helloworld', 'pol');
+          const parsed = parseOcrToTx(txt);
+          pushParsedTx(parsed, 'tx');
+        } catch(err) {
+          console.error('txImage OCR error:', err);
+          alert('Ошибка распознавания выписки: ' + (err && err.message ? err.message : String(err)));
+        }
+      }
+    });
+  }
+
+  const billImage = document.getElementById('billImage');
+  if (billImage) {
+    billImage.addEventListener('change', async e => {
+      const files = Array.from(e.target.files || []);
+      if (!files.length) return;
+      for (const f of files) {
+        try {
+          const blob = await preprocessImageToBlob(f, 2000);
+          const txt = await ocrSpaceApiImageBlob(blob, 'helloworld', 'pol');
+          const parsed = parseOcrToTx(txt);
+          pushParsedTx(parsed, 'bills');
+        } catch(err) {
+          console.error('billImage OCR error:', err);
+          alert('Ошибка распознавания фактуры: ' + (err && err.message ? err.message : String(err)));
+        }
+      }
+      render();
+    });
+  }
+});
       }
       const billImage = document.getElementById('billImage');
       if (billImage) {
@@ -1610,3 +1775,4 @@
   </script>
 </body>
 </html>
+
