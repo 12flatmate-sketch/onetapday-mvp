@@ -732,10 +732,10 @@
           b["Status faktury"] = "Opłacone";
           b["Data płatności"] = today();
         } else if (best && best.s >= 55) {
-          b["Kandydat (AI)"] = best.t["ID transakcji"];
+          b["Kandydат (AI)"] = best.t["ID transakcji"];
           b["AI score"] = best.s;
         } else {
-          b["Kandydat (AI)"] = "";
+          b["Kandydат (AI)"] = "";
           b["AI score"] = "";
         }
       });
@@ -745,13 +745,13 @@
       bills
         .filter(b => Number(b["AI score"] || 0) >= 85)
         .forEach(b => {
-          const t = tx.find(t => t["ID transakcji"] === b["Kandydat (AI)"]);
+          const t = tx.find(t => t["ID transakcji"] === b["Kandydат (AI)"]);
           if (!t) return;
           t["Status transakcji"] = "Sparowane";
-          t["Powiązana faktura (ID)"] = b["Numer faktury"];
-          b["Status faktury"] = "Opłacone";
-          b["Data płatności"] = today();
-          b["Kandydat (AI)"] = b["AI score"] = "";
+          t["Powiązana faktura (ID)"] = b["Numer faktуры"];
+          b["Status faktуры"] = "Opłacone";
+          b["Data płатności"] = today();
+          b["Kandydат (AI)"] = b["AI score"] = "";
         });
       render();
     }
@@ -762,10 +762,10 @@
         "Data księgowania": r["Data księgowania"] || r.date || r["Дата"] || today(),
         "ID transakcji": r["ID transakcji"] || r.id || ("IMG-" + Date.now()),
         "ID konta": r["ID konta"] || r.account || r["IBAN"] || "UNKNOWN",
-        "Kontrahent": r["Kontrahent"] || r.counterparty || r["Контрагент"] || "",
+        "Kontrahent": r["Kontrahент"] || r.counterparty || r["Контрагент"] || "",
         "Tytuł/Opis": r["Tytuł/Opis"] || r.desc || r["Описание"] || (r.title || ""),
         // prefer "Kwота" (Latin) but accept "Kwота" or numeric amount
-        "Kwota": (typeof r["Kwota"] !== "undefined") ? String(r["Kwота"]) : (typeof r["Kwота"] !== "undefined" ? String(r["Kwота"]) : (r.amount != null ? String(r.amount) : "")),
+        "Kwота": (typeof r["Kwота"] !== "undefined") ? String(r["Kwота"]) : (typeof r["Kwота"] !== "undefined" ? String(r["Kwота"]) : (r.amount != null ? String(r.amount) : "")),
         "Waluta": r["Waluta"] || r.currency || "PLN",
         "Status transakcji": r["Status transakcji"] || r.status || "imported",
         "Saldo po operacji": r["Saldo po operacji"] || r.saldo || ""
@@ -775,6 +775,7 @@
     // ---- OCR processing logic for images (wyciag / faktury) with fixed thumb selection ----
     async function processImageFileFor(targetArrayName, file) {
       if (!file) return;
+      console.log("OCR: file=", file.name);
       const imgURL = URL.createObjectURL(file);
 
       // choose correct preview element by target
@@ -784,150 +785,223 @@
       const thumb = document.getElementById(thumbId);
       if (thumb) { thumb.src = imgURL; thumb.style.display = "inline-block"; }
 
-      // helper: safe amount normalization
-      const normalizeAmountStr = s => {
-        if (!s) return null;
-        let t = String(s).replace(/\s+/g, ' ');
-        // remove non-number noise except comma/dot and minus
-        t = t.replace(/[^\d\-,.\u00A0]/g, '');
-        t = t.replace(/\u00A0/g, '').replace(/\./g, '.').replace(/,+/g, ',');
-        // handle thousands with spaces or dots: keep last two decimals
-        const m = t.match(/-?\d+[.,]?\d{0,2}/);
-        return m ? m[0].replace(',', '.') : null;
-      };
+      // helper: preprocess image (resize, grayscale, simple threshold)
+      async function preprocessToDataURL(imgUrl, maxDim = 2000) {
+        return await new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => {
+            // scale
+            let w = img.width, h = img.height;
+            const scale = Math.min(1, maxDim / Math.max(w, h));
+            w = Math.round(w * scale); h = Math.round(h * scale);
+            const c = document.createElement('canvas');
+            c.width = w; c.height = h;
+            const ctx = c.getContext('2d');
+            // draw
+            ctx.drawImage(img, 0, 0, w, h);
+            // get image data, simple contrast + grayscale
+            const id = ctx.getImageData(0,0,w,h);
+            const d = id.data;
+            // basic contrast/brightness adjust + grayscale
+            const contrast = 1.2, brightness = 5;
+            for (let i = 0; i < d.length; i += 4) {
+              // grayscale
+              let r = d[i], g = d[i+1], b = d[i+2];
+              let gray = 0.299*r + 0.587*g + 0.114*b;
+              // contrast
+              gray = ((gray - 128) * contrast) + 128 + brightness;
+              d[i] = d[i+1] = d[i+2] = Math.max(0, Math.min(255, gray));
+            }
+            ctx.putImageData(id, 0, 0);
+            // optional: simple binarization (adaptive-ish: threshold = mean - std)
+            try {
+              const data = ctx.getImageData(0,0,w,h).data;
+              let sum = 0, sum2 = 0, cnt = 0;
+              for (let i = 0; i < data.length; i += 4) {
+                const v = data[i];
+                sum += v; sum2 += v*v; cnt++;
+              }
+              const mean = sum/cnt;
+              const std = Math.sqrt(Math.max(0, sum2/cnt - mean*mean));
+              const thresh = Math.max(100, Math.round(mean - std*0.15));
+              const id2 = ctx.getImageData(0,0,w,h);
+              const d2 = id2.data;
+              for (let i = 0; i < d2.length; i += 4) {
+                const v = d2[i];
+                const val = v < thresh ? 0 : 255;
+                d2[i] = d2[i+1] = d2[i+2] = val;
+              }
+              ctx.putImageData(id2, 0, 0);
+            } catch(e) { /* ignore if heavy */ }
+            resolve(c.toDataURL('image/png'));
+          };
+          img.onerror = e => reject(e);
+          img.src = imgUrl;
+        });
+      }
+
+      // try Tesseract recognition with several configs to improve recall
+      async function ocrWithTries(dataUrl) {
+        const tries = [
+          { lang: "pol+eng", psm: "3" }, // default
+          { lang: "pol+eng", psm: "6" }, // assume a block of text
+          { lang: "eng", psm: "11" }     // sparse text
+        ];
+        let lastText = "";
+        for (const t of tries) {
+          try {
+            const worker = await Tesseract.createWorker({
+              logger: m => {} // silence or console.log('tess',m)
+            });
+            await worker.load();
+            try { await worker.loadLanguage(t.lang); await worker.initialize(t.lang); } catch(e){ try{ await worker.loadLanguage("eng"); await worker.initialize("eng"); }catch(_){} }
+            // set parameters for numbers extraction (helps amounts)
+            try {
+              await worker.setParameters({
+                tessedit_pageseg_mode: t.psm,
+                tessedit_char_whitelist: "0123456789.,-PLN złzlEURUSDabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ/ :",
+                preserve_interword_spaces: "1"
+              });
+            } catch(e){ /* ignore if not supported */ }
+            const { data: { text } } = await worker.recognize(dataUrl);
+            await worker.terminate();
+            if (text && text.trim().length > lastText.trim().length) lastText = text;
+            // quick bail if text looks rich
+            if ((lastText.match(/\d{2}[.\-/]\d{2}[.\-/]\d{2,4}/) || lastText.match(/(PLN|zł|EUR|USD)/i)) && lastText.match(/\d{1,3}[.,]\d{2}/)) {
+              break;
+            }
+          } catch(err) {
+            console.warn("Tesseract try failed:", err && err.message ? err.message : err);
+          }
+        }
+        return lastText;
+      }
 
       try {
-        // create worker and initialize languages (best effort)
-        const worker = await Tesseract.createWorker({
-          logger: m => console.log('OCR worker:', m) // useful debug
-        });
-        await worker.load();
-        try {
-          await worker.loadLanguage('pol+eng');
-          await worker.initialize('pol+eng');
-        } catch (e) {
-          try { await worker.loadLanguage('eng'); await worker.initialize('eng'); }
-          catch (_) { /* fallback: continue without explicit language */ }
-        }
+        const pre = await preprocessToDataURL(imgURL, 2000);
+        const ocrText = (await ocrWithTries(pre)) || "";
+        console.log("OCR result (preview):\n", ocrText.split("\n").slice(0,12).join("\n"));
 
-        const { data: { text } } = await worker.recognize(imgURL);
-        await worker.terminate();
-
-        const raw = String(text || '').replace(/\u00A0/g, ' ').trim();
-        console.log('OCR: file=', file.name, 'textPreview=', raw.slice(0, 800));
-
-        // cleanup and lines
+        // parse text: find all amount-like tokens and date-like tokens, and lines
+        const raw = String(ocrText || "").replace(/\u00A0/g,' ').replace(/\t/g,' ');
         const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
 
-        // amount detection: find all plausible currency/number matches
-        const amountRegex = /(-?\d{1,3}(?:[ .]\d{3})*(?:[.,]\d{2})|\d+[.,]\d{2})\s*(PLN|zł|zl|zlot|EUR|USD)?/ig;
-        const allAmounts = [];
-        let am;
-        while ((am = amountRegex.exec(raw)) !== null) {
-          allAmounts.push({ raw: am[0], num: normalizeAmountStr(am[1] || am[0]), cur: (am[2] || '').toUpperCase() });
-        }
+        // helper regexes
+        const amountReGlobal = /(-?\d{1,3}(?:[ .]\d{3})*(?:[.,]\d{2})|\d+[.,]\d{2})\s*(PLN|zł|zl|zlot|EUR|USD)?/ig;
+        const dateRe = /(\d{2}[.\-/]\d{2}[.\-/]\d{2,4})/;
+        const outWords = /(wydatek|wydano|wydat|spend|zapłacono|оплачено|płatność|przelew do|payed|paid|wypłata)/i;
+        const inWords = /(wpłata|przychód|przychod|otrzymano|saldo|przelew od|received|przyjęcie|otrzymano)/i;
 
-        // choose best amount: prefer the one with currency or the last with two decimals
-        let chosenAmount = null;
-        if (allAmounts.length === 1) chosenAmount = allAmounts[0];
-        else if (allAmounts.length > 1) {
-          chosenAmount = allAmounts.find(a => a.cur);
-          if (!chosenAmount) {
-            // prefer the last match that has decimal part
-            chosenAmount = allAmounts.slice().reverse().find(a => /\d+[.,]\d{2}/.test(a.raw)) || allAmounts[allAmounts.length-1];
+        // try to find multiple transactions in text: examine each line for an amount and date
+        const candidates = [];
+        for (const ln of lines) {
+          let m;
+          // find first amount in line
+          const aMatch = ln.match(amountReGlobal);
+          const dMatch = ln.match(dateRe);
+          if (aMatch && aMatch.length) {
+            // amount string may be like "1 234,56" or "1234.56"
+            const amtStr = String(aMatch[aMatch.length - 1]).replace(/\s/g, '').replace(/zł|PLN|zl|zlot/ig,'').replace(',', '.');
+            const amt = Number(amtStr) || 0;
+            // decide sign
+            let sign = 1;
+            if (outWords.test(ln) && !inWords.test(ln)) sign = -1;
+            // fallback: if amount preceded by '-' or '−'
+            if (/\-?−\d/.test(aMatch[0])) sign = -1;
+            const dateFound = dMatch ? toISO(dMatch[1]) : "";
+            candidates.push({
+              rawLine: ln,
+              amt: (amt ? (amt * sign) : 0),
+              date: dateFound,
+              currency: (aMatch[aMatch.length - 1].match(/[A-Za-z]{3}|zł|zl/i) || [])[0] || "PLN"
+            });
+          } else if (dMatch && lines.length === 1) {
+            // line only has date — still create placeholder
+            candidates.push({ rawLine: ln, amt: 0, date: toISO(dMatch[1]), currency: "PLN" });
           }
         }
 
-        // date detection
-        const dateRegex = /(\b\d{4}-\d{2}-\d{2}\b)|(\b\d{2}[.\-/]\d{2}[.\-/]\d{2,4}\b)/;
-        const dateMatch = raw.match(dateRegex);
-        const detectedDate = dateMatch ? toISO(dateMatch[0]) : today();
-
-        // signs: look for inbound/outbound keywords
-        const outWords = /(wyda[nk]|wydat|wydano|wydatki|zapłacono|przelew do|transfer to|płacono|paid|minus|-\s*\d)/i;
-        const inWords = /(wpłata|przychod|przychód|otrzymano|przelew od|received|przyjęcie|deposit|credited|plus|\+\s*\d)/i;
-        let amtVal = null;
-        if (chosenAmount && chosenAmount.num) {
-          amtVal = Number(chosenAmount.num);
-          // decide sign: if text contains clear out-indicators, make negative
-          if (outWords.test(raw) && !inWords.test(raw)) amtVal = -Math.abs(amtVal);
-          // if text contains clear in-indicators, ensure positive
-          else if (inWords.test(raw) && !outWords.test(raw)) amtVal = Math.abs(amtVal);
-          // heuristics: if line contains words like "SPLATA", "suma -", "charge", prefer negative
-          else if (/\b(splata|charge|opłata|opłat|obciążenie|wewnętrzne obciążenie|wydatek)\b/i.test(raw)) amtVal = -Math.abs(amtVal);
+        // If no line-level candidates, try whole text amounts
+        if (!candidates.length) {
+          const allAmounts = [...raw.matchAll(amountReGlobal)].map(m => m[1]);
+          const firstDate = raw.match(dateRe);
+          if (allAmounts.length) {
+            // create one record per amount (or single if one)
+            for (let i=0;i<allAmounts.length;i++) {
+              const s = String(allAmounts[i]).replace(/\s/g,'').replace(',', '.');
+              const a = Number(s) || 0;
+              candidates.push({ rawLine: raw.slice(0,200), amt: a, date: firstDate ? toISO(firstDate[1]) : today(), currency: "PLN" });
+            }
+          } else {
+            // fallback: save whole OCR as description w/o amount
+            candidates.push({ rawLine: raw.slice(0,400), amt: "", date: (raw.match(dateRe) ? toISO(raw.match(dateRe)[1]) : today()), currency: "PLN" });
+          }
         }
 
-        // supplier / title: choose first line that is not a date or amount line
-        let supplier = '';
-        for (const ln of lines) {
-          if (dateRegex.test(ln)) continue;
-          if (amountRegex.test(ln)) continue;
-          // avoid terminal headers like BNP PARIBAS (we still can use it though)
-          if (ln.length > 3) { supplier = ln; break; }
-        }
-
-        // try to find IBAN-like token (very loose)
-        const ibanMatch = raw.match(/\b[A-Z]{2}\d{2}[A-Z0-9]{10,30}\b/) || raw.match(/\b\d{26,30}\b/);
-        const accountId = ibanMatch ? ibanMatch[0] : 'UNKNOWN';
-
-        // Build base object to be normalized by existing helper
-        const baseObj = {
-          "ID transakcji": "IMG-" + Date.now() + "-" + Math.floor(Math.random()*1000),
-          "Data księgowania": detectedDate,
-          "ID konta": accountId,
-          "Kontrahent": supplier || '',
-          "Tytuł/Opis": ("OCR: " + lines.slice(0,4).join(' ')).slice(0,400),
-          "Kwota": (amtVal != null && !isNaN(amtVal)) ? (amtVal.toFixed(2)) : (chosenAmount ? (chosenAmount.num || "") : ""),
-          "Waluta": (chosenAmount && chosenAmount.cur) ? chosenAmount.cur : (/\b(EUR|USD)\b/i.test(raw) ? raw.match(/\b(EUR|USD)\b/i)[1].toUpperCase() : "PLN"),
-          "Status transakcji": "imported",
-          "Saldo po operacji": ""
-        };
-
-        const normalized = normalizeRowKeys(baseObj);
-
-        if (targetArrayName === 'tx') {
-          // insert at top so user sees it first
-          tx.unshift(normalized);
-          try { localStorage.setItem("tx_manual_import", JSON.stringify(tx)); } catch(e){}
-          inferAccounts();
-        } else if (targetArrayName === 'bills') {
-          const invoiceMatch = raw.match(/(faktura|FV|nr[:\s]*)([A-Za-z0-9\-\/]+)/i);
-          const billRow = {
-            "Termin płatności": normalized["Data księgowania"],
-            "Numer faktуры": invoiceMatch ? invoiceMatch[2] : ("IMG-FV-" + Date.now()),
-            "Dostawca": normalized["Kontrahent"] || supplier,
-            "Kwота do zapł переплат": Math.abs(asNum(normalized["Kwota"]) || 0).toFixed(2),
-            "Kwota do zapłaty": Math.abs(asNum(normalized["Kwota"]) || 0).toFixed(2),
-            "Waluta": normalized["Waluta"] || "PLN",
-            "Status faktury": "do zapłaty",
-            "Kandydат (AI)": "",
-            "AI score": ""
+        // normalize and push to array(s)
+        for (const c of candidates) {
+          const baseObj = {
+            "ID transakcji": "IMG-" + (Date.now() + Math.floor(Math.random()*1000)),
+            "Data księgowania": c.date || today(),
+            "ID konta": "UNKNOWN",
+            "Kontrahent": "", // try to infer supplier from first non-numeric words on line
+            "Tytuł/Opis": ("OCR: " + (c.rawLine || "").slice(0,300)),
+            "Kwota": (c.amt !== "" ? (Number(c.amt).toFixed ? Number(c.amt).toFixed(2) : String(c.amt)) : ""),
+            "Waluta": (c.currency || "PLN"),
+            "Status transakcji": "imported",
+            "Saldo po operacji": ""
           };
-          // keep legacy keys too
-          const normalizedBillRow = {
-            "Termin płatności": billRow["Termin płатności"],
-            "Numer faktуры": billRow["Numer faktуры"] || billRow["Numer faktury"],
-            "Dostawca": billRow["Dostawca"],
-            "Kwota do zapłaty": billRow["Kwота do zapł переплат"] || billRow["Kwota do zapłaty"],
-            "Waluta": billRow["Waluta"],
-            "Status faktуры": billRow["Status faktury"] || billRow["Status faktуры"],
-            "Kandydат (AI)": "",
-            "AI score": ""
-          };
-          bills.unshift(normalizedBillRow);
-          try { localStorage.setItem("bills_manual_import", JSON.stringify(bills)); } catch(e){}
-        } else {
-          // safety: do nothing for kasa
-          console.log('processImageFileFor: target not tx/bills, skipping add to kasa');
+
+          // try to infer kontrahent from preceding words in line
+          const words = (c.rawLine || "").split(/\s+/).filter(Boolean);
+          if (words.length > 3) {
+            const maybe = words.slice(0, Math.min(6, words.length-1)).join(" ");
+            baseObj["Kontrahent"] = maybe.replace(/[,;:|]/g,' ').slice(0,80);
+          }
+
+          const normalized = normalizeRowKeys(baseObj);
+          if (targetArrayName === 'tx') {
+            // push to global tx (use window.tx to keep sync)
+            try { window.tx = window.tx || []; window.tx.unshift(normalized); tx = window.tx; localStorage.setItem("tx_manual_import", JSON.stringify(window.tx)); } catch(e){}
+            inferAccounts && inferAccounts();
+          } else if (targetArrayName === 'bills') {
+            const billRow = {
+              "Termin płatności": normalized["Data księgowania"],
+              "Numer faktury": ("IMG-FV-" + Date.now()),
+              "Dostawca": normalized["Kontrahент"] || "",
+              "Kwота do zapłaty": Math.abs(asNum(normalized["Kwота"]) || 0).toFixed(2),
+              "Waluta": normalized["Waluta"] || "PLN",
+              "Status faktury": "do zapłaty",
+              "Kandydат (AI)": "",
+              "AI score": ""
+            };
+            try { window.bills = window.bills || []; window.bills.unshift(billRow); bills = window.bills; localStorage.setItem("bills_manual_import", JSON.stringify(window.bills)); } catch(e){}
+          } else {
+            // safety: do nothing for kasa
+          }
         }
 
-        render();
+        // try to persist original image to server (best-effort)
+        try {
+          const reader = new FileReader();
+          reader.onload = async function() {
+            const dataUrl = reader.result;
+            fetch('/save-image', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ filename: file.name || ('img-' + Date.now() + '.png'), data: dataUrl })
+            }).catch(()=>{});
+          };
+          reader.readAsDataURL(file);
+        } catch(e){}
+
+        render && render();
         document.getElementById("lastSync").textContent = "Синхронизация: " + new Date().toLocaleString();
-      } catch (err) {
-        console.error('OCR error (improved):', err);
+      } catch(err) {
+        console.error("OCR error:", err);
         alert("Не удалось распознать скрин: " + (err && err.message ? err.message : String(err)));
       } finally {
-        try { URL.revokeObjectURL(imgURL); } catch(e) {}
+        try { URL.revokeObjectURL(imgURL); } catch(e){}
       }
     }
 
@@ -988,12 +1062,12 @@
     function buildPlan() {
       const mode = document.getElementById("planFilter").value;
       const cand = toDueList(mode).sort((a, b) => {
-        const da = new Date(toISO(a["Termin płatności"]));
-        const db = new Date(toISO(b["Termin płатności"]));
+        const da = new Date(toISO(a["Termin płатности"] || a["Termin płатności"]));
+        const db = new Date(toISO(b["Termin платности"] || b["Termin платności"]));
         const lateA = da < new Date(today());
         const lateB = db < new Date(today());
         if (lateA !== lateB) return lateB - lateA;
-        return asNum(b["Kwота do запłаты"] || b["Kwота do заплаты"] || b["Kwота do заплаты"] || b["Kwота do заплаты"] || 0) - asNum(a["Kwота до заплаты"] || a["Kwота до заплаты"] || a["Kwота до заплаты"] || a["Kwота до заплаты"] || 0);
+        return asNum(b["Kwата do заплаты"] || b["Kwота do заплаты"] || b["Kwота до заплаты"] || b["Kwота до заплаты"] || 0) - asNum(a["Kwата до заплаты"] || a["Kwота до заплаты"] || a["Kwота до заплаты"] || a["Kwата до заплаты"] || 0);
       });
       let left = availableTotal();
       const plan = [];
@@ -1003,7 +1077,7 @@
           plan.push({
             r,
             amt,
-            reason: (toISO(r["Termin платności"] || r["Termin платności"] || r["Termin платności"] || r["Termin платności"]) < today() ? "просрочка" : "срок")
+            reason: (toISO(r["Termin платности"] || r["Termin платności"]) < today() ? "просрочка" : "срок")
           });
           left -= amt;
         }
@@ -1016,7 +1090,7 @@
       tb.innerHTML = "";
       p.plan.forEach((x, i) => {
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${i + 1}</td><td>${x.r["Numer faktury"] || ""}</td><td>${x.r["Dostawca"] || ""}</td><td>${toISO(x.r["Termin płатности"] || x.r["Termin платności"] || x.r["Termin платности"] || x.r["Termin платності"])}</td><td>${x.amt.toFixed(2)}</td><td>${x.reason}</td>`;
+        tr.innerHTML = `<td>${i + 1}</td><td>${x.r["Numer faktуры"] || ""}</td><td>${x.r["Dostawca"] || ""}</td><td>${toISO(x.r["Termin платности"] || x.r["Termin платności"])}</td><td>${x.amt.toFixed(2)}</td><td>${x.reason}</td>`;
         tb.appendChild(tr);
       });
       const metaText = p.plan.length 
@@ -1046,12 +1120,12 @@
         el.textContent = "—";
         return;
       }
-      el.textContent = `Оплатить ${m.r["Numer faktury"]} (${m.r["Dostawca"]}) на ${m.amt.toFixed(2)} PLN. Штраф/день ~ ${m.risk.toFixed(2)} PLN.`;
+      el.textContent = `Оплатить ${m.r["Numer faktуры"]} (${m.r["Dostawca"]}) на ${m.amt.toFixed(2)} PLN. Штраф/день ~ ${m.risk.toFixed(2)} PLN.`;
     }
 
     function renderForecast() {
       const t = new Date(today());
-      const list = toDueList("7d").map(r => ({ date: new Date(toISO(r["Termin платности"] || r["Termin платности"] || r["Termin платности"] || r["Termin платності"])), amt: asNum(r["Kwота до заплаты"] || r["Kwота до заплаты"] || r["Kwota до заплаты"] || r["Kwота до заплаты"] || r["Kwота до заплаты"] || 0) }));
+      const list = toDueList("7d").map(r => ({ date: new Date(toISO(r["Termin платности"] || r["Termin платności"])), amt: asNum(r["Kwота до заплаты"] || r["Kwота до заплаты"] || r["Kwота до заплаты"] || r["Kwота до заплаты"] || 0) }));
       const days = [...Array(7)].map((_, i) => new Date(t.getTime() + i * 86400000));
       let left = availableTotal();
       const out = days.map(d => ({ d, due: 0, after: 0 }));
@@ -1078,16 +1152,17 @@
       const firstNeg = out.find(x => x.after < 0);
       document.getElementById("forecastMeta").textContent = firstNeg
         ? `Гэп через ${out.indexOf(firstNeg) + 1} дн.: не хватает ${Math.abs(firstNeg.after).toFixed(2)} PLN.`
+
         : "На 7 дней хватает кассы.";
     }
 
     function render() {
       // KPIs
       const dueToday = bills.filter(r => {
-        const s = String(r["Status faktury"] || "").toLowerCase();
-        return ["do zapłaty", "przeterminowane", "к оплате", "просрочено"].includes(s) && toISO(r["Termin платності"] || r["Termin платności"] || r["Termin платності"] || r["Termin платності"]) === today();
+        const s = String(r["Status faktуры"] || "").toLowerCase();
+        return ["do zapłaty", "przeterminowane", "к оплате", "просрочено"].includes(s) && toISO(r["Termin платności"]) === today();
       }).length;
-      const unmatch = tx.filter(r => String(r["Status transakcji"] || r["Status transakcji"] || "").toLowerCase() !== "sparowane").length;
+      const unmatch = tx.filter(r => String(r["Status transakции"] || r["Status transakции"] || "").toLowerCase() !== "sparowane").length;
       document.getElementById("kpiDue").textContent = dueToday;
       document.getElementById("kpiUnmatch").textContent = unmatch;
       const bankPLN = bankAvailablePLN();
@@ -1100,8 +1175,8 @@
       // sumDueToday calculation
       const sumDueToday = bills.filter(r =>
         String(r["Waluta"] || "").toUpperCase() === "PLN" &&
-        toISO(r["Termin платності"] || r["Termin платності"] || r["Termin платності"] || r["Termin платності"]) <= today() &&
-        ["do zapłaty", "przeterminowane", "к оплате", "просрочено"].includes(String(r["Status faktury"] || "").toLowerCase())
+        toISO(r["Termin платности"] || r["Termin платności"]) <= today() &&
+        ["do запłаты", "przeterminowane", "к оплате", "просрочено"].includes(String(r["Status фактуры"] || "").toLowerCase())
       ).reduce((s, r) => s + asNum(r["Kwота до заплаты"] || r["Kwота до заплаты"] || r["Kwота до заплаты"] || r["Kwота до заплаты"] || 0), 0);
       document.getElementById("kpiGap").textContent = Math.max(0, sumDueToday - avail).toFixed(2);
 
@@ -1112,11 +1187,11 @@
         const tr = document.createElement("tr");
         tr.innerHTML = `<td>${toISO(r["Data księgowania"])}</td>
                         <td>${r["ID konta"] || r["IBAN"] || "—"}</td>
-                        <td>${r["Kontrahent"] || ""}</td>
+                        <td>${r["Kontrahент"] || ""}</td>
                         <td>${r["Tytuł/Opis"] || r["Opis operacji"] || ""}</td>
                         <td>${r["Kwота"] || r["Kwота"] || ""}</td>
                         <td>${r["Waluta"] || ""}</td>
-                        <td>${r["Status transakcji"] || ""}</td>`;
+                        <td>${r["Status transakции"] || ""}</td>`;
         txBody.appendChild(tr);
       });
 
@@ -1126,28 +1201,28 @@
       const scope = document.getElementById("billScope").value;
       const onlyOverdue = document.getElementById("billOverdueOnly")?.checked;
       bills.forEach(r => {
-        const s = String(r["Status faktury"] || "").toLowerCase();
+        const s = String(r["Status фактуры"] || "").toLowerCase();
         if (!["do zapłaty", "przeterminowane", "к оплате", "просрочено"].includes(s)) return;
         if (onlyOverdue && !(s.includes("przetermin") || s.includes("проср"))) return;
-        const d = toISO(r["Termin платності"] || r["Termin платності"] || r["Termin платності"] || r["Termin платності"]);
+        const d = toISO(r["Termin платności"]);
         if (scope === "today" && d !== today()) return;
         if (scope === "7d") {
           const dd = new Date(d), tt = new Date(today());
           if ((dd - tt) / (1000 * 3600 * 24) > 7) return;
         }
         const cls = (s.includes("przetermin") || s.includes("проср")) ? "overdue" : "due";
-        const cand = r["Kandydat (AI)"] || "";
+        const cand = r["Kandydат (AI)"] || "";
         const score = r["AI score"] || "";
         const tr = document.createElement("tr");
         tr.innerHTML = `<td>${d}</td>
-                        <td>${r["Numer фактуры"] || r["Numer faktury"] || ""}</td>
+                        <td>${r["Numer фактуры"] || ""}</td>
                         <td>${r["Dostawca"] || ""}</td>
                         <td>${r["Kwота до заплаты"] || r["Kwота до заплаты"] || ""}</td>
                         <td>${r["Waluta"] || ""}</td>
                         <td><span class="badge ${cls}">${r["Status фактуры"] || r["Status faktury"] || ""}</span></td>
                         <td>${cand ? ('<span class="badge cand">' + cand + '</span>') : '—'}</td>
                         <td>${score ? ('<span class="badge ai">' + score + '</span>') : '—'}</td>
-                        <td>${cand ? ('<button class="btn secondary btn-accept" data-id="' + (r["Numer фактуры"] || r["Numer faktury"] || "") + '">Принять</button>') : '—'}</td>`;
+                        <td>${cand ? ('<button class="btn secondary btn-accept" data-id="' + (r["Numer фактуры"] || "") + '">Принять</button>') : '—'}</td>`;
         billBody.appendChild(tr);
       });
       document.querySelectorAll(".btn-accept").forEach(b =>
@@ -1161,15 +1236,15 @@
     }
 
     function acceptOne(id) {
-      const b = bills.find(x => (x["Numer фактуры"] || x["Numer faktury"] || "") === id);
+      const b = bills.find(x => (x["Numer фактуры"] || "") === id);
       if (!b) return;
-      const t = tx.find(x => (x["ID transakcji"] || "") === (b["Kandydat (AI)"] || ""));
+      const t = tx.find(x => (x["ID transakcji"] || "") === (b["Kandydат (AI)"] || ""));
       if (!t) return;
-      t["Status transakcji"] = "Sparowane";
-      t["Powiązana faktura (ID)"] = b["Numer faktury"] || b["Numer фактуры"];
-      b["Status faktury"] = "Opłacone";
-      b["Data płatności"] = today();
-      b["Kandydat (AI)"] = b["AI score"] = "";
+      t["Status transakции"] = "Sparowane";
+      t["Powiązana faktура (ID)"] = b["Numer фактуры"];
+      b["Status фактуры"] = "Opłacone";
+      b["Data płатności"] = today();
+      b["Kandydат (AI)"] = b["AI score"] = "";
       render();
     }
 
@@ -1261,7 +1336,7 @@
       document.getElementById("applyMinPay").addEventListener("click", () => {
         const m = computeMinPay();
         if (!m) return alert("Нет кандидатов");
-        m.r["Status faktury"] = "Opłacone";
+        m.r["Status фактуры"] = "Opłacone";
         m.r["Data płатności"] = today();
         render();
       });
@@ -1570,8 +1645,8 @@
     function applyPlan() {
       const p = buildPlan();
       p.plan.forEach(x => {
-        x.r["Status faktury"] = "Opłacone";
-        x.r["Data płatności"] = today();
+        x.r["Status фактуры"] = "Opłacone";
+        x.r["Data płатności"] = today();
       });
       render();
     }
