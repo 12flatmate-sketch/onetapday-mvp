@@ -26,6 +26,24 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(express.static('public'));
 
+// --- ADDED: server-side upload/OCR dependencies (optional, safe require) ---
+let multer = null;
+let sharp = null;
+let Tesseract = null;
+try {
+  multer = require('multer');
+} catch (e) { console.warn('[WARN] multer not installed — upload endpoint will not work if used.'); }
+try {
+  sharp = require('sharp');
+} catch (e) { console.warn('[WARN] sharp not installed — image preprocessing disabled.'); }
+try {
+  Tesseract = require('tesseract.js');
+} catch (e) { console.warn('[WARN] tesseract.js not installed — server OCR endpoint will fail if used.'); }
+
+// ensure upload directory exists
+const UPLOAD_DIR = path.join(__dirname, 'tmp', 'uploads');
+try { fs.mkdirSync(UPLOAD_DIR, { recursive: true }); } catch (e) { console.warn('[WARN] cannot create upload dir', e && e.message); }
+
 // volatile sessions map kept for backward compatibility with old random tokens
 const sessions = {}; // token -> email
 
@@ -466,6 +484,120 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
   }
   return res.json({ received: true });
 });
+
+// === ADDED BLOCK: POST /api/v1/uploadscreens ===
+// Accepts multipart form files[] (images). Runs optional server-side OCR and returns parsed transactions.
+// If tesseract.js not available — returns error informing dependency missing.
+if (multer) {
+  const upload = multer({ dest: UPLOAD_DIR });
+  app.post('/api/v1/uploadscreens', upload.array('files'), async (req, res) => {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ success:false, error: 'No files uploaded (files[]).' });
+    }
+    if (!Tesseract) {
+      return res.status(500).json({ success:false, error: 'Server OCR (tesseract.js) not installed.' });
+    }
+
+    try {
+      const allParsed = [];
+
+      for (const f of req.files) {
+        const inPath = f.path;
+        const procPath = inPath + '_proc.png';
+        try {
+          if (sharp) {
+            await sharp(inPath)
+              .resize(1600, null, { withoutEnlargement: true })
+              .grayscale()
+              .normalise()
+              .toFile(procPath);
+          } else {
+            // fallback: copy original to procPath
+            fs.copyFileSync(inPath, procPath);
+          }
+        } catch (e) {
+          // fallback to original
+          try { fs.copyFileSync(inPath, procPath); } catch(err){ console.warn('copy fallback failed', err && err.message); }
+        }
+
+        // perform OCR
+        try {
+          const { createWorker } = Tesseract;
+          const worker = createWorker({
+            logger: m => { /* console.log(m); */ }
+          });
+          await worker.load();
+          await worker.loadLanguage('eng+pol');
+          await worker.initialize('eng+pol');
+          const { data: { text } } = await worker.recognize(procPath);
+          await worker.terminate();
+
+          const lines = (text || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+          for (const raw of lines) {
+            // basic amount extraction: last numeric token
+            const amountMatches = raw.match(/([-+]?\d[\d \u00A0,\.]*\d)/g);
+            let amount = null;
+            if (amountMatches && amountMatches.length) {
+              let tok = amountMatches[amountMatches.length - 1];
+              tok = tok.replace(/\s/g, '').replace(/\u00A0/g,'').replace(',', '.');
+              const n = parseFloat(tok);
+              if (!isNaN(n)) amount = n;
+            }
+            // date
+            const dateM = raw.match(/(\d{1,2}[\.\/-]\d{1,2}[\.\/-]\d{2,4})/);
+            const date = dateM ? dateM[1] : null;
+            // sign heuristics
+            const lower = raw.toLowerCase();
+            let sign = null;
+            if (/[-−—]/.test(raw) && amount !== null && /[-−—]\d/.test(raw)) sign = 'expense';
+            else if (/(wypłata|opłata|płatność|wydatek|withdraw|payment|przelew)/i.test(lower)) sign = 'expense';
+            else if (/(wpłata|zwrot|refund|credit|przychod|przychód)/i.test(lower)) sign = 'income';
+            else sign = amount !== null && amount < 0 ? 'expense' : 'income';
+
+            if (amount !== null) {
+              const tx = {
+                raw,
+                date,
+                amount: sign === 'expense' && amount > 0 ? -Math.abs(amount) : Math.abs(amount),
+                sign,
+                currency: 'PLN',
+                description: raw,
+                confidence: 0.8
+              };
+              allParsed.push(tx);
+            }
+          }
+
+        } catch (ocrErr) {
+          console.warn('OCR error', ocrErr && ocrErr.message ? ocrErr.message : ocrErr);
+          // continue to next file
+        } finally {
+          // cleanup temp files (best effort)
+          try { fs.unlinkSync(inPath); } catch(e) {}
+          try { fs.unlinkSync(procPath); } catch(e) {}
+        }
+      }
+
+      // aggregates
+      let total_income = 0, total_expense = 0, count_income = 0, count_expense = 0;
+      for (const t of allParsed) {
+        if (t.amount >= 0) { total_income += t.amount; count_income++; } else { total_expense += Math.abs(t.amount); count_expense++; }
+      }
+      const aggregates = { total_income: Number(total_income.toFixed(2)), total_expense: Number(total_expense.toFixed(2)), net: Number((total_income - total_expense).toFixed(2)), count_income, count_expense };
+
+      return res.json({ success:true, upload_id: 'u-' + Date.now(), transactions: allParsed, aggregates });
+
+    } catch (err) {
+      console.error('uploadscreens error', err && err.stack ? err.stack : err);
+      return res.status(500).json({ success:false, error: 'processing error', detail: String(err) });
+    }
+  });
+} else {
+  // multer not present — add a simple informative route to indicate missing dependency
+  app.post('/api/v1/uploadscreens', (req, res) => {
+    return res.status(500).json({ success:false, error: 'Server missing multer dependency. Install multer to enable this endpoint.' });
+  });
+}
 
 // Admin helpers
 app.post('/mark-paid', (req, res) => {
