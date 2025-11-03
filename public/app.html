@@ -107,7 +107,6 @@
       .card { background: #fff; border: 1px solid #999; }
       .wrap { max-width: 1000px; }
     }
-    /* Language toggle (reuse same style as portal) */
     .lang { display: flex; gap: 6px; margin-left: 12px; }
     .lang button {
       padding: 4px 8px;
@@ -192,7 +191,8 @@
           <div id="forecastMeta" class="muted" style="margin-top: 6px;">—</div>
         </div>
       </div>
-      <div class="grid2">
+
+      <div class="grid2" style="margin-top:12px;">
         <div class="card">
           <div style="font-weight: 700;" data-i="forecast_30d">Прогноз 30 дней</div>
           <div class="muted" data-i="forecast30_note">Автопрогноз по wyciąg + кассе на 30 дней.</div>
@@ -203,6 +203,7 @@
           <div id="monthSummary" class="muted">—</div>
         </div>
       </div>
+
       <div class="card" style="margin-top: 14px;">
         <div class="row">
           <div style="font-weight: 700;" data-i="plan_title">План платежей под кассу</div>
@@ -247,13 +248,12 @@
           <span data-i="upload_statement">Загрузить выписку (CSV)</span>
         </label>
 
-        <!-- NEW: gallery/screenshots upload for wyciag -->
+        <!-- gallery/screenshots upload for wyciag -->
         <label class="btn ghost">
           <input id="txImage" type="file" accept="image/*" multiple style="display: none;" />
           <span>Загрузить скрин выписки (галерея)</span>
         </label>
 
-        <!-- preview for wyciag (separate from kasa thumb) -->
         <img id="txLastThumb" class="thumb" style="display: none;" />
 
         <input id="txUrl" type="text" placeholder="URL CSV wyciąga" />
@@ -286,13 +286,11 @@
           <span data-i="upload_invoices">Загрузить счета (CSV)</span>
         </label>
 
-        <!-- NEW: gallery/screenshots upload for faktury -->
         <label class="btn ghost">
           <input id="billImage" type="file" accept="image/*" multiple style="display: none;" />
           <span>Загрузить скрин фактуры (галерея)</span>
         </label>
 
-        <!-- preview for faktury -->
         <img id="billLastThumb" class="thumb" style="display: none;" />
 
         <input id="billUrl" type="text" placeholder="URL CSV faktur" />
@@ -362,17 +360,13 @@
         <button class="btn ghost" id="q100">+100</button>
         <button class="btn ghost" id="q200">+200</button>
 
-        <!-- keep cash photo but clarify (so people don't upload bank screens here) -->
         <label class="btn ghost">
           <input id="cashPhoto" type="file" accept="image/*" capture="environment" style="display: none;" />
           <span>Скан чека — только для операций в кассу</span>
         </label>
 
         <button id="micBtn" class="mic" title="Сказать операцию">🎙️</button>
-        <span class="hint">
-          Пример: «принять 120 на кассу от продаж», «выдать 50 на доставку»
-        </span>
-        <!-- thumb for kasa stays here -->
+        <span class="hint">Пример: «принять 120 на кассу от продаж», «выдать 50 на доставку»</span>
         <img id="lastThumb" class="thumb" style="display: none;" />
         <span id="micStatus" class="pill">🎙️ Микрофон: готов</span>
       </div>
@@ -457,124 +451,22 @@
     </div>
   </div>
 
+  <!-- Tesseract (for client OCR) -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
   <script>
-    // Redirect to portal if not logged in
-    if (!localStorage.getItem("otd_user")) {
-      window.location.href = "/";
-    }
-
-    // Internationalization strings for main app
+    // ---- i18n minimal set (RU present, others stubbed) ----
     const M = {
-      ru: {
-        tab_dashboard: "Пульт", tab_statement: "Выписка", tab_invoices: "Фактуры", tab_accounts: "Счета", tab_cash: "Касса", tab_settings: "Настройки",
-        kpi_due_today: "К оплате сегодня", kpi_unmatched: "Несвязанные транзакции", kpi_banks: "Банки в расчёте", kpi_cash: "Касса (нал)", kpi_total: "Доступно всего", kpi_gap_today: "Разрыв кассы сегодня",
-        btn_sync: "Синхронизация", btn_ai_match: "ИИ-сверка", btn_accept_safe: "Принять безопасные пары", btn_pdf: "PDF отчёт",
-        minpay_title: "Минимальный платёж (штраф-стоп)", btn_apply_minpay: "Отметить как оплачено",
-        forecast_7d: "Прогноз 7 дней", forecast7d_note: "Считает PLN-счета из wyciąg (включённые) + кассу.",
-        forecast_30d: "Прогноз 30 дней", forecast30_note: "Автопрогноз по wyciąg + кассе на 30 дней.",
-        month_summary_title: "Итоги месяца",
-        plan_title: "План платежей под кассу", filter_label: "Фильтр:", filter_today: "Сегодня", filter_7d: "7 дней", filter_all: "Все", exclude_blacklist: "Исключать blacklist",
-        btn_make_plan: "Сформировать", btn_apply_plan: "Применить",
-        plan_th_invoice: "Фактура", plan_th_supplier: "Поставщик", plan_th_due: "Срок", plan_th_amount: "Сумма", plan_th_reason: "Причина",
-        upload_statement: "Загрузить выписку (CSV)", save_url: "Сохранить URL",
-        th_date: "Дата", th_account: "Счёт", th_counterparty: "Контрагент", th_desc: "Описание", th_amount: "Сумма", th_currency: "Валюта", th_status: "Статус",
-        upload_invoices: "Загрузить счета (CSV)", only_overdue: "Только просроченные", show_label: "Показать:",
-        inv_th_due: "Срок", inv_th_number: "№", inv_th_supplier: "Поставщик", inv_th_amount: "Сумма", inv_th_currency: "Валюта", inv_th_status: "Статус", inv_th_candidate: "Кандидат", inv_th_score: "Score", inv_th_action: "Действие",
-        auto_accounts_title: "Счета из выписки (авто)",
-        auto_accounts_desc: "Мы сами собираем счета по полям «ID konta» или «IBAN» из выписки. Включай в расчёт, редактируй стартовый баланс, меняй тип.",
-        acc_th_account: "Счёт", acc_th_type: "Тип", acc_th_currency: "Валюта", acc_th_balance_calc: "Баланс (расчёт)", acc_th_start_balance: "Стартовый баланс", acc_th_include: "В расчёт плана",
-        btn_add_in: "+ Приём", btn_add_out: "− Выдача", btn_close_shift: "Закрыть смену", btn_scan_receipt: "Сканировать чек (фото)",
-        speech_lang: "Язык распознавания:", btn_test_voice: "Тест команд",
-        cash_th_date: "Дата", cash_th_type: "Тип", cash_th_amount: "Сумма", cash_th_source: "Источник", cash_th_comment: "Комментарий",
-        pilot_subscription_title: "Подписка пилота", // pilot subscription section
-        btn_mark_paid: "Отметить оплату", btn_start_pilot: "Запустить пилот (2 мес.)", btn_activate_discount: "Включить −50% на 12 мес.", btn_reset_pilot: "Сброс",
-        start_label: "Начало:", end_label: "Окончание:", discount_label: "Скидка активна до:",
-        calc_mode: "Режим расчёта доступных средств", auto_mode_label: "Авто: из счетов wyciąg (включённые) + касса",
-        parameters: "Параметры",
-        param_cash: "Доступная касса сегодня (ручной PLN):", param_penalty: "Пеня, %/день:", param_interval: "Интервал синха, мин:",
-        btn_save_settings: "Сохранить", btn_export_settings: "Экспорт настроек", btn_import_settings: "Импорт настроек",
-        auto_mode_explain: "Режим «Авто»: считаем доступные деньги из всех включённых счетов, собранных из wyciąg (или с заданным стартовым балансом), + баланс кассы. Ручной режим берёт только указанную сумму + кассу."
-      },
-      en: { /* omitted for brevity — unchanged from previous file */ },
-      pl: { /* omitted for brevity — unchanged */ },
-      uk: { /* omitted for brevity — unchanged */ }
+      ru: { /* strings kept minimal — UI labels in DOM already */ },
+      en: {},
+      pl: {},
+      uk: {}
     };
-
     const $ = id => document.getElementById(id);
 
-    // --- per-user localStorage helpers (kept) ---
-    function _currentUserEmail() {
-      const e = localStorage.getItem('otd_user') || '';
-      return (e && typeof e === 'string') ? e.toLowerCase() : '';
-    }
-    function _localKeyForUser(email) {
-      if (!email) return 'otd_app_state_guest';
-      return 'otd_app_state_' + email.replace(/[^a-z0-9@.]/g,'_');
-    }
-
-    // simple GET wrapper
-    async function getJSON(path){
-      try {
-        const r = await fetch(path, { credentials:'include' });
-        let parsed;
-        try { parsed = await r.json(); } catch(e) { parsed = { _raw: await r.text().catch(()=>'') }; }
-        return { ok: r.ok, status: r.status, body: parsed };
-      } catch(e){ return { ok:false, status:0, body: String(e) }; }
-    }
-
-    // Universal POST wrapper (cookies included)
-    async function postJSON(path, body = {}) {
-      try {
-        const r = await fetch(path, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify(body || {})
-        });
-        let parsed;
-        try { parsed = await r.json(); } catch(e) { parsed = { _raw: await r.text().catch(()=>'') }; }
-        return { ok: r.ok, status: r.status, body: parsed };
-      } catch (err) {
-        return { ok: false, status: 0, body: { error: String(err) } };
-      }
-    }
-
-    // Internationalization small helper
-    function applyLang(lang) {
-      const dict = (M[lang] || M.ru);
-      document.querySelectorAll('[data-i]').forEach(el => {
-        const k = el.getAttribute('data-i');
-        if (dict[k]) el.textContent = dict[k];
-      });
-      document.querySelectorAll('#langBarMain button').forEach(btn=>btn.classList.toggle('on', btn.dataset.lang === lang));
-      localStorage.setItem('otd_lang', lang);
-    }
-
-    // DOM ready
-    document.addEventListener('DOMContentLoaded', () => {
-      applyLang(localStorage.getItem('otd_lang') || 'ru');
-
-      document.querySelectorAll('#langBarMain button').forEach(b => b.addEventListener('click', ()=>applyLang(b.dataset.lang)));
-      document.querySelectorAll('.tabs .tab').forEach(t => t.addEventListener('click', () => {
-        document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-        t.classList.add('active');
-        document.getElementById(t.dataset.sec).classList.add('active');
-      }));
-
-      // following variables represent client-side model
-      window.tx = window.tx || [];
-      window.bills = window.bills || [];
-      window.kasa = window.kasa || [];
-    });
-
-    // --- now the big app logic (kept structure, but fixes applied) ---
-  </script>
-
-  <script>
-  (function(){
-    // small utilities
+    // quick helpers
+    const asNum = v => Number(String(v || "").replace(/\s/g, "").replace(",", ".") || 0);
+    const today = () => new Date().toISOString().slice(0,10);
     function toISO(d) {
       if (!d) return "";
       const s = String(d).trim();
@@ -582,33 +474,26 @@
       if (m) return m[0];
       m = s.match(/^(\d{1,2})[.\-/](\d{1,2})[.\-/](\d{2,4})$/);
       if (m) {
-        const dd = m[1].padStart(2, "0"),
-              mm = m[2].padStart(2, "0"),
-              yy = m[3].length === 2 ? ("20" + m[3]) : m[3];
+        const dd = m[1].padStart(2,"0"), mm = m[2].padStart(2,"0"), yy = m[3].length === 2 ? ("20"+m[3]) : m[3];
         return yy + "-" + mm + "-" + dd;
       }
       return "";
     }
-    const asNum = v => Number(String(v || "").replace(/\s/g, "").replace(",", "."));
-    const today = () => new Date().toISOString().slice(0, 10);
 
-    async function fetchCSV(url) {
-      const res = await fetch(url, { cache: "no-store" });
-      const txt = await res.text();
-      return parseCSV(txt);
-    }
+    // CSV parse (simple, tolerant)
     function smartSplit(line, del) {
       let out = [], cur = "", q = false;
       for (let ch of line) {
         if (ch === '"') { q = !q; continue; }
         if (ch === del && !q) { out.push(cur); cur = ""; }
-        else { cur += ch; }
+        else cur += ch;
       }
       out.push(cur);
       return out;
     }
     function parseCSV(text) {
-      text = text.replace(/\r/g, "");
+      if (!text) return [];
+      text = text.replace(/\r/g,"");
       const lines = text.split("\n").filter(l => l.trim());
       if (!lines.length) return [];
       const sep = (lines[0].split(";").length > lines[0].split(",").length) ? ";" : ",";
@@ -616,43 +501,43 @@
       return lines.map(line => {
         const cells = smartSplit(line, sep);
         const obj = {};
-        head.forEach((h, i) => obj[h] = (cells[i] || "").trim());
+        head.forEach((h,i) => obj[h] = (cells[i] || "").trim());
         return obj;
       });
     }
 
-    function normName(s) {
-      s = (s || "").toLowerCase().replace(/[.,]/g, " ").replace(/\s+/g, " ").trim();
-      const stop = ["sp z oo", "sp. z o.o.", "spolka", "spółka", "sa", "s.a", "ooo"];
-      stop.forEach(t => s = s.replace(t, ""));
-      return s.trim();
-    }
-    function nameSimilar(a, b) {
-      a = normName(a); b = normName(b);
-      if (!a || !b) return 0;
-      if (a === b) return 1;
-      if (a.includes(b) || b.includes(a)) return 0.8;
-      return 0;
+    // normalizer: tolerate multilingual keys and amount key variants
+    function normalizeRowKeys(r) {
+      return {
+        "Data księgowania": r["Data księgowania"] || r.date || r["Дата"] || today(),
+        "ID transakcji": r["ID transakcji"] || r.id || ("IMG-" + Date.now() + "-" + Math.floor(Math.random()*9999)),
+        "ID konta": r["ID konta"] || r.account || r["IBAN"] || "UNKNOWN",
+        "Kontrahent": r["Kontrahent"] || r.counterparty || r["Контрагент"] || "",
+        "Tytuł/Opis": r["Tytuł/Opis"] || r.desc || r["Описание"] || (r.title || ""),
+        "Kwota": (typeof r["Kwota"] !== "undefined") ? String(r["Kwota"]) : (typeof r["Kwота"] !== "undefined" ? String(r["Kwота"]) : (r.amount != null ? String(r.amount) : "")),
+        "Waluta": r["Waluta"] || r.currency || "PLN",
+        "Status transakcji": r["Status transakcji"] || r.status || "imported",
+        "Saldo po operacji": r["Saldo po operacji"] || r.saldo || ""
+      };
     }
 
-    // account inference + balances
-    let tx = [], bills = [], kasa = [];
+    // app model
+    let tx = [];
+    let bills = [];
+    let kasa = [];
     let accMeta = {};
 
+    // infer accounts from transactions
     function inferAccounts() {
       const map = {};
       tx.forEach(r => {
         const id = r["ID konta"] || r["IBAN"] || "UNKNOWN";
         const cur = (r["Waluta"] || "PLN").toUpperCase();
-        if (!map[id]) {
-          map[id] = { id, name: id.slice(0, 12), currency: cur, include: true, type: "Biznes", start: 0 };
-        }
+        if (!map[id]) map[id] = { id, name: id.slice(0,12), currency: cur, include: true, type: "Biznes", start: 0 };
       });
       try {
         const saved = JSON.parse(localStorage.getItem("accMeta") || "{}");
-        Object.keys(map).forEach(id => {
-          if (saved[id]) map[id] = Object.assign(map[id], saved[id]);
-        });
+        Object.keys(map).forEach(id => { if (saved[id]) map[id] = Object.assign(map[id], saved[id]); });
       } catch(e) {}
       accMeta = map;
       renderAccounts();
@@ -666,9 +551,10 @@
         return asNum(last["Saldo po operacji"]);
       }
       const start = Number((accMeta[accId] || {}).start || 0);
-      const sum = rows.reduce((s, r) => s + asNum(r["Kwota"] || r["Kwота"] || r["Kwota"] || r["Kwota"]), 0);
+      const sum = rows.reduce((s,r)=> s + asNum(r["Kwota"] || r["Kwота"] || 0), 0);
       return start + sum;
     }
+
     function rate(cur) {
       cur = String(cur || "PLN").toUpperCase();
       if (cur === "PLN") return 1;
@@ -676,6 +562,7 @@
       if (cur === "USD") return asNum(localStorage.getItem("rateUSD") || 3.95);
       return 1;
     }
+
     function bankAvailablePLN() {
       let sum = 0;
       Object.values(accMeta).filter(a => a.include).forEach(a => {
@@ -684,6 +571,7 @@
       });
       return sum;
     }
+
     function kasaBalance() {
       let bal = 0;
       kasa.forEach(k => {
@@ -693,6 +581,7 @@
       });
       return bal;
     }
+
     function availableTotal() {
       const auto = localStorage.getItem("autoCash") === "1";
       const manual = asNum(localStorage.getItem("cashPLN") || 0);
@@ -700,568 +589,267 @@
       return auto ? (bankAvailablePLN() + kas) : (manual + kas);
     }
 
+    // scoring for AI-suggested match
+    function normName(s) {
+      s = (s || "").toLowerCase().replace(/[.,]/g," ").replace(/\s+/g," ").trim();
+      const stop = ["sp z oo","sp. z o.o.","spolka","spółka","sa","s.a","ooo"];
+      stop.forEach(t => s = s.replace(t,""));
+      return s.trim();
+    }
+    function nameSimilar(a,b) {
+      a = normName(a); b = normName(b); if (!a || !b) return 0;
+      if (a === b) return 1;
+      if (a.includes(b) || b.includes(a)) return 0.8;
+      return 0;
+    }
     function scoreMatch(bill, tr) {
       let score = 0;
-      const bAmt = asNum(bill["Kwota do zapłaty"] || bill["Kwота do zapłaty"]);
-      const tAmt = Math.abs(asNum(tr["Kwota"] || tr["Kwота"] || tr["Kwота"]));
+      const bAmt = asNum(bill["Kwota do zapłaty"] || bill["Kwота do запłаты"]);
+      const tAmt = Math.abs(asNum(tr["Kwota"] || tr["Kwота"]));
       const bCur = String(bill["Waluta"] || "").toUpperCase();
-      const tCur = String(tr["Waluta"] || "").toUpperCase();
+      const tCur = String(tr["Waluta"] || tr["Waluta"] || tr["Waluta"]).toUpperCase();
       if (bAmt > 0 && tAmt > 0 && Math.abs(bAmt - tAmt) < 0.005 && bCur === tCur) score += 60;
-      const inv = String(bill["Numer faktury"] || "").toLowerCase();
+      const inv = String(bill["Numer faktury"] || bill["Numer faktury"] || "").toLowerCase();
       const desc = String(tr["Tytuł/Opis"] || tr["Opis operacji"] || "").toLowerCase();
       if (inv && desc.includes(inv)) score += 25;
       if (nameSimilar(bill["Dostawca"], tr["Kontrahent"] || "") >= 0.8) score += 10;
-      if (asNum(tr["Kwota"] || tr["Kwота"] || tr["Kwота"]) < 0) score += 5;
+      if (asNum(tr["Kwota"] || tr["Kwота"]) < 0) score += 5;
       return { score: Math.min(100, score) };
     }
 
     function runAI() {
       bills.forEach(b => {
-        const status = String(b["Status faktury"] || "").toLowerCase();
+        const status = String(b["Status faktury"] || b["Status faktury"] || "").toLowerCase();
         if (status.includes("opłacone") || status.includes("оплачено")) return;
         let best = null;
         tx.forEach(t => {
           if (String(t["Status transakcji"] || "").toLowerCase() === "sparowane") return;
-          if (asNum(t["Kwота"] || t["Kwота"] || t["Kwota"]) >= 0) return;
+          if (asNum(t["Kwota"] || t["Kwота"]) >= 0) return;
           const s = scoreMatch(b, t);
           if (!best || s.score > best.s) best = { t, s: s.score };
         });
         if (best && best.s >= 85) {
           best.t["Status transakcji"] = "Sparowane";
-          best.t["Powiązana faktura (ID)"] = b["Numer faktury"];
+          best.t["Powiązana faktura (ID)"] = b["Numer faktury"] || b["Numer faktury"];
           b["Status faktury"] = "Opłacone";
           b["Data płatności"] = today();
         } else if (best && best.s >= 55) {
-          b["Kandydат (AI)"] = best.t["ID transakcji"];
+          b["Kandydat (AI)"] = best.t["ID transakcji"];
           b["AI score"] = best.s;
         } else {
-          b["Kandydат (AI)"] = "";
+          b["Kandydat (AI)"] = "";
           b["AI score"] = "";
         }
       });
       render();
     }
+
     function acceptSafe() {
-      bills
-        .filter(b => Number(b["AI score"] || 0) >= 85)
-        .forEach(b => {
-          const t = tx.find(t => t["ID transakcji"] === b["Kandydат (AI)"]);
-          if (!t) return;
-          t["Status transakcji"] = "Sparowane";
-          t["Powiązana faktura (ID)"] = b["Numer фактуры"];
-          b["Status фактуры"] = "Opłacone";
-          b["Data płатności"] = today();
-          b["Kandydат (AI)"] = b["AI score"] = "";
-        });
+      bills.filter(b => Number(b["AI score"] || 0) >= 85).forEach(b => {
+        const t = tx.find(t => t["ID transakcji"] === b["Kandydat (AI)"]);
+        if (!t) return;
+        t["Status transakcji"] = "Sparowane";
+        t["Powiązana faktura (ID)"] = b["Numer faktury"];
+        b["Status faktury"] = "Opłacone";
+        b["Data płatności"] = today();
+        b["Kandydat (AI)"] = b["AI score"] = "";
+      });
       render();
     }
 
-    // ---- FIXED: normalizeRowKeys now robustly prefers Latin "Kwota" and tolerates variants ----
-    function normalizeRowKeys(r) {
-      const out = {
-        "Data księgowania": r["Data księgowania"] || r.date || r["Дата"] || today(),
-        "ID transakcji": r["ID transakcji"] || r.id || ("IMG-" + Date.now()),
-        "ID konta": r["ID konta"] || r.account || r["IBAN"] || "UNKNOWN",
-        "Kontrahent": r["Kontrahent"] || r.counterparty || r["Контрагент"] || "",
-        "Tytuł/Opis": r["Tytuł/Opis"] || r.desc || r["Описание"] || (r.title || ""),
-        // prefer Latin "Kwota" but also create cyrillic variant for legacy checks
-        "Kwota": (typeof r["Kwota"] !== "undefined") ? String(r["Kwota"]) : (typeof r["Kwота"] !== "undefined" ? String(r["Kwота"]) : (r.amount != null ? String(r.amount) : "")),
-        "Kwота": (typeof r["Kwota"] !== "undefined") ? String(r["Kwота"] || r["Kwота"] || r.amount || "") : (typeof r["Kwота"] !== "undefined" ? String(r["Kwота"]) : (r.amount != null ? String(r.amount) : "")),
-        "Waluta": r["Waluta"] || r.currency || "PLN",
-        "Status transakcji": r["Status transakcji"] || r.status || "imported",
-        "Saldo po operacji": r["Saldo po operacji"] || r.saldo || ""
-      };
-      return out;
+    // ---- OCR helpers ----
+    async function fetchCSV(url) {
+      const res = await fetch(url, { cache: "no-store" });
+      const txt = await res.text();
+      return parseCSV(txt);
     }
 
-    // ---- OCR processing logic for images (wyciag / faktury) with improved preprocessing ----
-    async function processImageFileFor(targetArrayName, file) {
-      if (!file) return;
-      const imgURL = URL.createObjectURL(file);
-      try {
-        // choose correct preview element by target
-        let thumbId = 'lastThumb';
-        if (targetArrayName === 'tx') thumbId = 'txLastThumb';
-        else if (targetArrayName === 'bills') thumbId = 'billLastThumb';
-        const thumb = document.getElementById(thumbId);
-        if (thumb) { thumb.src = imgURL; thumb.style.display = "inline-block"; }
+    // Tesseract worker creation — IMPORTANT: do NOT pass functions in options (can't clone)
+    async function createTessWorker() {
+      const worker = await Tesseract.createWorker();
+      return worker;
+    }
 
-        // load image into Image for preprocessing
+    // preprocess image into PNG blob (resize + simple binarize)
+    async function preprocessImageToBlob(file, maxWidth = 2000) {
+      let bitmap;
+      try { bitmap = await createImageBitmap(file); }
+      catch (e) {
         const img = await new Promise((res, rej) => {
           const i = new Image();
           i.onload = () => res(i);
-          i.onerror = (e) => rej(e);
-          i.src = imgURL;
+          i.onerror = rej;
+          i.src = URL.createObjectURL(file);
         });
-
-        // canvas preprocess: upscale a bit, grayscale, auto-invert for dark theme, adaptive-ish threshold
-        const maxDim = 3000; // increased max dimension for better OCR on small screenshots
-        const w0 = img.width, h0 = img.height;
-        const scale = Math.min(3, Math.max(1, maxDim / Math.max(w0, h0))); // allow up to 3x upscale
-        const w = Math.round(w0 * scale), h = Math.round(h0 * scale);
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        const ctx = canvas.getContext('2d');
-        // draw with smoothing disabled to preserve text shapes
-        ctx.imageSmoothingEnabled = false;
-        ctx.drawImage(img, 0, 0, w, h);
-
-        try {
-          // grayscale
-          const id = ctx.getImageData(0, 0, w, h);
-          const d = id.data;
-          let sum = 0, sum2 = 0, cnt = 0;
-          for (let i = 0; i < d.length; i += 4) {
-            const r = d[i], g = d[i+1], b = d[i+2];
-            const l = Math.round(0.299*r + 0.587*g + 0.114*b);
-            d[i] = d[i+1] = d[i+2] = l;
-            sum += l; sum2 += l*l; cnt++;
-          }
-          ctx.putImageData(id, 0, 0);
-
-          const mean = sum / Math.max(1, cnt);
-          const std = Math.sqrt(Math.max(0, sum2 / Math.max(1, cnt) - mean*mean));
-
-          // if image seems dark (low mean) — invert to make text dark on light background
-          if (mean < 120) {
-            const idInv = ctx.getImageData(0,0,w,h);
-            const dinv = idInv.data;
-            for (let i = 0; i < dinv.length; i += 4) {
-              dinv[i] = 255 - dinv[i];
-              dinv[i+1] = 255 - dinv[i+1];
-              dinv[i+2] = 255 - dinv[i+2];
-            }
-            ctx.putImageData(idInv, 0, 0);
-          }
-
-          // now simple global threshold informed by mean/std (adaptive-ish)
-          const final = ctx.getImageData(0,0,w,h);
-          const df = final.data;
-          const thresh = Math.max(120, Math.round(mean - std * 0.10));
-          for (let i = 0; i < df.length; i += 4) {
-            const v = df[i];
-            const val = v < thresh ? 0 : 255;
-            df[i] = df[i+1] = df[i+2] = val;
-          }
-          ctx.putImageData(final, 0, 0);
-        } catch(procErr) {
-          console.warn("Preprocess failed, continuing with original image", procErr);
-        }
-
-        const processedDataUrl = canvas.toDataURL('image/png', 1.0);
-
-        // create worker (best-effort); languages list kept minimal to avoid failures
-        const worker = await Tesseract.createWorker({
-          logger: m => console.debug("TESS:", m) // keep logs for debugging
-        });
-        await worker.load();
-        // try to load languages; ignore failures and fallback gracefully
-        try {
-          await worker.loadLanguage("pol+eng");
-          await worker.initialize("pol+eng");
-        } catch(e) {
-          try { await worker.loadLanguage("eng"); await worker.initialize("eng"); } catch(_) {}
-        }
-
-        // prefer recognize on processed DataURL
-        const { data: { text } } = await worker.recognize(processedDataUrl);
-        await worker.terminate();
-
-        const cleaned = String(text || "").replace(/\u00A0/g, ' ').trim();
-        console.log("OCR result (preview):", cleaned);
-        localStorage.setItem('lastOCR', cleaned);
-
-        // basic heuristics: find amounts (multiple), date, invoice, supplier
-        // find all amounts
-        const amountRe = /(-?\d{1,3}(?:[ \u00A0.,]\d{3})*(?:[.,]\d{2})|\d+[.,]\d{2})\s*(PLN|zł|zl|zlot|EUR|USD)?/gi;
-        const found = [];
-        let m;
-        while ((m = amountRe.exec(cleaned)) !== null) {
-          found.push({ raw: m[0], value: m[1], cur: m[2] ? m[2] : 'PLN', index: m.index });
-        }
-
-        const dateMatch = cleaned.match(/(\d{2}[.\-/]\d{2}[.\-/]\d{2,4})/);
-        const invoiceMatch = cleaned.match(/(faktura|FV|nr[:\s]*)([A-Za-z0-9\-\/]+)/i);
-        const supplierMatch = cleaned.split("\n").map(l=>l.trim()).filter(Boolean)[0] || "";
-
-        // sign detection
-        const outWords = /(wydatek|wydano|wydat|spend|zapłacono|оплачено|płatność|płatn|płatność|zapłacono|przelew do|payed|paid|transfer to|do:)/i;
-        const inWords = /(wpłata|przychód|przychod|przychód|otrzymano|saldo|przelew od|received|przyjęcie|od:|from:)/i;
-        const signHintOut = outWords.test(cleaned);
-        const signHintIn = inWords.test(cleaned);
-
-        // make entries for each found amount; if none found, fallback to previous single amount behavior
-        if (found.length) {
-          for (let i = 0; i < found.length; i++) {
-            const item = found[i];
-            let amtStr = item.value.replace(/\u00A0/g,'').replace(/\s/g, '').replace(/\./g, '').replace(',', '.');
-            // but careful: if number like "1 234" (no decimals) — try to parse
-            if (!amtStr.includes('.')) {
-              // leave as integer
-            }
-            let amt = Number(amtStr);
-            if (isNaN(amt)) amt = null;
-            // attempt sign assignment
-            if (amt != null) {
-              if (signHintOut) amt = -Math.abs(amt);
-              else if (!signHintIn && /\b(paid|zapłacono|wydano|przelew do|transfer to|do:)\b/i.test(cleaned)) amt = -Math.abs(amt);
-              // else if signHintIn -> positive
-            }
-
-            const baseObj = {
-              "ID transakcji": "IMG-" + Date.now() + "-" + Math.floor(Math.random()*9999) + "-" + i,
-              "Data księgowania": dateMatch ? toISO(dateMatch[1]) : today(),
-              "ID konta": "UNKNOWN",
-              "Kontrahent": supplierMatch || "",
-              "Tytuł/Opis": ("OCR: " + cleaned.split("\n").slice(0,3).join(" ")).slice(0,400) + (found.length>1 ? ` (part ${i+1}/${found.length})` : ""),
-              "Kwота": (amt != null ? amt.toFixed(2) : ""),
-              "Waluta": (item.cur || "PLN").toUpperCase(),
-              "Status transakcji": "imported"
-            };
-
-            const normalized = normalizeRowKeys(baseObj);
-
-            if (targetArrayName === 'tx') {
-              tx.unshift(normalized);
-            } else if (targetArrayName === 'bills') {
-              const billRow = {
-                "Termin płatności": normalized["Data księgowania"],
-                "Numer faktury": invoiceMatch ? invoiceMatch[2] : ("IMG-FV-" + Date.now() + "-" + i),
-                "Dostawca": normalized["Kontrahent"] || supplierMatch,
-                "Kwota do zapłaty": Math.abs(asNum(normalized["Kwота"] || normalized["Kwota"] || 0)).toFixed(2),
-                "Waluta": normalized["Waluta"] || "PLN",
-                "Status faktury": "do zapłaty",
-                "Kandydат (AI)": "",
-                "AI score": ""
-              };
-              bills.unshift(billRow);
-            }
-          }
-          try { localStorage.setItem("tx_manual_import", JSON.stringify(tx)); } catch(e){}
-          try { localStorage.setItem("bills_manual_import", JSON.stringify(bills)); } catch(e){}
-          inferAccounts();
-          render();
-        } else {
-          // If no amounts found — fallback to pushing a single OCR-like tx row
-          const amtMatch = cleaned.replace(",", ".").match(/(-?\d{1,3}(?:[ .]\d{3})*(?:[.,]\d{2})|\d+[.,]\d{2})\s*(PLN|zł|zl|zlot|EUR|USD)?/i);
-          const amtStr = amtMatch ? amtMatch[1].replace(/\s/g,'').replace(/\./g,'').replace(',', '.') : null;
-          let amt = amtStr ? Number(amtStr) : null;
-          const baseObj = {
-            "ID transakcji": "IMG-" + Date.now(),
-            "Data księgowania": dateMatch ? toISO(dateMatch[1]) : today(),
-            "ID konta": "UNKNOWN",
-            "Kontrahent": supplierMatch || "",
-            "Tytuł/Opis": ("OCR: " + cleaned.split("\n").slice(0,3).join(" ")).slice(0,400),
-            "Kwота": (amt != null ? amt.toFixed(2) : ""),
-            "Waluta": amtMatch && amtMatch[2] ? amtMatch[2].toUpperCase() : "PLN",
-            "Status transakcji": "imported"
-          };
-          const normalized = normalizeRowKeys(baseObj);
-          if (targetArrayName === 'tx') {
-            tx.unshift(normalized);
-            try { localStorage.setItem("tx_manual_import", JSON.stringify(tx)); } catch(e){}
-            inferAccounts();
-          } else if (targetArrayName === 'bills') {
-            const billRow = {
-              "Termin płatności": normalized["Data księgowania"],
-              "Numer faktury": invoiceMatch ? invoiceMatch[2] : ("IMG-FV-" + Date.now()),
-              "Dostawca": normalized["Kontrahent"] || supplierMatch,
-              "Kwота do запłаты": Math.abs(asNum(normalized["Kwота"]) || 0).toFixed(2),
-              "Waluta": normalized["Waluta"] || "PLN",
-              "Status фактуры": "do zapłaty",
-              "Kandydат (AI)": "",
-              "AI score": ""
-            };
-            bills.unshift(billRow);
-            try { localStorage.setItem("bills_manual_import", JSON.stringify(bills)); } catch(e){}
-          }
-          render();
-        }
-
-        // optional: persist original image on server (best effort)
-        try {
-          const reader = new FileReader();
-          reader.onload = async function() {
-            const dataUrl = reader.result;
-            fetch('/save-image', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ filename: file.name || ('img-' + Date.now() + '.png'), data: dataUrl })
-            }).catch(()=>{});
-          };
-          reader.readAsDataURL(file);
-        } catch(e){}
-      } catch(err) {
-        console.error("OCR error:", err);
-        alert("Не удалось распознать скрин: " + (err && err.message ? err.message : String(err)));
+        const c = document.createElement('canvas');
+        c.width = img.naturalWidth; c.height = img.naturalHeight;
+        c.getContext('2d').drawImage(img,0,0);
+        bitmap = await createImageBitmap(c);
       }
-    }
-
-    // Bind handlers for new image inputs (multiple files)
-    document.addEventListener('DOMContentLoaded', () => {
-      const txImage = document.getElementById('txImage');
-      if (txImage) {
-        txImage.addEventListener('change', async e => {
-          const files = Array.from(e.target.files || []);
-          if (!files.length) return;
-          document.getElementById("lastSync").textContent = "Синхронизация: " + new Date().toLocaleString();
-          for (const f of files) {
-            try {
-              await processImageFileFor('tx', f);
-            } catch(err) {
-              console.error('txImage OCR error:', err);
-              alert('Ошибка распознавания выписки: ' + (err && err.message ? err.message : String(err)));
-            }
-          }
-        });
+      const scale = Math.min(1, maxWidth / Math.max(bitmap.width, bitmap.height));
+      const w = Math.round(bitmap.width * scale), h = Math.round(bitmap.height * scale);
+      const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(bitmap, 0, 0, w, h);
+      const imgd = ctx.getImageData(0,0,w,h);
+      const d = imgd.data;
+      let sum = 0;
+      for (let i=0;i<d.length;i+=4) {
+        const l = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
+        sum += l;
       }
-
-      const billImage = document.getElementById('billImage');
-      if (billImage) {
-        billImage.addEventListener('change', async e => {
-          const files = Array.from(e.target.files || []);
-          if (!files.length) return;
-          for (const f of files) {
-            try {
-              await processImageFileFor('bills', f);
-            } catch(err) {
-              console.error('billImage OCR error:', err);
-              alert('Ошибка распознавания фактуры: ' + (err && err.message ? err.message : String(err)));
-            }
-          }
-          render();
-        });
+      const avg = sum / (d.length/4);
+      const threshold = Math.max(100, avg*0.9);
+      for (let i=0;i<d.length;i+=4) {
+        const l = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
+        const t = l > threshold ? 255 : 0;
+        d[i] = d[i+1] = d[i+2] = t;
       }
+      ctx.putImageData(imgd,0,0);
+      return await new Promise(res => canvas.toBlob(res,'image/png'));
+    }
 
-      // re-attach the older billImage handler (kept for backwards)
-      const billImageLegacy = document.getElementById('billImage');
-      if (billImageLegacy) {
-        billImageLegacy.addEventListener('change', async e => {
-          const files = Array.from(e.target.files || []);
-          if (!files.length) return;
-          for (const f of files) {
-            await processImageFileFor('bills', f);
-          }
-          render();
-        });
+    // OCR.space fallback (requires API key — demo 'helloworld' works but limited)
+    async function ocrSpaceApiImageBlob(blob, apiKey = 'helloworld', lang = 'pol') {
+      const form = new FormData();
+      form.append('apikey', apiKey);
+      form.append('language', lang);
+      form.append('isOverlayRequired', 'false');
+      form.append('file', blob, 'img.png');
+      const resp = await fetch('https://api.ocr.space/parse/image', {
+        method: 'POST',
+        body: form
+      });
+      const j = await resp.json();
+      if (!j || !j.ParsedResults || !j.ParsedResults.length) throw new Error('OCR.space: пустой ответ');
+      return j.ParsedResults.map(p => p.ParsedText).join('\n\n');
+    }
+
+    function parseOcrToTx(text) {
+      const t = String(text || '');
+      const dateMatch = t.match(/(\d{2}[.\-/]\d{2}[.\-/]\d{2,4})/);
+      const amountMatch = t.replace(/\s+/g,' ').match(/(-?\d{1,3}(?:[ ,.\u00A0]\d{3})*(?:[.,]\d{2})|\d+[.,]\d{2})\s*(PLN|zł|zl|EUR|USD)?/i);
+      const invoiceMatch = t.match(/(faktura|fv|nr[:\s]*)([A-Za-z0-9\-\/]+)/i);
+      const supplier = t.split('\n').map(l=>l.trim()).filter(Boolean)[0] || '';
+      let amt = null;
+      if (amountMatch) {
+        let s = amountMatch[1];
+        s = s.replace(/\u00A0/g,'').replace(/\s/g,'').replace(/\./g,'').replace(',', '.');
+        const n = Number(s);
+        if (!isNaN(n)) amt = n;
       }
-    });
-
-    // rest of UI bindings and functions (kept, with small key-name tolerances)
-    function toDueList(mode) {
-      const t = today();
-      const excl = document.getElementById("excludeBlacklist")?.checked;
-      return bills.filter(r => {
-        const s = String(r["Status фактуры"] || r["Status faktury"] || r["Status faktury"] || "").toLowerCase();
-        if (!["do zapłaty", "przeterminowane", "к оплате", "просрочено"].includes(s)) return false;
-        const d = toISO(r["Termin платности"] || r["Termin платności"] || r["Termin платежи"] || r["Termin платежi"]);
-        if (!d) return false;
-        if (mode === "today") return d === t;
-        if (mode === "7d") {
-          const dd = new Date(d), tt = new Date(t);
-          return (dd - tt) / (1000 * 3600 * 24) <= 7;
-        }
-        return true;
-      }).filter(r => {
-        if (String(r["Waluta"] || r["Walута"] || "").toUpperCase() !== "PLN") return false;
-        if (excl) {
-          const blist = (localStorage.getItem("blacklist") || "").toLowerCase();
-          if (blist && r["Dostawca"] && blist.split(",").some(name => r["Dostawca"].toLowerCase().includes(name.trim()))) {
-            return false;
-          }
-        }
-        return true;
-      });
+      const outWords = /(wydatek|wydano|zapłacono|оплачено|przelew do|paid to|transfer to)/i;
+      const inWords = /(wpłata|otrzymano|przelew od|received|przyjęcie)/i;
+      let sign = null;
+      if (outWords.test(t)) sign = -1;
+      if (inWords.test(t)) sign = 1;
+      if (amt != null && sign === -1) amt = -Math.abs(amt);
+      return {
+        date: dateMatch ? (function(m){
+          const parts = m[1].split(/[.\-/]/);
+          if (parts[2].length === 2) parts[2] = '20'+parts[2];
+          return parts[2] + '-' + parts[1].padStart(2,'0') + '-' + parts[0].padStart(2,'0');
+        })(dateMatch) : today(),
+        amount: amt,
+        invoice: invoiceMatch ? invoiceMatch[2] : null,
+        supplier,
+        raw: t
+      };
     }
 
-    function buildPlan() {
-      const mode = document.getElementById("planFilter").value;
-      const cand = toDueList(mode).sort((a, b) => {
-        const da = new Date(toISO(a["Termin платности"] || a["Termin платności"] || a["Termin платежи"] || a["Termin платежi"]));
-        const db = new Date(toISO(b["Termin платности"] || b["Termin платności"] || b["Termin платежи"] || b["Termin платежi"]));
-        const lateA = da < new Date(today());
-        const lateB = db < new Date(today());
-        if (lateA !== lateB) return lateB - lateA;
-        return asNum(b["Kwота do заплаты"] || b["Kwота do заплаты"] || b["Kwота do заплаты"] || b["Kwута до заплаты"] || 0) - asNum(a["Kwота do заплаты"] || a["Kwота do заплаты"] || a["Kwота до заплаты"] || 0);
-      });
-      let left = availableTotal();
-      const plan = [];
-      for (const r of cand) {
-        const amt = asNum(r["Kwота do заплаты"] || r["Kwота до заплаты"] || r["Kwата до заплаты"] || 0);
-        if (amt <= left) {
-          plan.push({
-            r,
-            amt,
-            reason: (toISO(r["Termin платності"] || r["Termin платności"] || r["Termin платежи"]) < today() ? "просрочка" : "срок")
-          });
-          left -= amt;
-        }
+    // push parsed tx or bill
+    function pushParsedTx(parsed, target='tx') {
+      const baseObj = {
+        "ID transakcji": "IMG-" + Date.now() + "-" + Math.floor(Math.random()*9999),
+        "Data księgowania": parsed.date || today(),
+        "ID konta": "UNKNOWN",
+        "Kontrahent": parsed.supplier || "",
+        "Tytuł/Opis": ("OCR: " + (parsed.raw || '')).slice(0,400),
+        "Kwota": (parsed.amount != null ? parsed.amount.toFixed(2) : ""),
+        "Waluta": "PLN",
+        "Status transakcji": "imported"
+      };
+      const normalized = normalizeRowKeys(baseObj);
+      if (target === 'tx') {
+        tx.unshift(normalized);
+        try { localStorage.setItem('tx_manual_import', JSON.stringify(tx)); } catch(e){}
+        inferAccounts();
+      } else if (target === 'bills') {
+        const billRow = {
+          "Termin płatności": normalized["Data księgowania"],
+          "Numer faktury": parsed.invoice || ("IMG-FV-" + Date.now()),
+          "Dostawca": normalized["Kontrahent"] || parsed.supplier,
+          "Kwota do zapłaty": Math.abs(asNum(normalized["Kwota"]) || 0).toFixed(2),
+          "Waluta": normalized["Waluta"] || "PLN",
+          "Status faktury": "do zapłaty",
+          "Kandydat (AI)": "",
+          "AI score": ""
+        };
+        bills.unshift(billRow);
+        try { localStorage.setItem('bills_manual_import', JSON.stringify(bills)); } catch(e){}
       }
-      return { plan, left, avail: availableTotal() };
-    }
-    function renderPlan() {
-      const p = buildPlan();
-      const tb = document.getElementById("planTable").querySelector("tbody");
-      tb.innerHTML = "";
-      p.plan.forEach((x, i) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${i + 1}</td><td>${x.r["Numer фактуры"] || x.r["Numer faktury"] || ""}</td><td>${x.r["Dostawca"] || ""}</td><td>${toISO(x.r["Termin платности"] || x.r["Termin платności"] || x.r["Termin платежи"])}</td><td>${x.amt.toFixed(2)}</td><td>${x.reason}</td>`;
-        tb.appendChild(tr);
-      });
-      const metaText = p.plan.length 
-        ? `Потратим ${(p.avail - p.left).toFixed(2)} из ${p.avail.toFixed(2)} PLN. Останется ${p.left.toFixed(2)} PLN.` 
-        : "План пуст или денег нет.";
-      document.getElementById("planMeta").textContent = metaText;
-    }
-
-    function computeMinPay() {
-      const t = today();
-      const pct = asNum(localStorage.getItem("penaltyPct") || 0.05) / 100.0;
-      const cand = bills.filter(r => 
-        String((r["Waluta"] || r["Walута"] || "").toUpperCase()) === "PLN" &&
-        toISO(r["Termin платности"] || r["Termin платności"] || r["Termin платежи"]) <= t &&
-        ["do zapłaty", "przeterminowane", "к оплате", "просрочено"].includes(String(r["Status фактуры"] || r["Status faktury"] || r["Status faktury"] || "").toLowerCase())
-      ).map(r => (({
-        r,
-        amt: asNum(r["Kwота do заплаты"] || r["Kwута до заплаты"] || r["Kwата до заплаты"] || 0),
-        risk: asNum(r["Kwота do заплаты"] || r["Kwута до заплаты"] || 0) * pct
-      }))).sort((a, b) => b.risk - a.risk || b.amt - a.amt);
-      return cand[0] || null;
-    }
-    function renderMinPay() {
-      const m = computeMinPay();
-      const el = document.getElementById("minPayBox");
-      if (!m) {
-        el.textContent = "—";
-        return;
-      }
-      el.textContent = `Оплатить ${m.r["Numer фактуры"] || m.r["Numer faktury"]} (${m.r["Dostawca"]}) на ${m.amt.toFixed(2)} PLN. Штраф/день ~ ${m.risk.toFixed(2)} PLN.`;
-    }
-
-    function renderForecast() {
-      const t = new Date(today());
-      const list = toDueList("7d").map(r => ({ date: new Date(toISO(r["Termin платности"] || r["Termin платności"] || r["Termin платежи"])), amt: asNum(r["Kwота do заплаты"] || r["Kwута до заплаты"] || 0) }));
-      const days = [...Array(7)].map((_, i) => new Date(t.getTime() + i * 86400000));
-      let left = availableTotal();
-      const out = days.map(d => ({ d, due: 0, after: 0 }));
-      list.forEach(x => {
-        const idx = Math.min(6, Math.max(0, Math.floor((x.date - t) / 86400000)));
-        out[idx].due += x.amt;
-      });
-      out.forEach(o => { left -= o.due; o.after = left; });
-      const wrap = document.getElementById("forecastBars");
-      wrap.innerHTML = "";
-      out.forEach(o => {
-        const div = document.createElement("div");
-        div.className = "bar" + (o.after < 0 ? " neg" : "");
-        const h = document.createElement("div");
-        h.className = "h";
-        h.style.height = (Math.min(120, Math.abs(o.after) / 100) * 0.8 + 18) + "px";
-        div.innerHTML = "<small>" + o.d.toISOString().slice(5, 10) + "</small>";
-        div.appendChild(h);
-        const v = document.createElement("div");
-        v.textContent = (o.after < 0 ? "-" : "") + Math.abs(o.after).toFixed(0) + " PLN";
-        div.appendChild(v);
-        wrap.appendChild(div);
-      });
-      const firstNeg = out.find(x => x.after < 0);
-      document.getElementById("forecastMeta").textContent = firstNeg
-        ? `Гэп через ${out.indexOf(firstNeg) + 1} дн.: не хватает ${Math.abs(firstNeg.after).toFixed(2)} PLN.`
-        : "На 7 дней хватает кассы.";
-    }
-
-    function render() {
-      // KPIs
-      const dueToday = bills.filter(r => {
-        const s = String(r["Status faktury"] || r["Status фактуры"] || r["Status faktury"] || "").toLowerCase();
-        return ["do zapłaty", "przeterminowane", "к оплате", "просрочено"].includes(s) && toISO(r["Termin платности"] || r["Termin платności"] || r["Termin платежи"]) === today();
-      }).length;
-      const unmatch = tx.filter(r => String(r["Status transakcji"] || r["Status транзакции"] || "").toLowerCase() !== "sparowane").length;
-      document.getElementById("kpiDue").textContent = dueToday;
-      document.getElementById("kpiUnmatch").textContent = unmatch;
-      const bankPLN = bankAvailablePLN();
-      document.getElementById("kpiBank").textContent = bankPLN.toFixed(2);
-      const kas = kasaBalance();
-      document.getElementById("kpiCash").textContent = kas.toFixed(2);
-      const avail = availableTotal();
-      document.getElementById("kpiAvail").textContent = avail.toFixed(2);
-
-      // sumDueToday calculation
-      const sumDueToday = bills.filter(r =>
-        String((r["Walута"] || r["Walута"] || "").toUpperCase()) === "PLN" &&
-        toISO(r["Termin платности"] || r["Termin платności"] || r["Termin платежи"]) <= today() &&
-        ["do zapłaty", "przeterminowane", "к оплате", "просрочено"].includes(String(r["Status фактуры"] || r["Status faktury"] || r["Status faktury"] || "").toLowerCase())
-      ).reduce((s, r) => s + asNum(r["Kwота do заплаты"] || r["Kwута до заплаты"] || r["Kwота до заплаты"] || 0), 0);
-      document.getElementById("kpiGap").textContent = Math.max(0, sumDueToday - avail).toFixed(2);
-
-      // Transactions table
-      const txBody = document.getElementById("txTable").querySelector("tbody");
-      txBody.innerHTML = "";
-      tx.forEach(r => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${toISO(r["Data księgowania"])}</td>
-                        <td>${r["ID konta"] || r["IBAN"] || "—"}</td>
-                        <td>${r["Kontrahent"] || ""}</td>
-                        <td>${r["Tytuł/Opis"] || r["Opis operacji"] || ""}</td>
-                        <td>${(r["Kwота"] || r["Kwota"] || "")}</td>
-                        <td>${r["Waluta"] || ""}</td>
-                        <td>${r["Status transakcji"] || ""}</td>`;
-        txBody.appendChild(tr);
-      });
-
-      // Invoices table
-      const billBody = document.getElementById("billTable").querySelector("tbody");
-      billBody.innerHTML = "";
-      const scope = document.getElementById("billScope").value;
-      const onlyOverdue = document.getElementById("billOverdueOnly")?.checked;
-      bills.forEach(r => {
-        const s = String(r["Status фактуры"] || r["Status faktury"] || r["Status faktury"] || "").toLowerCase();
-        if (!["do zapłaty", "przeterminowane", "к оплате", "просрочено"].includes(s)) return;
-        if (onlyOverdue && !(s.includes("przetermin") || s.includes("проср"))) return;
-        const d = toISO(r["Termin платности"] || r["Termin платności"] || r["Termin платежи"]);
-        if (scope === "today" && d !== today()) return;
-        if (scope === "7d") {
-          const dd = new Date(d), tt = new Date(today());
-          if ((dd - tt) / (1000 * 3600 * 24) > 7) return;
-        }
-        const cls = (s.includes("przetermin") || s.includes("проср")) ? "overdue" : "due";
-        const cand = r["Kandydат (AI)"] || r["Kandydат (AI)"] || "";
-        const score = r["AI score"] || "";
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${d}</td>
-                        <td>${r["Numer фактуры"] || r["Numer faktury"] || ""}</td>
-                        <td>${r["Dostawca"] || ""}</td>
-                        <td>${r["Kwота do заплаты"] || r["Kwута до заплаты"] || r["Kwата до заплаты"] || ""}</td>
-                        <td>${r["Waluta"] || ""}</td>
-                        <td><span class="badge ${cls}">${r["Status фактуры"] || r["Status faktury"] || ""}</span></td>
-                        <td>${cand ? ('<span class="badge cand">' + cand + '</span>') : '—'}</td>
-                        <td>${score ? ('<span class="badge ai">' + score + '</span>') : '—'}</td>
-                        <td>${cand ? ('<button class="btn secondary btn-accept" data-id="' + (r["Numer фактуры"] || r["Numer faktury"] || "") + '">Принять</button>') : '—'}</td>`;
-        billBody.appendChild(tr);
-      });
-      document.querySelectorAll(".btn-accept").forEach(b =>
-        b.addEventListener("click", () => acceptOne(b.getAttribute("data-id")))
-      );
-
-      renderMinPay();
-      renderForecast();
-      renderAccounts();
-      renderKasa();
-    }
-
-    function acceptOne(id) {
-      const b = bills.find(x => (x["Numer фактуры"] || x["Numer faktury"] || "") === id);
-      if (!b) return;
-      const t = tx.find(x => (x["ID transakcji"] || "") === (b["Kandydат (AI)"] || ""));
-      if (!t) return;
-      t["Status transakcji"] = "Sparowane";
-      t["Powiązana faktura (ID)"] = b["Numer фактуры"] || b["Numer фактуры"];
-      b["Status фактуры"] = "Opłacone";
-      b["Data płatności"] = today();
-      b["Kandydат (AI)"] = b["AI score"] = "";
       render();
     }
 
+    // process single image with tesseract (preferred) with fallback to OCR.space
+    async function processImageFileFor(targetArrayName, file) {
+      if (!file) return;
+      const imgURL = URL.createObjectURL(file);
+      // preview thumb
+      let thumbId = 'lastThumb';
+      if (targetArrayName === 'tx') thumbId = 'txLastThumb';
+      else if (targetArrayName === 'bills') thumbId = 'billLastThumb';
+      const thumb = document.getElementById(thumbId);
+      if (thumb) { thumb.src = imgURL; thumb.style.display = "inline-block"; }
+
+      // preprocess to blob
+      let blob;
+      try {
+        blob = await preprocessImageToBlob(file, 2000);
+      } catch(e) {
+        // fallback to original file
+        blob = file;
+      }
+
+      // try Tesseract first (client)
+      try {
+        const worker = await createTessWorker();
+        try {
+          await worker.loadLanguage('pol+eng');
+          await worker.initialize('pol+eng');
+        } catch(e) {
+          try { await worker.loadLanguage('eng'); await worker.initialize('eng'); } catch(_) {}
+        }
+        const dataUrl = await new Promise(res => {
+          const r = new FileReader();
+          r.onload = () => res(r.result);
+          r.readAsDataURL(blob);
+        });
+        const { data: { text } } = await worker.recognize(dataUrl);
+        await worker.terminate();
+        const cleaned = String(text || "").replace(/\u00A0/g,' ').trim();
+        console.log("OCR result (tess):", cleaned);
+        localStorage.setItem('lastOCR', cleaned);
+        const parsed = parseOcrToTx(cleaned);
+        pushParsedTx(parsed, targetArrayName === 'bills' ? 'bills' : 'tx');
+        return;
+      } catch(tessErr) {
+        console.warn("Tesseract failed, fallback to OCR.space", tessErr);
+      }
+
+      // fallback OCR.space
+      try {
+        const txt = await ocrSpaceApiImageBlob(blob, 'helloworld', 'pol');
+        const parsed = parseOcrToTx(txt);
+        pushParsedTx(parsed, targetArrayName === 'bills' ? 'bills' : 'tx');
+        return;
+      } catch(e) {
+        console.error("OCR.space also failed:", e);
+        alert("Не удалось распознать скрин: " + (e && e.message ? e.message : String(e)));
+      }
+    }
+
+    // render functions
     function renderAccounts() {
       const tb = document.querySelector("#autoAcc tbody");
       if (!tb) return;
@@ -1289,197 +877,320 @@
         tb.appendChild(tr);
       });
       tb.querySelectorAll(".acc-type").forEach(el => el.addEventListener("change", e => {
-        const id = e.target.dataset.id;
-        accMeta[id].type = e.target.value;
-        saveAccMeta();
-        render();
+        const id = e.target.dataset.id; accMeta[id].type = e.target.value; saveAccMeta(); render();
       }));
       tb.querySelectorAll(".acc-cur").forEach(el => el.addEventListener("change", e => {
-        const id = e.target.dataset.id;
-        accMeta[id].currency = e.target.value;
-        saveAccMeta();
-        render();
+        const id = e.target.dataset.id; accMeta[id].currency = e.target.value; saveAccMeta(); render();
       }));
       tb.querySelectorAll(".acc-start").forEach(el => el.addEventListener("change", e => {
-        const id = e.target.dataset.id;
-        accMeta[id].start = asNum(e.target.value);
-        saveAccMeta();
-        render();
+        const id = e.target.dataset.id; accMeta[id].start = asNum(e.target.value); saveAccMeta(); render();
       }));
       tb.querySelectorAll(".acc-include").forEach(el => el.addEventListener("change", e => {
-        const id = e.target.dataset.id;
-        accMeta[id].include = e.target.checked;
-        saveAccMeta();
-        render();
+        const id = e.target.dataset.id; accMeta[id].include = e.target.checked; saveAccMeta(); render();
       }));
     }
-    function saveAccMeta() {
-      localStorage.setItem("accMeta", JSON.stringify(accMeta));
-    }
+    function saveAccMeta(){ localStorage.setItem("accMeta", JSON.stringify(accMeta)); }
 
-    // Kasa: keep logic, display and storage separate (unchanged behaviour)
-    function loadKasa() {
-      try { kasa = JSON.parse(localStorage.getItem("kasa") || "[]"); } catch(e) { kasa = []; }
-    }
-    function saveKasa() {
-      localStorage.setItem("kasa", JSON.stringify(kasa));
-    }
-    function renderKasa() {
+    function renderKasa(){
       const tb = document.querySelector("#kasaTable tbody");
       if (!tb) return;
       tb.innerHTML = "";
-      kasa.forEach((k, i) => {
+      kasa.forEach((k,i)=>{
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${i + 1}</td><td>${k.date}</td><td>${k.type}</td><td>${k.amount.toFixed(2)}</td><td>${k.source || ""}</td><td>${k.comment || ""}</td>`;
+        tr.innerHTML = `<td>${i+1}</td><td>${k.date}</td><td>${k.type}</td><td>${k.amount.toFixed(2)}</td><td>${k.source||""}</td><td>${k.comment||""}</td>`;
         tb.appendChild(tr);
       });
     }
+
     function addKasa(type, amount, comment, source) {
-      if (amount == null || isNaN(amount)) return alert("Сумма");
+      if (amount == null || isNaN(amount)) return alert("Сумма некорректна");
       kasa.push({ id: Date.now(), date: today(), type, amount: Number(amount), comment: comment || "", source: source || "ручной" });
-      saveKasa();
+      localStorage.setItem("kasa", JSON.stringify(kasa));
       render();
       renderKasa();
     }
+    function loadKasa(){ try{ kasa = JSON.parse(localStorage.getItem("kasa") || "[]"); } catch(e){ kasa = []; } }
 
+    // Plan building and helpers
+    function toDueList(mode) {
+      const t = today();
+      const excl = document.getElementById("excludeBlacklist")?.checked;
+      return bills.filter(r => {
+        const s = String(r["Status faktury"] || r["Status faktury"] || "").toLowerCase();
+        if (!["do zapłaty","przeterminowane","к оплате","просрочено"].includes(s)) return false;
+        const d = toISO(r["Termin платности"] || r["Termin платności"] || r["Termin платежи"]);
+        if (!d) return false;
+        if (mode === "today") return d === t;
+        if (mode === "7d") {
+          const dd = new Date(d), tt = new Date(t);
+          return (dd - tt) / (1000*3600*24) <= 7;
+        }
+        return true;
+      }).filter(r => {
+        if (String(r["Waluta"] || "").toUpperCase() !== "PLN") return false;
+        if (excl) {
+          const blist = (localStorage.getItem("blacklist") || "").toLowerCase();
+          if (blist && r["Dostawca"] && blist.split(",").some(name => r["Dostawca"].toLowerCase().includes(name.trim()))) return false;
+        }
+        return true;
+      });
+    }
+
+    function buildPlan() {
+      const mode = document.getElementById("planFilter").value;
+      const cand = toDueList(mode).sort((a,b) => {
+        const da = new Date(toISO(a["Termin платности"] || a["Termin платності"] || a["Termin платежи"]));
+        const db = new Date(toISO(b["Termin платности"] || b["Termin платності"] || b["Termin платежи"]));
+        const lateA = da < new Date(today());
+        const lateB = db < new Date(today());
+        if (lateA !== lateB) return lateB - lateA;
+        return asNum(b["Kwота do заплаты"] || b["Kwота do заплаты"] || 0) - asNum(a["Kwота do заплаты"] || a["Kwота do заплаты"] || 0);
+      });
+      let left = availableTotal();
+      const plan = [];
+      for (const r of cand) {
+        const amt = asNum(r["Kwота do заплаты"] || r["Kwота do заплаты"] || 0);
+        if (amt <= left) {
+          plan.push({ r, amt, reason: (toISO(r["Termin платности"] || r["Termin платності"] || r["Termin платежи"]) < today() ? "просрочка":"срок") });
+          left -= amt;
+        }
+      }
+      return { plan, left, avail: availableTotal() };
+    }
+
+    function renderPlan() {
+      const p = buildPlan();
+      const tb = document.getElementById("planTable").querySelector("tbody");
+      tb.innerHTML = "";
+      p.plan.forEach((x,i) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${i+1}</td><td>${x.r["Numer faktury"] || x.r["Numer faktury"] || ""}</td><td>${x.r["Dostawca"] || ""}</td><td>${toISO(x.r["Termin платности"] || x.r["Termin платności"] || x.r["Termin платежи"])}</td><td>${x.amt.toFixed(2)}</td><td>${x.reason}</td>`;
+        tb.appendChild(tr);
+      });
+      const metaText = p.plan.length ? `Потратим ${(p.avail - p.left).toFixed(2)} из ${p.avail.toFixed(2)} PLN. Останется ${p.left.toFixed(2)} PLN.` : "План пуст или денег нет.";
+      document.getElementById("planMeta").textContent = metaText;
+    }
+
+    function computeMinPay() {
+      const t = today();
+      const pct = asNum(localStorage.getItem("penaltyPct") || 0.05) / 100.0;
+      const cand = bills.filter(r=> String((r["Waluta"]||"").toUpperCase()) === "PLN" && toISO(r["Termin платности"]||r["Termin платności"]||r["Termin платежи"]) <= t && ["do zapłaty","przeterminowane","к оплате","просрочено"].includes(String(r["Status faktury"]||r["Status faktury"]||"").toLowerCase())).map(r=>({ r, amt: asNum(r["Kwота do заплаты"]||0), risk: asNum(r["Kwота do заплаты"]||0)*pct })).sort((a,b)=>b.risk-a.risk || b.amt - a.amt);
+      return cand[0] || null;
+    }
+
+    function renderMinPay() {
+      const m = computeMinPay();
+      const el = document.getElementById("minPayBox");
+      if (!m) { el.textContent = "—"; return; }
+      el.textContent = `Оплатить ${m.r["Numer фактуры"]||m.r["Numer faktury"]} (${m.r["Dostawca"]}) на ${m.amt.toFixed(2)} PLN. Штраф/день ~ ${m.risk.toFixed(2)} PLN.`;
+    }
+
+    function renderForecast() {
+      const t = new Date(today());
+      const list = toDueList("7d").map(r=>({ date: new Date(toISO(r["Termin платности"]||r["Termin платності"]||r["Termin платежи"])), amt: asNum(r["Kwота do zapлаты"]||0) }));
+      const days = [...Array(7)].map((_,i) => new Date(t.getTime() + i*86400000));
+      let left = availableTotal();
+      const out = days.map(d => ({ d, due: 0, after: 0 }));
+      list.forEach(x => {
+        const idx = Math.min(6, Math.max(0, Math.floor((x.date - t)/86400000)));
+        out[idx].due += x.amt;
+      });
+      out.forEach(o => { left -= o.due; o.after = left; });
+      const wrap = document.getElementById("forecastBars"); wrap.innerHTML = "";
+      out.forEach(o => {
+        const div = document.createElement("div"); div.className = "bar" + (o.after < 0 ? " neg" : "");
+        const h = document.createElement("div"); h.className = "h";
+        h.style.height = (Math.min(120, Math.abs(o.after)/100) * 0.8 + 18) + "px";
+        div.innerHTML = "<small>" + o.d.toISOString().slice(5,10) + "</small>";
+        div.appendChild(h);
+        const v = document.createElement("div");
+        v.textContent = (o.after < 0 ? "-" : "") + Math.abs(o.after).toFixed(0) + " PLN";
+        div.appendChild(v);
+        wrap.appendChild(div);
+      });
+      const firstNeg = out.find(x => x.after < 0);
+      document.getElementById("forecastMeta").textContent = firstNeg ? `Гэп через ${out.indexOf(firstNeg)+1} дн.: не хватает ${Math.abs(firstNeg.after).toFixed(2)} PLN.` : "На 7 дней хватает кассы.";
+    }
+
+    // main render
+    function render() {
+      // KPIs
+      const dueToday = bills.filter(r=>{
+        const s = String(r["Status faktury"]||r["Status faktury"]||"").toLowerCase();
+        return ["do zapłaty","przeterminowane","к оплате","просрочено"].includes(s) && toISO(r["Termin платности"]||r["Termin платności"]||r["Termin платежи"]) === today();
+      }).length;
+      const unmatch = tx.filter(r => String(r["Status transakcji"]||"").toLowerCase() !== "sparowane").length;
+      $('kpiDue').textContent = dueToday;
+      $('kpiUnmatch').textContent = unmatch;
+      const bankPLN = bankAvailablePLN();
+      $('kpiBank').textContent = bankPLN.toFixed(2);
+      const kas = kasaBalance();
+      $('kpiCash').textContent = kas.toFixed(2);
+      const avail = availableTotal();
+      $('kpiAvail').textContent = avail.toFixed(2);
+
+      const sumDueToday = bills.filter(r => String((r["Waluta"]||"").toUpperCase()) === "PLN" && toISO(r["Termin платности"]||r["Termin платності"]||r["Termin платежи"]) <= today() && ["do zapłaty","przeterminowane","к оплате","просрочено"].includes(String(r["Status faktury"]||"").toLowerCase())).reduce((s,r) => s + asNum(r["Kwота do заплаты"]||r["Kwота do заплаты"]||0),0);
+      $('kpiGap').textContent = Math.max(0, sumDueToday - avail).toFixed(2);
+
+      // tx table
+      const txBody = $('txTable').querySelector("tbody"); txBody.innerHTML = "";
+      tx.forEach(r => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${toISO(r["Data księgowania"])}</td>
+                        <td>${r["ID konta"] || r["IBAN"] || "—"}</td>
+                        <td>${r["Kontrahent"] || ""}</td>
+                        <td>${r["Tytuł/Opis"] || r["Opis operacji"] || ""}</td>
+                        <td>${r["Kwota"] || r["Kwота"] || ""}</td>
+                        <td>${r["Waluta"] || ""}</td>
+                        <td>${r["Status transakcji"] || ""}</td>`;
+        txBody.appendChild(tr);
+      });
+
+      // invoices table
+      const billBody = $('billTable').querySelector("tbody"); billBody.innerHTML = "";
+      const scope = $('billScope').value; const onlyOverdue = $('billOverdueOnly')?.checked;
+      bills.forEach(r => {
+        const s = String(r["Status faktury"] || r["Status faktury"] || "").toLowerCase();
+        if (!["do zapłaty","przeterminowane","к оплате","просрочено"].includes(s)) return;
+        if (onlyOverdue && !(s.includes("przetermin") || s.includes("проср"))) return;
+        const d = toISO(r["Termin платности"]||r["Termin платności"]||r["Termin платежи"]);
+        if (scope === "today" && d !== today()) return;
+        if (scope === "7d") {
+          const dd = new Date(d), tt = new Date(today());
+          if ((dd - tt) / (1000*3600*24) > 7) return;
+        }
+        const cls = (s.includes("przetermin") || s.includes("проср")) ? "overdue" : "due";
+        const cand = r["Kandydat (AI)"] || "";
+        const score = r["AI score"] || "";
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${d}</td>
+                        <td>${r["Numer faktury"]||r["Numer faktury"]||""}</td>
+                        <td>${r["Dostawca"]||""}</td>
+                        <td>${r["Kwota do zapłaty"]||r["Kwота do заплаты"]||""}</td>
+                        <td>${r["Waluta"]||""}</td>
+                        <td><span class="badge ${cls}">${r["Status faktury"]||r["Status faktury"]||""}</span></td>
+                        <td>${cand ? ('<span class="badge cand">'+cand+'</span>') : '—'}</td>
+                        <td>${score ? ('<span class="badge ai">'+score+'</span>') : '—'}</td>
+                        <td>${cand ? ('<button class="btn secondary btn-accept" data-id="'+(r["Numer faktury"]||r["Numer faktury"]||"")+'">Принять</button>') : '—'}</td>`;
+        billBody.appendChild(tr);
+      });
+      document.querySelectorAll(".btn-accept").forEach(b => b.addEventListener("click", () => acceptOne(b.getAttribute("data-id"))));
+
+      renderMinPay();
+      renderForecast();
+      renderAccounts();
+      renderKasa();
+    }
+
+    function acceptOne(id) {
+      const b = bills.find(x => (x["Numer faktury"]||x["Numer faktury"]||"") === id); if (!b) return;
+      const t = tx.find(x => (x["ID transakcji"]||"") === (b["Kandydat (AI)"]||"")); if (!t) return;
+      t["Status transakcji"] = "Sparowane";
+      t["Powiązana faktura (ID)"] = b["Numer faktury"] || b["Numer faktury"];
+      b["Status faktury"] = "Opłacone"; b["Data płatności"] = today(); b["Kandydat (AI)"] = b["AI score"] = "";
+      render();
+    }
+
+    // event bindings & init
     document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById("runAI").addEventListener("click", runAI);
-      document.getElementById("acceptSafe").addEventListener("click", acceptSafe);
-      document.getElementById("makePlan").addEventListener("click", renderPlan);
-      document.getElementById("applyPlan").addEventListener("click", applyPlan);
-      document.getElementById("applyMinPay").addEventListener("click", () => {
-        const m = computeMinPay();
-        if (!m) return alert("Нет кандидатов");
-        m.r["Status фактуры"] = "Opłacone";
-        m.r["Data płatności"] = today();
+      // lang & tabs
+      document.querySelectorAll('#langBarMain button').forEach(b => b.addEventListener('click', ()=> {
+        document.querySelectorAll('#langBarMain button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+        localStorage.setItem('otd_lang', b.dataset.lang);
+      }));
+      document.querySelectorAll('.tabs .tab').forEach(t => t.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        t.classList.add('active'); document.getElementById(t.dataset.sec).classList.add('active');
+      }));
+
+      // minimal model load
+      try { tx = JSON.parse(localStorage.getItem('tx_manual_import') || "[]"); } catch(e){ tx = []; }
+      try { bills = JSON.parse(localStorage.getItem('bills_manual_import') || "[]"); } catch(e){ bills = []; }
+      try { accMeta = JSON.parse(localStorage.getItem('accMeta') || "{}"); } catch(e){ accMeta = {}; }
+      loadKasa();
+
+      // file inputs
+      $('txFile')?.addEventListener('change', async e => {
+        const f = e.target.files[0]; if (!f) return;
+        tx = parseCSV(await f.text());
+        localStorage.setItem('tx_manual_import', JSON.stringify(tx));
+        inferAccounts(); render();
+      });
+      $('billFile')?.addEventListener('change', async e => {
+        const f = e.target.files[0]; if (!f) return;
+        bills = parseCSV(await f.text());
+        localStorage.setItem('bills_manual_import', JSON.stringify(bills));
         render();
       });
-      document.getElementById("planFilter").addEventListener("change", renderPlan);
-      document.getElementById("billScope").addEventListener("change", render);
-      document.getElementById("excludeBlacklist")?.addEventListener("change", () => { renderPlan(); render(); });
-      document.getElementById("billOverdueOnly")?.addEventListener("change", render);
-      document.getElementById("exportPDF").addEventListener("click", () => window.print());
-      document.getElementById("syncNow").addEventListener("click", async () => {
-        try {
-          const u1 = localStorage.getItem("txUrl") || "";
-          const u2 = localStorage.getItem("billUrl") || "";
-          if (u1) tx = await fetchCSV(u1);
-          if (u2) bills = await fetchCSV(u2);
-          inferAccounts();
-          render();
-          document.getElementById("lastSync").textContent = "Синхронизация: " + new Date().toLocaleString();
-        } catch(e) {
-          document.getElementById("lastSync").textContent = "Ошибка: " + (e && e.message ? e.message : String(e));
+
+      // save URLs
+      $('saveTxUrl')?.addEventListener('click', ()=> { localStorage.setItem('txUrl', $('txUrl').value.trim()); alert('Сохранено URL wyciąga'); });
+      $('saveBillUrl')?.addEventListener('click', ()=> { localStorage.setItem('billUrl', $('billUrl').value.trim()); alert('Сохранено URL faktur'); });
+
+      // image uploads: tx and bills
+      $('txImage')?.addEventListener('change', async e => {
+        const files = Array.from(e.target.files || []); if (!files.length) return;
+        document.getElementById("lastSync").textContent = "Синхронизация: " + new Date().toLocaleString();
+        for (const f of files) {
+          await processImageFileFor('tx', f);
+        }
+      });
+      $('billImage')?.addEventListener('change', async e => {
+        const files = Array.from(e.target.files || []); if (!files.length) return;
+        for (const f of files) {
+          await processImageFileFor('bills', f);
         }
       });
 
-      document.getElementById("txFile")?.addEventListener("change", async e => {
-        const f = e.target.files[0];
-        if (!f) return;
-        tx = parseCSV(await f.text());
-        inferAccounts();
-        render();
+      // buttons
+      $('runAI').addEventListener('click', runAI);
+      $('acceptSafe').addEventListener('click', acceptSafe);
+      $('makePlan').addEventListener('click', renderPlan);
+      $('applyPlan').addEventListener('click', applyPlan);
+      $('applyMinPay').addEventListener('click', ()=> {
+        const m = computeMinPay(); if (!m) return alert("Нет кандидатов");
+        m.r["Status faktury"] = "Opłacone"; m.r["Data płatności"] = today(); render();
       });
-      document.getElementById("billFile")?.addEventListener("change", async e => {
-        const f = e.target.files[0];
-        if (!f) return;
-        bills = parseCSV(await f.text());
-        render();
-      });
-      document.getElementById("saveTxUrl")?.addEventListener("click", () => {
-        localStorage.setItem("txUrl", document.getElementById("txUrl").value.trim());
-        alert("Сохранено URL wyciąga");
-      });
-      document.getElementById("saveBillUrl")?.addEventListener("click", () => {
-        localStorage.setItem("billUrl", document.getElementById("billUrl").value.trim());
-        alert("Сохранено URL faktur");
+      $('planFilter').addEventListener('change', renderPlan);
+      $('billScope').addEventListener('change', render);
+      $('excludeBlacklist')?.addEventListener('change', ()=> { renderPlan(); render(); });
+      $('billOverdueOnly')?.addEventListener('change', render);
+      $('exportPDF').addEventListener('click', ()=> window.print());
+      $('syncNow').addEventListener('click', async ()=> {
+        try {
+          const u1 = localStorage.getItem("txUrl") || ""; const u2 = localStorage.getItem("billUrl") || "";
+          if (u1) tx = await fetchCSV(u1);
+          if (u2) bills = await fetchCSV(u2);
+          localStorage.setItem('tx_manual_import', JSON.stringify(tx));
+          localStorage.setItem('bills_manual_import', JSON.stringify(bills));
+          inferAccounts(); render(); $('lastSync').textContent = "Синхронизация: " + new Date().toLocaleString();
+        } catch(e) { $('lastSync').textContent = "Ошибка: " + (e && e.message ? e.message : String(e)); }
       });
 
       // cash controls
-      document.getElementById("addIn").addEventListener("click", () =>
-        addKasa("przyjęcie", asNum(document.getElementById("quickAmt").value), document.getElementById("quickNote").value, "ручной")
-      );
-      document.getElementById("addOut").addEventListener("click", () =>
-        addKasa("wydanie", asNum(document.getElementById("quickAmt").value), document.getElementById("quickNote").value, "ручной")
-      );
-      document.getElementById("cashClose").addEventListener("click", () => {
-        const a = prompt("Итог в кассе (PLN):", kasaBalance().toFixed(2));
-        if (a === null) return;
+      $('addIn').addEventListener('click', ()=> addKasa("przyjęcie", asNum($('quickAmt').value), $('quickNote').value, "ручной"));
+      $('addOut').addEventListener('click', ()=> addKasa("wydanie", asNum($('quickAmt').value), $('quickNote').value, "ручной"));
+      $('cashClose').addEventListener('click', ()=> {
+        const a = prompt("Итог в кассе (PLN):", kasaBalance().toFixed(2)); if (a === null) return;
         addKasa("zamknięcie", asNum(a), "close", "ручной");
       });
-      document.getElementById("q50").addEventListener("click", () => {
-        document.getElementById("quickAmt").value = (Number(document.getElementById("quickAmt").value || 0) + 50).toFixed(2);
-      });
-      document.getElementById("q100").addEventListener("click", () => {
-        document.getElementById("quickAmt").value = (Number(document.getElementById("quickAmt").value || 0) + 100).toFixed(2);
-      });
-      document.getElementById("q200").addEventListener("click", () => {
-        document.getElementById("quickAmt").value = (Number(document.getElementById("quickAmt").value || 0) + 200).toFixed(2);
-      });
+      $('q50').addEventListener('click', ()=> $('quickAmt').value = (Number($('quickAmt').value || 0) + 50).toFixed(2));
+      $('q100').addEventListener('click', ()=> $('quickAmt').value = (Number($('quickAmt').value || 0) + 100).toFixed(2));
+      $('q200').addEventListener('click', ()=> $('quickAmt').value = (Number($('quickAmt').value || 0) + 200).toFixed(2));
 
-      // Voice recognition (unchanged)
-      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      let rec = null;
-      if (SR) {
-        rec = new SR();
-        rec.continuous = false;
-        rec.interimResults = false;
-        rec.maxAlternatives = 1;
-        rec.lang = localStorage.getItem("speechLang") || "pl-PL";
-        rec.onstart = () => {
-          if (document.querySelector(".mic")) document.querySelector(".mic").classList.add("on");
-          document.getElementById("micStatus").textContent = `🎙️ Слушаю... (${rec.lang})`;
-        };
-        rec.onend = () => {
-          if (document.querySelector(".mic")) document.querySelector(".mic").classList.remove("on");
-        };
-        rec.onresult = (e) => {
-          const text = (e.results[0][0].transcript || "").toLowerCase();
-          document.getElementById("micStatus").textContent = "🎙️ Распознано: " + text;
-          const numMatch = text.match(/(\d+[.,]?\d*)\s*(zł|pln)?/);
-          const num = numMatch ? numMatch[1] : null;
-          const isOut = /(wyda|minus|wydat|выда|минус|расход)/.test(text);
-          const isIn = /(przyj|plus|wpływ|принять|плюс|приход)/.test(text) || !isOut;
-          const note = text.replace(/(\d+[.,]?\d*\s*(zł|pln)?)/, "").trim();
-          if (!num) {
-            document.getElementById("micStatus").textContent = "🎙️ Сумму не нашёл";
-            return;
-          }
-          addKasa(isOut ? "wydanie" : "przyjęcie", asNum(num), note || "голос", "voice");
-        };
-      }
-      document.getElementById("micBtn").addEventListener("click", () => {
-        if (!rec) { alert("Голосовой ввод требует Chrome + HTTPS/localhost."); return; }
-        try {
-          const sel = document.getElementById("speechLang");
-          if (sel) {
-            rec.lang = sel.value;
-            localStorage.setItem("speechLang", rec.lang);
-          }
-          rec.start();
-        } catch(e) {
-          document.getElementById("micStatus").textContent = "🎙️ Не смог запустить: " + e.message;
-        }
-      });
-      document.getElementById("micTest").addEventListener("click", () => {
-        document.getElementById("micStatus").textContent = "🎙️ Тест: прийнято 120 на кассу (симуляция)";
-        addKasa("przyjęcie", 120, "симуляция", "test");
-      });
-
-      // OCR in kasa for receipt photo (keeps user choice)
-      document.getElementById("cashPhoto")?.addEventListener("change", async e => {
-        const f = e.target.files[0];
-        if (!f) return;
+      // cash photo OCR (quick Tesseract)
+      $('cashPhoto')?.addEventListener('change', async e => {
+        const f = e.target.files[0]; if (!f) return;
         const imgURL = URL.createObjectURL(f);
-        const thumb = document.getElementById("lastThumb");
-        if (thumb) { thumb.src = imgURL; thumb.style.display = "inline-block"; }
+        const thumb = $('lastThumb'); if (thumb) { thumb.src = imgURL; thumb.style.display = "inline-block"; }
         try {
-          const worker = await Tesseract.createWorker();
-          await worker.load();
+          const worker = await createTessWorker();
           try { await worker.loadLanguage("eng+pol"); await worker.initialize("eng+pol"); } catch(e){ try{ await worker.loadLanguage("eng"); await worker.initialize("eng"); } catch(_){} }
-          const { data: { text } } = await worker.recognize(imgURL);
+          const dataUrl = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(f); });
+          const { data:{ text } } = await worker.recognize(dataUrl);
           await worker.terminate();
-          const amountMatch = text.replace(",", ".").match(/(\d{1,3}(?:[ .]\d{3})*(?:[.,]\d{2})|\d+[.,]\d{2})\s*(PLN|zł)?/i);
+          const amountMatch = text.replace(",",".").match(/(\d{1,3}(?:[ .]\d{3})*(?:[.,]\d{2})|\d+[.,]\d{2})\s*(PLN|zł)?/i);
           const dateMatch = text.match(/(\d{2}[.\-/]\d{2}[.\-/]\d{2,4})/);
           const amtStr = amountMatch ? amountMatch[1].replace(/\s/g,'').replace(/\./g,'').replace(',', '.') : null;
           const note = "OCR: " + (dateMatch ? dateMatch[1] + " " : "") + (text.split("\n")[0] || "paragon");
@@ -1496,194 +1207,118 @@
         }
       });
 
-      // Settings handlers
-      document.getElementById("applySettings").addEventListener("click", () => {
-        localStorage.setItem("cashPLN", document.getElementById("cashPLN").value || "0");
-        localStorage.setItem("penaltyPct", document.getElementById("penaltyPct").value || "0.05");
-        localStorage.setItem("intervalMin", document.getElementById("intervalMin").value || "10");
-        localStorage.setItem("rateEUR", document.getElementById("rateEUR").value || "4.30");
-        localStorage.setItem("rateUSD", document.getElementById("rateUSD").value || "3.95");
-        localStorage.setItem("blacklist", document.getElementById("blacklist").value || "");
-        localStorage.setItem("autoCash", document.getElementById("autoCash").checked ? "1" : "0");
-        document.getElementById("modeCash").textContent = (localStorage.getItem("otd_lang") || "ru") === "ru"
-          ? "Режим: " + (document.getElementById("autoCash").checked ? "авто" : "ручной")
-          : (localStorage.getItem("otd_lang") || "ru") === "pl"
-            ? "Tryb: " + (document.getElementById("autoCash").checked ? "auto" : "ręczny")
-            : (localStorage.getItem("otd_lang") || "ru") === "uk"
-              ? "Режим: " + (document.getElementById("autoCash").checked ? "авто" : "ручний")
-              : "Mode: " + (document.getElementById("autoCash").checked ? "auto" : "manual");
+      // voice recognition (optional)
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      let rec = null;
+      if (SR) {
+        rec = new SR();
+        rec.continuous = false; rec.interimResults = false; rec.maxAlternatives = 1;
+        rec.lang = localStorage.getItem("speechLang") || "pl-PL";
+        rec.onstart = () => { if (document.querySelector(".mic")) document.querySelector(".mic").classList.add("on"); $('micStatus').textContent = `🎙️ Слушаю... (${rec.lang})`; };
+        rec.onend = () => { if (document.querySelector(".mic")) document.querySelector(".mic").classList.remove("on"); };
+        rec.onresult = (e) => {
+          const text = (e.results[0][0].transcript || "").toLowerCase();
+          $('micStatus').textContent = "🎙️ Распознано: " + text;
+          const numMatch = text.match(/(\d+[.,]?\d*)\s*(zł|pln)?/);
+          const num = numMatch ? numMatch[1] : null;
+          const isOut = /(wyda|minus|wydat|выда|минус|расход)/.test(text);
+          const isIn = /(przyj|plus|wpływ|принять|плюс|приход)/.test(text) || !isOut;
+          const note = text.replace(/(\d+[.,]?\d*\s*(zł|pln)?)/, "").trim();
+          if (!num) { $('micStatus').textContent = "🎙️ Сумму не нашёл"; return; }
+          addKasa(isOut ? "wydanie" : "przyjęcie", asNum(num), note || "голос", "voice");
+        };
+      }
+      $('micBtn').addEventListener('click', ()=>{
+        if (!rec) { alert("Голосовой ввод требует Chrome + HTTPS/localhost."); return; }
+        try {
+          const sel = $('speechLang'); if (sel) { rec.lang = sel.value; localStorage.setItem("speechLang", rec.lang); }
+          rec.start();
+        } catch(e) { $('micStatus').textContent = "🎙️ Не смог запустить: " + e.message; }
+      });
+      $('micTest').addEventListener('click', ()=> { $('micStatus').textContent = "🎙️ Тест: принят 120 на кассу (симуляция)"; addKasa("przyjęcie", 120, "симуляция", "test"); });
+
+      // settings
+      $('applySettings').addEventListener('click', ()=> {
+        localStorage.setItem("cashPLN", $('cashPLN').value || "0");
+        localStorage.setItem("penaltyPct", $('penaltyPct').value || "0.05");
+        localStorage.setItem("intervalMin", $('intervalMin').value || "10");
+        localStorage.setItem("rateEUR", $('rateEUR').value || "4.30");
+        localStorage.setItem("rateUSD", $('rateUSD').value || "3.95");
+        localStorage.setItem("blacklist", $('blacklist').value || "");
+        localStorage.setItem("autoCash", $('autoCash').checked ? "1" : "0");
+        $('modeCash').textContent = (localStorage.getItem("otd_lang") || "ru") === "ru" ? "Режим: " + ($('autoCash').checked ? "авто":"ручной") : "Mode: " + ($('autoCash').checked ? "auto":"manual");
         render();
       });
-      document.getElementById("exportCfg").addEventListener("click", () => {
-        const cfg = {
-          txUrl: localStorage.getItem("txUrl") || "",
-          billUrl: localStorage.getItem("billUrl") || "",
-          cashPLN: localStorage.getItem("cashPLN") || "0",
-          penaltyPct: localStorage.getItem("penaltyPct") || "0.05",
-          intervalMin: localStorage.getItem("intervalMin") || "10",
-          rateEUR: localStorage.getItem("rateEUR") || "4.30",
-          rateUSD: localStorage.getItem("rateUSD") || "3.95",
-          blacklist: localStorage.getItem("blacklist") || "",
-          autoCash: localStorage.getItem("autoCash") || "0",
-          accMeta: localStorage.getItem("accMeta") || "{}"
-        };
-        const blob = new Blob([JSON.stringify(cfg, null, 2)], { type: "application/json" });
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "onetapday_settings.json";
-        a.click();
+      $('exportCfg').addEventListener('click', ()=> {
+        const cfg = { txUrl: localStorage.getItem("txUrl")||"", billUrl: localStorage.getItem("billUrl")||"", cashPLN: localStorage.getItem("cashPLN")||"0", penaltyPct: localStorage.getItem("penaltyPct")||"0.05", intervalMin: localStorage.getItem("intervalMin")||"10", rateEUR: localStorage.getItem("rateEUR")||"4.30", rateUSD: localStorage.getItem("rateUSD")||"3.95", blacklist: localStorage.getItem("blacklist")||"", autoCash: localStorage.getItem("autoCash")||"0", accMeta: localStorage.getItem("accMeta")||"{}" };
+        const blob = new Blob([JSON.stringify(cfg,null,2)], { type: "application/json" });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "onetapday_settings.json"; a.click();
       });
-      document.getElementById("importCfg")?.addEventListener("change", async e => {
-        const f = e.target.files[0];
-        if (!f) return;
+      $('importCfg')?.addEventListener('change', async e=> {
+        const f = e.target.files[0]; if (!f) return;
         const cfg = JSON.parse(await f.text());
-        Object.entries(cfg).forEach(([k, v]) => localStorage.setItem(k, typeof v === "string" ? v : JSON.stringify(v)));
+        Object.entries(cfg).forEach(([k,v]) => localStorage.setItem(k, typeof v === "string" ? v : JSON.stringify(v)));
         location.reload();
       });
 
-      // Pilot admin actions (POST endpoints)
-      (function pilotUI() {
-        function getPilot() { try { return JSON.parse(localStorage.getItem("otd_pilot") || "{}"); } catch(e){ return {}; } }
-        function setPilot(s) { try { localStorage.setItem("otd_pilot", JSON.stringify(s)); } catch(e){} }
-        function isoDate(d) { const x = new Date(d); return isNaN(x) ? "—" : x.toISOString().slice(0,10); }
-        function daysLeft(endIso) { if (!endIso) return 0; const e = new Date(endIso), n = new Date(); return Math.max(0, Math.ceil((e - n) / 86400000)); }
-        function updatePilotUI() {
-          const s = getPilot();
-          const st = s.status || "none";
-          let desc = "—";
-          if (st === "none") desc = "ожидается оплата депозита";
-          if (st === "deposit_paid") desc = "депозит оплачен";
-          if (st === "active") desc = "пилот активен";
-          if (st === "ended") desc = "пилот завершён";
-          if (st === "discount_active") desc = "скидка активна";
-          const mini = document.getElementById("pilotMini"); if (mini) mini.textContent = "Статус: " + desc;
-          const ps = document.getElementById("pilotStart"); if (ps) ps.textContent = s.startAt ? isoDate(s.startAt) : "—";
-          const pe = document.getElementById("pilotEnd"); if (pe) pe.textContent = s.endAt ? isoDate(s.endAt) : "—";
-          const pc = document.getElementById("pilotCountdown"); if (pc) pc.textContent = (st === "active" && s.endAt) ? (" · осталось " + daysLeft(s.endAt) + " дн.") : "";
-          const du = document.getElementById("discountUntil"); if (du) du.textContent = s.discountUntil ? isoDate(s.discountUntil) : "—";
-          const userEmail = localStorage.getItem("otd_user") || "";
-          const isAdmin = userEmail && (userEmail === "1tapday@gmail.com");
-          document.getElementById("btnMarkPaid").style.display = isAdmin ? "inline-block" : "none";
-          document.getElementById("btnStartPilot").style.display = isAdmin ? "inline-block" : "none";
-          document.getElementById("btnResetPilot").style.display = isAdmin ? "inline-block" : "none";
+      // pilot admin UI (kept simple)
+      (function pilotUI(){
+        function getPilot(){ try { return JSON.parse(localStorage.getItem("otd_pilot")||"{}"); } catch(e){ return {}; } }
+        function setPilot(s){ try { localStorage.setItem("otd_pilot", JSON.stringify(s)); } catch(e){} }
+        function isoDate(d){ const x = new Date(d); return isNaN(x) ? "—" : x.toISOString().slice(0,10); }
+        function daysLeft(endIso){ if (!endIso) return 0; const e = new Date(endIso), n = new Date(); return Math.max(0, Math.ceil((e-n)/86400000)); }
+        function updatePilotUI(){
+          const s = getPilot(); const st = s.status || "none";
+          let desc = "—"; if (st==="none") desc="ожидается оплата депозита"; if (st==="deposit_paid") desc="депозит оплачен"; if (st==="active") desc="пилот активен"; if (st==="ended") desc="пилот завершён"; if (st==="discount_active") desc="скидка активна";
+          $('pilotMini').textContent = "Статус: " + desc;
+          $('pilotStart').textContent = s.startAt ? isoDate(s.startAt):"—";
+          $('pilotEnd').textContent = s.endAt ? isoDate(s.endAt):"—";
+          $('pilotCountdown').textContent = (st==="active" && s.endAt) ? (" · осталось " + daysLeft(s.endAt) + " дн.") : "";
+          $('discountUntil').textContent = s.discountUntil ? isoDate(s.discountUntil):"—";
+          const userEmail = localStorage.getItem("otd_user") || ""; const isAdmin = userEmail && (userEmail === "1tapday@gmail.com");
+          $('btnMarkPaid').style.display = isAdmin ? "inline-block" : "none";
+          $('btnStartPilot').style.display = isAdmin ? "inline-block" : "none";
+          $('btnResetPilot').style.display = isAdmin ? "inline-block" : "none";
           const showDiscount = st === "ended";
-          document.getElementById("btnActivateDiscount").style.display = showDiscount ? "inline-block" : (isAdmin ? "none" : "none");
+          $('btnActivateDiscount').style.display = showDiscount ? "inline-block" : "none";
         }
-        document.addEventListener("click", (e) => {
-          const id = e.target && e.target.id;
-          if (!id) return;
+        document.addEventListener("click", e => {
+          const id = e.target && e.target.id; if (!id) return;
           let s = getPilot();
-          if (id === "btnMarkPaid") {
-            fetch("/mark-paid", { method: "POST" })
-              .then(res => res.json()).then(data => {
-                if (data.success) {
-                  s.status = "deposit_paid";
-                  s.paidAt = new Date().toISOString();
-                  setPilot(s);
-                  updatePilotUI();
-                } else {
-                  alert(data.error || "Ошибка пометки оплаты");
-                }
-              });
-          }
-          if (id === "btnStartPilot") {
-            fetch("/start-pilot", { method: "POST" })
-              .then(res => res.json()).then(data => {
-                if (data.success) {
-                  s.status = "active";
-                  s.startAt = new Date().toISOString();
-                  const d = new Date(); d.setMonth(d.getMonth() + 2); s.endAt = d.toISOString();
-                  s.reminders = [14,7,3].map(n => { let x = new Date(d); x.setDate(x.getDate() - n); return x.toISOString(); });
-                  setPilot(s); updatePilotUI();
-                } else {
-                  alert(data.error || "Ошибка запуска пилота");
-                }
-              });
-          }
-          if (id === "btnActivateDiscount") {
-            fetch("/activate-discount", { method: "POST" })
-              .then(res => res.json()).then(data => {
-                if (data.success) {
-                  s.status = "discount_active";
-                  s.discountSince = new Date().toISOString();
-                  const e2 = new Date(); e2.setMonth(e2.getMonth() + 12); s.discountUntil = e2.toISOString();
-                  setPilot(s); updatePilotUI();
-                } else {
-                  alert(data.error || "Ошибка активации скидки");
-                }
-              });
-          }
-          if (id === "btnResetPilot") {
-            localStorage.removeItem("otd_pilot");
-            updatePilotUI();
-          }
+          if (id === "btnMarkPaid") { s.status="deposit_paid"; s.paidAt=new Date().toISOString(); setPilot(s); updatePilotUI(); }
+          if (id === "btnStartPilot") { s.status="active"; s.startAt = new Date().toISOString(); const d = new Date(); d.setMonth(d.getMonth()+2); s.endAt = d.toISOString(); s.reminders = [14,7,3].map(n=>{ let x = new Date(d); x.setDate(x.getDate()-n); return x.toISOString(); }); setPilot(s); updatePilotUI(); }
+          if (id === "btnActivateDiscount") { s.status="discount_active"; s.discountSince = new Date().toISOString(); const e2 = new Date(); e2.setMonth(e2.getMonth()+12); s.discountUntil = e2.toISOString(); setPilot(s); updatePilotUI(); }
+          if (id === "btnResetPilot") { localStorage.removeItem("otd_pilot"); updatePilotUI(); }
         }, false);
-        setInterval(() => {
-          const s = JSON.parse(localStorage.getItem("otd_pilot") || "{}");
-          if ((s.status || "") === "active") updatePilotUI();
-        }, 60000);
+        setInterval(()=>{ const s = JSON.parse(localStorage.getItem("otd_pilot")||"{}"); if ((s.status||"") === "active") updatePilotUI(); }, 60000);
         updatePilotUI();
       })();
 
-      // init load
+      // init UI values
       (function init() {
-        loadKasa();
-        try { accMeta = JSON.parse(localStorage.getItem("accMeta") || "{}"); } catch(e) { accMeta = {}; }
-        try { tx = JSON.parse(localStorage.getItem("tx_manual_import") || "[]").concat(tx); } catch(e){}
-        try { bills = JSON.parse(localStorage.getItem("bills_manual_import") || "[]").concat(bills); } catch(e){}
-        renderKasa();
-        document.getElementById("txUrl").value = localStorage.getItem("txUrl") || "";
-        document.getElementById("billUrl").value = localStorage.getItem("billUrl") || "";
-        document.getElementById("cashPLN").value = localStorage.getItem("cashPLN") || "5000";
-        document.getElementById("penaltyPct").value = localStorage.getItem("penaltyPct") || "0.05";
-        document.getElementById("intervalMin").value = localStorage.getItem("intervalMin") || "10";
-        document.getElementById("rateEUR").value = localStorage.getItem("rateEUR") || "4.30";
-        document.getElementById("rateUSD").value = localStorage.getItem("rateUSD") || "3.95";
-        document.getElementById("blacklist").value = localStorage.getItem("blacklist") || "";
-        document.getElementById("autoCash").checked = localStorage.getItem("autoCash") === "1";
-        const saved = localStorage.getItem("speechLang");
-        if (saved) document.getElementById("speechLang").value = saved;
-        document.getElementById("modeCash").textContent = (localStorage.getItem("otd_lang") || "ru") === "ru"
-          ? "Режим: " + (document.getElementById("autoCash").checked ? "авто" : "ручной")
-          : (localStorage.getItem("otd_lang") || "ru") === "pl"
-            ? "Tryb: " + (document.getElementById("autoCash").checked ? "auto" : "ręczny")
-            : (localStorage.getItem("otd_lang") || "ru") === "uk"
-              ? "Режим: " + (document.getElementById("autoCash").checked ? "авто" : "ручний")
-              : "Mode: " + (document.getElementById("autoCash").checked ? "auto" : "manual");
+        $('txUrl').value = localStorage.getItem("txUrl") || "";
+        $('billUrl').value = localStorage.getItem("billUrl") || "";
+        $('cashPLN').value = localStorage.getItem("cashPLN") || "5000";
+        $('penaltyPct').value = localStorage.getItem("penaltyPct") || "0.05";
+        $('intervalMin').value = localStorage.getItem("intervalMin") || "10";
+        $('rateEUR').value = localStorage.getItem("rateEUR") || "4.30";
+        $('rateUSD').value = localStorage.getItem("rateUSD") || "3.95";
+        $('blacklist').value = localStorage.getItem("blacklist") || "";
+        $('autoCash').checked = localStorage.getItem("autoCash") === "1";
+        const saved = localStorage.getItem("speechLang"); if (saved) $('speechLang').value = saved;
+        $('modeCash').textContent = (localStorage.getItem("otd_lang") || "ru") === "ru" ? "Режим: " + ($('autoCash').checked ? "авто":"ручной") : "Mode: " + ($('autoCash').checked ? "auto":"manual");
         inferAccounts();
         render();
       })();
     });
 
-    // simple helpers used by event handlers below
+    // helper applyPlan used above
     function applyPlan() {
       const p = buildPlan();
-      p.plan.forEach(x => {
-        x.r["Status фактуры"] = "Opłacone";
-        x.r["Data płатności"] = today();
-      });
+      p.plan.forEach(x => { x.r["Status faktury"] = "Opłacone"; x.r["Data płatności"] = today(); });
       render();
     }
-  })();
-  </script>
 
-  <script>
-  (async function(){
-    function fmtTime(ms){ if(ms <= 0) return '00:00:00'; const h = Math.floor(ms/3600000), m = Math.floor(ms%3600000/60000), s = Math.floor(ms%60000/1000); return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0'); }
-    async function whoami(){ try { const r = await fetch('/me', { credentials: 'include' }); if (!r.ok) return null; const json = await r.json(); return json.user || null;} catch(e){ return null; } }
-    const user = await whoami();
-    if (!user) { alert('Вам нужно войти. Перенаправляю на страницу входа.'); window.location.href = '/'; return; }
-    const statusEl = document.getElementById('mvp-status') || (function(){ const e = document.createElement('div'); e.id='mvp-status'; e.style.margin='8px'; document.body.prepend(e); return e; })();
-    const endISO = user.endAt || user.demo_until || user.demoUntil;
-    if (endISO) {
-      let until = Date.parse(endISO); if (isNaN(until)) until = Date.now() + 24*60*60*1000;
-      statusEl.textContent = 'Демо активировано — осталось ' + fmtTime(until - Date.now());
-      const t = setInterval(()=>{ const diff = until - Date.now(); if (diff <= 0) { clearInterval(t); statusEl.innerHTML = 'Демо завершено. <button id="payAfterDemo">Оплатить сейчас</button>'; document.getElementById('payAfterDemo').addEventListener('click', async ()=>{ const r = await fetch('/create-checkout-session', { method: 'POST', credentials: 'include' }); const j = await r.json().catch(()=>null); const redirect = (j && (j.url || j.sessionUrl || j.session && j.session.url)) || null; if (redirect) window.location.href = redirect; else alert('Не удалось создать платежную сессию. Смотри логи.'); }); return; } else statusEl.textContent = 'Демо активировано — осталось ' + fmtTime(diff) + ' (после окончания будет предложена оплата)'; }, 1000);
-    } else {
-      statusEl.innerHTML = 'Нет доступа. <button id="payNow">Оплатить 2 месяца</button>';
-      document.getElementById('payNow').addEventListener('click', async ()=>{ const r = await fetch('/create-checkout-session', { method: 'POST', credentials: 'include' }); const j = await r.json().catch(()=>null); const redirect = (j && (j.url || j.sessionUrl || j.session && j.session.url)) || null; if (redirect) window.location.href = redirect; else alert('Не удалось создать Stripe-сессию.'); });
-    }
-  })();
   </script>
 </body>
 </html>
