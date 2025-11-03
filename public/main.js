@@ -74,6 +74,70 @@
     localStorage.setItem('otd_lang', lang);
   }
 
+  // --- canonical keys and normalization helpers ---
+  const TX_KEYS = {
+    date: "Data księgowania",
+    id: "ID transakcji",
+    account: "ID konta",
+    counterparty: "Kontrahent",
+    desc: "Tytuł/Opis",
+    amount: "Kwota",
+    currency: "Waluta",
+    status: "Status transakcji",
+    balance: "Saldo po operacji"
+  };
+  const BILL_KEYS = {
+    due: "Termin płatności",
+    number: "Numer faktury",
+    supplier: "Dostawca",
+    amount: "Kwota do zapłaty",
+    currency: "Waluta",
+    status: "Status faktury",
+    candidate: "Kandidat (AI)",
+    score: "AI score"
+  };
+
+  function mapRowToTx(row) {
+    const out = {};
+    // try common headers
+    out[TX_KEYS.date] = row[TX_KEYS.date] || row['date'] || row['Дата'] || row['Data'] || row['data'] || '';
+    out[TX_KEYS.id] = row[TX_KEYS.id] || row['ID transakcji'] || row['id'] || row['transaction_id'] || ('TX-' + Date.now() + '-' + Math.floor(Math.random()*1000));
+    out[TX_KEYS.account] = row[TX_KEYS.account] || row['ID konta'] || row['IBAN'] || row['account'] || 'UNKNOWN';
+    out[TX_KEYS.counterparty] = row[TX_KEYS.counterparty] || row['Kontrahent'] || row['counterparty'] || row['Kontrahent'] || '';
+    out[TX_KEYS.desc] = row[TX_KEYS.desc] || row['Tytuł/Opis'] || row['Opis operacji'] || row['desc'] || row['Описание'] || '';
+    // normalize amount (remove non-numeric except minus and dot/comma)
+    let rawAmt = (row[TX_KEYS.amount] || row['Kwota'] || row['amount'] || row['Kwота'] || '').toString();
+    rawAmt = rawAmt.replace(/\s/g, '').replace(/,/g, '.').replace(/[^\d\.\-]/g, '');
+    out[TX_KEYS.amount] = rawAmt === '' ? '' : rawAmt;
+    out[TX_KEYS.currency] = (row[TX_KEYS.currency] || row['Waluta'] || row['currency'] || 'PLN').toString().toUpperCase() || 'PLN';
+    out[TX_KEYS.status] = row[TX_KEYS.status] || row['Status transakcji'] || row['status'] || 'imported';
+    out[TX_KEYS.balance] = row[TX_KEYS.balance] || row['Saldo po operacji'] || row['balance'] || '';
+    return out;
+  }
+  function mapRowToBill(row) {
+    const out = {};
+    out[BILL_KEYS.due] = row[BILL_KEYS.due] || row['Termin płatności'] || row['due'] || row['data'] || '';
+    out[BILL_KEYS.number] = row[BILL_KEYS.number] || row['Numer faktury'] || row['invoice'] || '';
+    let rawAmt = (row[BILL_KEYS.amount] || row['Kwota do zapłaty'] || row['amount'] || '').toString();
+    rawAmt = rawAmt.replace(/\s/g, '').replace(/,/g, '.').replace(/[^\d\.\-]/g, '');
+    out[BILL_KEYS.amount] = rawAmt === '' ? '' : rawAmt;
+    out[BILL_KEYS.currency] = (row[BILL_KEYS.currency] || row['Waluta'] || row['currency'] || 'PLN').toString().toUpperCase() || 'PLN';
+    out[BILL_KEYS.supplier] = row[BILL_KEYS.supplier] || row['Dostawca'] || row['supplier'] || '';
+    out[BILL_KEYS.status] = row[BILL_KEYS.status] || row['Status faktury'] || row['status'] || 'do zapłaty';
+    out[BILL_KEYS.candidate] = row[BILL_KEYS.candidate] || '';
+    out[BILL_KEYS.score] = row[BILL_KEYS.score] || '';
+    return out;
+  }
+
+  function normalizeTxArray(arr) {
+    if (!Array.isArray(arr)) return [];
+    return arr.map(r => mapRowToTx(r));
+  }
+  function normalizeBillsArray(arr) {
+    if (!Array.isArray(arr)) return [];
+    return arr.map(r => mapRowToBill(r));
+  }
+
   // --- per-user localStorage helpers ---
   function _currentUserEmail() {
     const e = localStorage.getItem('otd_user') || '';
@@ -174,7 +238,7 @@
       await syncStateFromServerToLocal().catch(()=>null);
       return { ok: true };
     }
-    // 2) fallback /demo
+    // 2) fallback /demo (server may not have)
     resp = await postJSON('/demo', {});
     if (resp.ok && resp.body && (resp.body.demo_until || resp.body.demoUntil || resp.body.success)) {
       const until = resp.body.demo_until || resp.body.demoUntil || null;
@@ -201,8 +265,8 @@
     const emailEl = $('email'), passEl = $('pass'), loginBtn = $('doLogin'), doPayBtn = $('doPay'), stripeBtn = $('payStripe'), demoBtn = $('demoBtn');
 
     // Registration / Login
-    loginBtn.addEventListener('click', async ()=>{
-      const email = (emailEl.value||'').trim(), pass = passEl.value || '';
+    if (loginBtn) loginBtn.addEventListener('click', async ()=>{
+      const email = (emailEl && emailEl.value||'').trim(), pass = passEl && passEl.value || '';
       if (!email || !pass) return alert('Введите email и пароль');
 
       const activeTab = document.querySelector('.tabs button.on');
@@ -241,7 +305,7 @@
     });
 
     // Demo button manual
-    demoBtn.addEventListener('click', async ()=>{
+    if (demoBtn) demoBtn.addEventListener('click', async ()=>{
       const md = await tryStartDemo();
       if (md.ok) { alert('Демо активировано — 24 часа'); }
       else {
@@ -251,7 +315,7 @@
     });
 
     // Stripe
-    stripeBtn.addEventListener('click', async (e)=>{
+    if (stripeBtn) stripeBtn.addEventListener('click', async (e)=>{
       e.preventDefault();
       const resp = await postJSON('/create-checkout-session', {});
       if (!resp.ok) {
@@ -264,7 +328,7 @@
       alert('Неожиданный ответ сервера платежа: ' + JSON.stringify(body));
     });
 
-    doPayBtn.addEventListener('click', ()=>{ stripeBtn.scrollIntoView({behavior:'smooth', block:'center'}); });
+    if (doPayBtn) doPayBtn.addEventListener('click', ()=>{ stripeBtn && stripeBtn.scrollIntoView({behavior:'smooth', block:'center'}); });
 
     // restore demo timer if present (local only)
     const savedUntil = localStorage.getItem('otd_demo_until');
@@ -280,6 +344,7 @@
         const params = new URLSearchParams(location.search);
         const sid = params.get('session_id');
         if (!sid) return;
+        // call /session to finalize and set cookie if possible
         await fetch('/session?session_id=' + encodeURIComponent(sid), { credentials: 'include' });
         setTimeout(()=> location.href = location.pathname, 900);
       } catch(e){ console.warn('session finalize failed', e); }
@@ -308,10 +373,10 @@
         const until = user.demo_until || user.demoUntil || user.endAt || user.end_at;
         if (until) startDemoCountdown(until);
         else if ($('statusText')) $('statusText').textContent = `${user.email} — ${T[lang].status_active}`;
-        $('payStripe').style.display = '';
+        $('payStripe') && ($('payStripe').style.display = '');
       } else {
         if ($('statusText')) $('statusText').textContent = `${user.email} — ${T[lang].status_none}`;
-        $('payStripe').style.display = '';
+        $('payStripe') && ($('payStripe').style.display = '');
       }
     };
 
