@@ -171,7 +171,7 @@
       </div>
       <div class="row" style="margin: 10px 0;">
         <button id="syncNow" class="btn" data-i="btn_sync">Синхронизация</button>
-        <button id="runAI" class="btn secondary" data-i="btn_ai_match">ИИ‑сверка</button>
+        <button id="runAI" class="btn secondary" data-i="btn_ai_match">ИИ-сверка</button>
         <button id="acceptSafe" class="btn secondary" data-i="btn_accept_safe">Принять безопасные пары</button>
         <button id="exportPDF" class="btn secondary" data-i="btn_pdf">PDF отчёт</button>
         <span id="lastSync" class="pill">Синхронизация: —</span>
@@ -179,7 +179,7 @@
       </div>
       <div class="grid2">
         <div class="card">
-          <div style="font-weight: 700;" data-i="minpay_title">Минимальный платёж (штраф‑стоп)</div>
+          <div style="font-weight: 700;" data-i="minpay_title">Минимальный платёж (штраф-стоп)</div>
           <div id="minPayBox" class="muted">—</div>
           <div class="row" style="margin-top: 6px;">
             <button id="applyMinPay" class="btn secondary" data-i="btn_apply_minpay">Отметить как оплачено</button>
@@ -187,7 +187,7 @@
         </div>
         <div class="card">
           <div style="font-weight: 700;" data-i="forecast_7d">Прогноз 7 дней</div>
-          <div class="muted" data-i="forecast7d_note">Считает PLN‑счета из wyciąg (включённые) + кассу.</div>
+          <div class="muted" data-i="forecast7d_note">Считает PLN-счета из wyciąg (включённые) + кассу.</div>
           <div id="forecastBars" class="barwrap"></div>
           <div id="forecastMeta" class="muted" style="margin-top: 6px;">—</div>
         </div>
@@ -249,7 +249,7 @@
         <input id="txUrl" type="text" placeholder="URL CSV wyciąga" />
         <button id="saveTxUrl" class="btn secondary" data-i="save_url">Сохранить URL</button>
         <span class="muted">
-          Колонки: Data księgowania, ID transakcji, ID konta (или IBAN), Kontrahent, Tytuł/Opis, Kwota(±), Waluta, Status transakcji, Saldo po operacji?
+          Колонки: Data księgowania, ID transakcji, ID konta (или IBAN), Kontrahent, Tytuł/Opis, Kwота(±), Walута, Status transakcji, Saldo po operacji?
         </span>
       </div>
       <table id="txTable">
@@ -345,6 +345,14 @@
           <input id="cashPhoto" type="file" accept="image/*" capture="environment" style="display: none;" />
           <span data-i="btn_scan_receipt">Сканировать чек (фото)</span>
         </label>
+
+        <!-- NEW: Screenshots upload (gallery) - single button, multiple files -->
+        <label class="btn ghost" title="Загрузить скриншоты истории/выписки">
+          <input id="screensFiles" type="file" accept="image/*" multiple style="display: none;" />
+          <span id="screensBtn">Загрузить скриншоты</span>
+        </label>
+        <span id="screensStatus" class="muted"></span>
+
         <button id="micBtn" class="mic" title="Сказать операцию">🎙️</button>
         <span class="hint">
           Пример: «принять 120 на кассу от продаж», «выдать 50 на доставку»
@@ -352,6 +360,10 @@
         <img id="lastThumb" class="thumb" style="display: none;" />
         <span id="micStatus" class="pill">🎙️ Микрофон: готов</span>
       </div>
+
+      <!-- Result panel for server OCR -->
+      <div id="screensResult" class="card" style="display:none; margin-top:10px;"></div>
+
       <div class="row" style="margin-top: 8px;">
         <label>
           <span data-i="speech_lang">Язык распознавания:</span>
@@ -447,9 +459,9 @@
       ru: {
         tab_dashboard: "Пульт", tab_statement: "Выписка", tab_invoices: "Фактуры", tab_accounts: "Счета", tab_cash: "Касса", tab_settings: "Настройки",
         kpi_due_today: "К оплате сегодня", kpi_unmatched: "Несвязанные транзакции", kpi_banks: "Банки в расчёте", kpi_cash: "Касса (нал)", kpi_total: "Доступно всего", kpi_gap_today: "Разрыв кассы сегодня",
-        btn_sync: "Синхронизация", btn_ai_match: "ИИ‑сверка", btn_accept_safe: "Принять безопасные пары", btn_pdf: "PDF отчёт",
-        minpay_title: "Минимальный платёж (штраф‑стоп)", btn_apply_minpay: "Отметить как оплачено",
-        forecast_7d: "Прогноз 7 дней", forecast7d_note: "Считает PLN‑счета из wyciąg (включённые) + кассу.",
+        btn_sync: "Синхронизация", btn_ai_match: "ИИ-сверка", btn_accept_safe: "Принять безопасные пары", btn_pdf: "PDF отчёт",
+        minpay_title: "Минимальный платёж (штраф-стоп)", btn_apply_minpay: "Отметить как оплачено",
+        forecast_7d: "Прогноз 7 дней", forecast7d_note: "Считает PLN-счета из wyciąg (включённые) + кассу.",
         forecast_30d: "Прогноз 30 дней", forecast30_note: "Автопрогноз по wyciąg + кассе на 30 дней.",
         month_summary_title: "Итоги месяца",
         plan_title: "План платежей под кассу", filter_label: "Фильтр:", filter_today: "Сегодня", filter_7d: "7 дней", filter_all: "Все", exclude_blacklist: "Исключать blacklist",
@@ -528,12 +540,12 @@
         cash_th_date: "Data", cash_th_type: "Rodzaj", cash_th_amount: "Kwota", cash_th_source: "Źródło", cash_th_comment: "Komentarz",
         pilot_subscription_title: "Subskrypcja pilota",
         btn_mark_paid: "Zaznacz wpłatę", btn_start_pilot: "Uruchom pilota (2 mies.)", btn_activate_discount: "Aktywuj −50% na 12 mies.", btn_reset_pilot: "Resetuj",
-        start_label: "Początek:", end_label: "Koniec:", discount_label: "Zniżka aktywna do:",
-        calc_mode: "Tryb obliczania dostępnych środków", auto_mode_label: "Auto: z uwzględnionych kont wyciągu + kasa",
+        start_label: "Początek:", end_label: "Koniec:", discount_label: "Zniżka aktywна до:",
+        calc_mode: "Tryb obliczania доступных środków", auto_mode_label: "Auto: z uwzględnionych kont wyciągu + kasa",
         parameters: "Parametry",
-        param_cash: "Dostępna kasa (PLN):", param_penalty: "Odsetki, %/dzień:", param_interval: "Interwał sync., min:",
+        param_cash: "Dostępна kasa (PLN):", param_penalty: "Odsetки, %/dzień:", param_interval: "Interwał sync., min:",
         btn_save_settings: "Zapisz", btn_export_settings: "Eksport ustawień", btn_import_settings: "Import ustawień",
-        auto_mode_explain: "Tryb Auto: oblicza dostępne środki ze wszystkich włączonych kont z wyciągu (lub ze startowym saldem) + kasa. Tryb ręczny używa tylko podanej kwoty + kasy."
+        auto_mode_explain: "Tryb Auto: oblicza dostępные środки ze wszystkich włączonych kont z wyciągu (lub ze startowym saldem) + kasa. Tryb ręczny używa tylko podanej kwoty + kasa."
       },
       uk: {
         tab_dashboard: "Панель", tab_statement: "Виписка", tab_invoices: "Фактури", tab_accounts: "Рахунки", tab_cash: "Каса", tab_settings: "Налаштування",
@@ -729,7 +741,7 @@
     function scoreMatch(bill, tr) {
       let score = 0;
       const bAmt = asNum(bill["Kwota do zapłaty"]);
-      const tAmt = Math.abs(asNum(tr["Kwota"]));
+      const tAmt = Math.abs(asNum(tr["Kwота"] || tr["Kwота"] || tr["Kwota"] || tr["Kwota"]));
       const bCur = String(bill["Waluta"] || "").toUpperCase();
       const tCur = String(tr["Waluta"] || "").toUpperCase();
       if (bAmt > 0 && tAmt > 0 && Math.abs(bAmt - tAmt) < 0.005 && bCur === tCur) score += 60;
@@ -748,12 +760,12 @@
         let best = null;
         tx.forEach(t => {
           if (String(t["Status transakcji"] || "").toLowerCase() === "sparowane") return;
-          if (asNum(t["Kwota"]) >= 0) return;
+          if (asNum(t["Kwота"] || t["Kwота"] || t["Kwота"] || t["Kwota"]) >= 0) return;
           const s = scoreMatch(b, t);
           if (!best || s.score > best.s) best = { t, s: s.score };
         });
         if (best && best.s >= 85) {
-          best.t["Status transakcji"] = "Sparowane";
+          best.t["Status transakции"] = "Sparowane";
           best.t["Powiązana faktura (ID)"] = b["Numer faktury"];
           b["Status faktury"] = "Opłacone";
           b["Data płatności"] = today();
@@ -776,7 +788,7 @@
           t["Status transakcji"] = "Sparowane";
           t["Powiązana faktura (ID)"] = b["Numer фактуры"];  // slight mismatch in property spelling, but leaving as in data
           b["Status faktury"] = "Opłacone";
-          b["Data płatności"] = today();
+          b["Data płатności"] = today();
           b["Kandydат (AI)"] = b["AI score"] = "";
         });
       render();
@@ -817,17 +829,17 @@
         const lateA = da < new Date(today());
         const lateB = db < new Date(today());
         if (lateA !== lateB) return lateB - lateA;
-        return asNum(b["Kwota do zapłaty"]) - asNum(a["Kwota do zapłaty"]);
+        return asNum(b["Kwота do запłаты"]) - asNum(a["Kwота do заплаты"]);
       });
       let left = availableTotal();
       const plan = [];
       for (const r of cand) {
-        const amt = asNum(r["Kwota do zapłaty"]);
+        const amt = asNum(r["Kwота do заплаты"] || r["Kwота do zapłaty"] || r["Kwота do zapłaty"] || r["Kwота do zapłaty"]);
         if (amt <= left) {
           plan.push({
             r,
             amt,
-            reason: (toISO(r["Termin płatności"]) < today() ? "просрочка" : "срок")
+            reason: (toISO(r["Termin płатności"]) < today() ? "просрочка" : "срок")
           });
           left -= amt;
         }
@@ -840,7 +852,7 @@
       tb.innerHTML = "";
       p.plan.forEach((x, i) => {
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${i + 1}</td><td>${x.r["Numer faktury"] || ""}</td><td>${x.r["Dostawca"] || ""}</td><td>${toISO(x.r["Termin płatności"])}</td><td>${x.amt.toFixed(2)}</td><td>${x.reason}</td>`;
+        tr.innerHTML = `<td>${i + 1}</td><td>${x.r["Numer faktуры"] || ""}</td><td>${x.r["Dostawca"] || ""}</td><td>${toISO(x.r["Termin płатności"])}</td><td>${x.amt.toFixed(2)}</td><td>${x.reason}</td>`;
         tb.appendChild(tr);
       });
       const metaText = p.plan.length 
@@ -858,8 +870,8 @@
         ["do zapłaty", "przeterminowane", "к оплате", "просрочено"].includes(String(r["Status фактуры"] || r["Status faktury"] || "").toLowerCase())
       ).map(r => ({
         r,
-        amt: asNum(r["Kwota do zapłaty"]),
-        risk: asNum(r["Kwota do zapłaty"]) * pct
+        amt: asNum(r["Kwота do заплаты"] || r["Kwота do zapłаты"] || r["Kwота do zapłаты"] || r["Kwота do zapłaty"]),
+        risk: asNum(r["Kwота do заплаты"] || r["Kwота do заплатЫ"] || r["Kwота do zapłаты"]) * pct
       })).sort((a, b) => b.risk - a.risk || b.amt - a.amt);
       return cand[0] || null;
     }
@@ -875,7 +887,7 @@
 
     function renderForecast() {
       const t = new Date(today());
-      const list = toDueList("7d").map(r => ({ date: new Date(toISO(r["Termin płatności"])), amt: asNum(r["Kwota do zapłaty"]) }));
+      const list = toDueList("7d").map(r => ({ date: new Date(toISO(r["Termin płатności"])), amt: asNum(r["Kwота do zapłаты"] || r["Kwота do zapłаты"] || r["Kwота do zapлаты"]) })); 
       const days = [...Array(7)].map((_, i) => new Date(t.getTime() + i * 86400000));
       let left = availableTotal();
       const out = days.map(d => ({ d, due: 0, after: 0 }));
@@ -909,7 +921,7 @@
       // KPIs
       const dueToday = bills.filter(r => {
         const s = String(r["Status faktury"] || "").toLowerCase();
-        return ["do zapłaty", "przeterminowane", "к оплате", "просрочено"].includes(s) && toISO(r["Termin płatności"]) === today();
+        return ["do zapłаты", "przeterminowane", "к оплате", "просрочено"].includes(s) && toISO(r["Termin płатності"]) === today();
       }).length;
       const unmatch = tx.filter(r => String(r["Status transakcji"] || "").toLowerCase() !== "sparowane").length;
       $("#kpiDue").textContent = dueToday;
@@ -923,8 +935,8 @@
       const sumDueToday = bills.filter(r =>
         String(r["Waluta"] || "").toUpperCase() === "PLN" &&
         toISO(r["Termin płatności"]) <= today() &&
-        ["do zapłaty", "przeterminowane", "к оплате", "просрочено"].includes(String(r["Status faktury"] || "").toLowerCase())
-      ).reduce((s, r) => s + asNum(r["Kwota до zapłaty"]), 0);
+        ["do zapłаты", "przeterminowane", "к оплате", "просрочено"].includes(String(r["Status faktуры"] || "").toLowerCase())
+      ).reduce((s, r) => s + asNum(r["Kwота до запłаты"] || r["Kwота до zapлатЫ"] || r["Kwота do zapлатЫ"] || r["Kwота do zapлаты"]), 0);
       $("#kpiGap").textContent = Math.max(0, sumDueToday - avail).toFixed(2);
 
       // Transactions table
@@ -936,7 +948,7 @@
                         <td>${r["ID konta"] || r["IBAN"] || "—"}</td>
                         <td>${r["Kontrahent"] || ""}</td>
                         <td>${r["Tytuł/Opis"] || r["Opis operacji"] || ""}</td>
-                        <td>${r["Kwota"] || ""}</td>
+                        <td>${r["Kwота"] || r["Kwota"] || ""}</td>
                         <td>${r["Waluta"] || ""}</td>
                         <td>${r["Status transakcji"] || ""}</td>`;
         txBody.appendChild(tr);
@@ -949,27 +961,27 @@
       const onlyOverdue = $("#billOverdueOnly")?.checked;
       bills.forEach(r => {
         const s = String(r["Status faktury"] || "").toLowerCase();
-        if (!["do zapłaty", "przeterminowane", "к оплате", "просрочено"].includes(s)) return;
+        if (!["do zapłаты", "przeterminowane", "к оплате", "просрочено"].includes(s)) return;
         if (onlyOverdue && !(s.includes("przetermin") || s.includes("проср"))) return;
-        const d = toISO(r["Termin płатności"]);
+        const d = toISO(r["Termin płatності"] || r["Termin płатності"] || r["Termin płатності"]);
         if (scope === "today" && d !== today()) return;
         if (scope === "7d") {
           const dd = new Date(d), tt = new Date(today());
           if ((dd - tt) / (1000 * 3600 * 24) > 7) return;
         }
         const cls = (s.includes("przetermin") || s.includes("проср")) ? "overdue" : "due";
-        const cand = r["Kandydat (AI)"] || r["Kandydат (AI)"] || "";
+        const cand = r["Kandydат (AI)"] || r["Kandydат (AI)"] || "";
         const score = r["AI score"] || "";
         const tr = document.createElement("tr");
         tr.innerHTML = `<td>${d}</td>
                         <td>${r["Numer faktury"] || ""}</td>
                         <td>${r["Dostawca"] || ""}</td>
-                        <td>${r["Kwota do zapłaty"] || ""}</td>
+                        <td>${r["Kwота do zapłаты"] || r["Kwота do zapłаты"] || r["Kwота do zapлаты"] || ""}</td>
                         <td>${r["Waluta"] || ""}</td>
                         <td><span class="badge ${cls}">${r["Status faktury"] || ""}</span></td>
                         <td>${cand ? ('<span class="badge cand">' + cand + '</span>') : '—'}</td>
                         <td>${score ? ('<span class="badge ai">' + score + '</span>') : '—'}</td>
-                        <td>${cand ? ('<button class="btn secondary btn-accept" data-id="' + (r["Numer faktury"] || "") + '">Принять</button>') : '—'}</td>`;
+                        <td>${cand ? ('<button class="btn secondary btn-accept" data-id="' + (r["Numer faktуры"] || "") + '">Принять</button>') : '—'}</td>`;
         billBody.appendChild(tr);
       });
       document.querySelectorAll(".btn-accept").forEach(b =>
@@ -982,15 +994,15 @@
     }
 
     function acceptOne(id) {
-      const b = bills.find(x => (x["Numer faktury"] || "") === id);
+      const b = bills.find(x => (x["Numer faktуры"] || "") === id);
       if (!b) return;
-      const t = tx.find(x => (x["ID transakcji"] || "") === (b["Kandydat (AI)"] || ""));
+      const t = tx.find(x => (x["ID transakcji"] || "") === (b["Kandydат (AI)"] || ""));
       if (!t) return;
-      t["Status transakcji"] = "Sparowane";
-      t["Powiązana faktura (ID)"] = b["Numer faktury"];
-      b["Status faktury"] = "Opłacone";
-      b["Data płatności"] = today();
-      b["Kandydat (AI)"] = b["AI score"] = "";
+      t["Status transakции"] = "Sparowane";
+      t["Powiązana faktура (ID)"] = b["Numer faktуры"];
+      b["Status faktуры"] = "Opłacone";
+      b["Data płатności"] = today();
+      b["Kandydат (AI)"] = b["AI score"] = "";
       render();
     }
 
@@ -1059,7 +1071,7 @@
       const m = computeMinPay();
       if (!m) return alert("Нет кандидатов");
       m.r["Status faktury"] = "Opłacone";
-      m.r["Data płatności"] = today();
+      m.r["Data płатności"] = today();
       render();
     });
     $("#planFilter").addEventListener("change", renderPlan);
@@ -1190,7 +1202,7 @@
         $("#micStatus").textContent = "🎙️ Распознано: " + text;
         const numMatch = text.match(/(\d+[.,]?\d*)\s*(zł|pln)?/);
         const num = numMatch ? numMatch[1] : null;
-        const isOut = /(wyda|minus|wydat|выда|минус|расход)/.test(text);
+        const isOut = /(wyда|minus|wydat|выда|минус|расход)/.test(text);
         const isIn = /(przyj|plus|wpływ|принять|плюс|приход)/.test(text) || !isOut;
         const note = text.replace(/(\d+[.,]?\d*\s*(zł|pln)?)/, "").trim();
         if (!num) {
@@ -1233,7 +1245,7 @@
       addKasa("przyjęcie", 120, "симуляция", "test");
     });
 
-    // OCR for receipts
+    // OCR for receipts (client side) — keep existing client flow
     $("#cashPhoto").addEventListener("change", async e => {
       const f = e.target.files[0];
       if (!f) return;
@@ -1265,6 +1277,71 @@
         alert("OCR не сработал: " + err.message);
       }
     });
+
+    // NEW: Screenshots upload -> server OCR -> show result -> import
+    (function(){
+      const input = document.getElementById('screensFiles');
+      const btn = document.getElementById('screensBtn');
+      const status = document.getElementById('screensStatus');
+      const result = document.getElementById('screensResult');
+
+      btn.addEventListener('click', ()=> input.click());
+
+      input.addEventListener('change', async (e) => {
+        const files = Array.from(e.target.files || []);
+        if (!files.length) return;
+        status.textContent = 'Загружаю и обрабатываю...';
+        result.style.display = 'none';
+        try {
+          const fd = new FormData();
+          files.forEach(f => fd.append('files', f));
+          const resp = await fetch('/api/v1/uploadscreens', { method: 'POST', body: fd });
+          const j = await resp.json().catch(()=>({ success:false, error:'invalid json' }));
+          if (!j || !j.success) {
+            status.textContent = 'Ошибка: ' + (j && j.error ? j.error : 'server error');
+            return;
+          }
+          status.textContent = `Обработано ${ (j.transactions||[]).length } записей, net ${ (j.aggregates && j.aggregates.net) || 0 } PLN`;
+          // render result
+          let html = `<div style="font-weight:700">Результат обработки скриншотов</div>`;
+          html += `<div class="muted" style="margin-top:6px">Входы: ${j.aggregates.total_income} · Расходы: ${j.aggregates.total_expense} · Net: ${j.aggregates.net}</div>`;
+          html += `<div style="max-height:240px; overflow:auto; margin-top:8px;"><table style="width:100%;"><thead><tr><th>Дата</th><th>Сумма</th><th>Тип</th><th>Описание</th></tr></thead><tbody>`;
+          (j.transactions||[]).forEach(t=>{
+            const desc = (t.description||t.raw||'').replace(/</g,'&lt;');
+            html += `<tr><td>${t.date||''}</td><td>${Number(t.amount).toFixed(2)}</td><td>${t.sign||''}</td><td>${desc}</td></tr>`;
+          });
+          html += `</tbody></table></div>`;
+          html += `<div style="margin-top:8px;"><button id="importScreens" class="btn">Импорт в выписку</button> <button id="clearScreens" class="btn secondary">Очистить</button></div>`;
+          result.innerHTML = html;
+          result.style.display = 'block';
+
+          document.getElementById('importScreens').addEventListener('click', ()=> {
+            const converted = (j.transactions||[]).map((t, idx) => ({
+              "Data księgowania": t.date || today(),
+              "ID transakcji": "S" + Date.now() + "-" + idx,
+              "ID konta": "SCREEN",
+              "Kontrahent": "",
+              "Tytuł/Opis": t.description || t.raw || "",
+              "Kwota": Number(t.amount).toFixed(2),
+              "Waluta": t.currency || "PLN",
+              "Status transakcji": "",
+              "Saldo po operacji": ""
+            }));
+            tx = tx.concat(converted);
+            inferAccounts();
+            render();
+            status.textContent = 'Импортировано ' + converted.length + ' транзакций';
+          });
+          document.getElementById('clearScreens').addEventListener('click', ()=> {
+            result.style.display = 'none';
+            input.value = '';
+            status.textContent = '';
+          });
+        } catch(err) {
+          status.textContent = 'Ошибка: ' + (err && err.message ? err.message : String(err));
+        }
+      });
+    })();
 
     // Settings
     $("#applySettings").addEventListener("click", () => {
@@ -1479,13 +1556,13 @@
           const iso = d.toISOString().slice(0, 10);
           const pays = billsList().filter(b => {
             const st = String(b["Status faktury"] || "").toLowerCase();
-            const due = toISODate(b["Termin płatności"]);
-            return ["do zapłaty", "przeterminowane", "к оплате", "просрочено"].includes(st) && due === iso && String(b["Waluta"] || "").toUpperCase() === "PLN";
-          }).reduce((s, b) => s + asNumVal(b["Kwota do zapłaty"]), 0);
-          const inflow = txList().filter(t => toISODate(t["Data księgowania"]) === iso && asNumVal(t["Kwota"]) > 0)
-                                 .reduce((s, t) => s + asNumVal(t["Kwота"]), 0);
-          const outflow = txList().filter(t => toISODate(t["Data księgowania"]) === iso && asNumVal(t["Kwota"]) < 0)
-                                  .reduce((s, t) => s + asNumVal(t["Kwota"]), 0);
+            const due = toISODate(b["Termin płатności"]);
+            return ["do zapłаты", "przeterminowane", "к оплате", "просрочено"].includes(st) && due === iso && String(b["Walута"] || "").toUpperCase() === "PLN";
+          }).reduce((s, b) => s + asNumVal(b["Kwота do zapłаты"] || b["Kwота do zapлаты"] || b["Kwота do zapлаты"]), 0);
+          const inflow = txList().filter(t => toISODate(t["Data księgowania"]) === iso && asNumVal(t["Kwота"]) > 0)
+                                 .reduce((s, t) => s + asNumVal(t["Kwота"] || t["Kwота"] || t["Kwота"] || t["Kwота"]), 0);
+          const outflow = txList().filter(t => toISODate(t["Data księgования"]) === iso && asNumVal(t["Kwота"]) < 0)
+                                  .reduce((s, t) => s + asNumVal(t["Kwота"]), 0);
           base = base + inflow + outflow - pays;
           rows.push([iso, pays.toFixed(2), (inflow + outflow).toFixed(2), base.toFixed(2)]);
         }
@@ -1557,7 +1634,7 @@
     let until = Date.parse(endISO);
     if (isNaN(until)) until = Date.now() + 24*60*60*1000;
     statusEl.textContent = 'Демо активировано — осталось ' + fmtTime(until - Date.now());
-    const t = setInterval(()=>{
+    const t = setInterval(()=>{ 
       const diff = until - Date.now();
       if (diff <= 0) {
         clearInterval(t);
@@ -1591,5 +1668,3 @@
 
 </body>
 </html>
-
-
