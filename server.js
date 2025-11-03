@@ -44,15 +44,17 @@ function base64urlEncode(input) {
 }
 function base64urlDecode(input) {
   const b = input.replace(/-/g, '+').replace(/_/g, '/');
-  return Buffer.from(b, 'base64').toString();
+  // add padding
+  const pad = b.length % 4 === 0 ? '' : '='.repeat(4 - (b.length % 4));
+  return Buffer.from(b + pad, 'base64').toString();
 }
 function hmacSha256(data) {
   return crypto.createHmac('sha256', SESSION_SECRET).update(data).digest('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
 }
 function timingSafeEqualStr(a, b) {
   try {
-    const A = Buffer.from(a);
-    const B = Buffer.from(b);
+    const A = Buffer.from(String(a));
+    const B = Buffer.from(String(b));
     if (A.length !== B.length) return false;
     return crypto.timingSafeEqual(A, B);
   } catch (e) { return false; }
@@ -312,7 +314,7 @@ app.post('/login', (req, res) => {
     setSessionCookie(res, user.email);
     expireStatuses(user);
 
-    return res.json({ success: true, user: { email: user.email, status: user.status, demoUsed: !!user.demoUsed } });
+    return res.json({ success: true, user: { email: user.email, status: user.status, demoUsed: !!user.demoUsed, startAt: user.startAt, endAt: user.endAt } });
   } catch (err) {
     console.error('[LOGIN] error', err && err.stack ? err.stack : err);
     return res.status(500).json({ success: false, error: 'internal' });
@@ -325,6 +327,49 @@ app.post('/logout', (req, res) => {
   if (token && sessions[token]) delete sessions[token];
   res.clearCookie('session');
   return res.json({ success: true });
+});
+
+// Finalize Stripe session (called by frontend after redirect to app.html?session_id=...)
+// attempts to read checkout session and set cookie for the user (best-effort)
+app.get('/session', async (req, res) => {
+  const sessionId = req.query && req.query.session_id;
+  if (!sessionId) return res.status(400).json({ success: false, error: 'missing session_id' });
+  if (!stripe) {
+    console.warn('[SESSION] stripe not configured — cannot finalize session automatically');
+    return res.status(501).json({ success: false, error: 'stripe not configured' });
+  }
+  try {
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    const email = (session.metadata && session.metadata.email) || (session.customer_details && session.customer_details.email);
+    if (!email) {
+      return res.status(200).json({ success: true, message: 'no email in session' });
+    }
+    const u = findUserByEmail(email);
+    if (!u) {
+      // create user automatically (best-effort) so they get session cookie
+      const salt = genSalt(16);
+      const fakePwd = genSalt(8);
+      const storedHash = hashPassword(fakePwd, salt);
+      users[email] = {
+        email,
+        salt,
+        hash: storedHash,
+        status: 'none',
+        startAt: null,
+        endAt: null,
+        discountUntil: null,
+        demoUsed: false,
+        appState: {},
+        isAdmin: email === ADMIN_EMAIL
+      };
+      saveUsers();
+    }
+    setSessionCookie(res, email);
+    return res.json({ success: true, email });
+  } catch (err) {
+    console.error('[SESSION] error', err && err.stack ? err.stack : err);
+    return res.status(500).json({ success: false, error: 'session finalize failed' });
+  }
 });
 
 // Start demo (authenticated) — one-time
@@ -343,6 +388,24 @@ app.post('/start-demo', (req, res) => {
   saveUsers();
 
   return res.json({ success: true, demo_until: user.endAt, message: 'Demo started' });
+});
+
+// activate discount (admin)
+app.post('/activate-discount', (req, res) => {
+  const user = getUserBySession(req);
+  if (!user || !user.isAdmin) return res.status(403).json({ success: false, error: 'Forbidden' });
+
+  // expects ?email=target@example.com OR uses admin's user to set global discount? We'll support both.
+  const targetEmail = normalizeEmail(req.query.email || req.body && req.body.email || '');
+  const target = targetEmail ? findUserByEmail(targetEmail) : user;
+  if (!target) return res.status(404).json({ success: false, error: 'User not found' });
+
+  target.status = 'discount_active';
+  const until = new Date();
+  until.setMonth(until.getMonth() + 12);
+  target.discountUntil = until.toISOString();
+  saveUsers();
+  return res.json({ success: true, email: target.email, discountUntil: target.discountUntil });
 });
 
 // whoami / me
@@ -439,7 +502,7 @@ app.post('/create-checkout-session', async (req, res) => {
       cancel_url: `${req.protocol}://${req.get('host')}/?cancel=1`
     });
 
-    return res.json({ sessionUrl: session.url, id: session.id });
+    return res.json({ sessionUrl: session.url, id: session.id, url: session.url });
   } catch (err) {
     console.error('[STRIPE] create session error', err && err.stack ? err.stack : err);
     return res.status(500).json({ success: false, error: 'Stripe session creation failed' });
