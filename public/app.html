@@ -360,11 +360,10 @@
     btn_save_settings: "Save", btn_export_settings: "Export settings", btn_import_settings: "Import settings",
     auto_mode_explain: "Auto mode: sum included accounts from statements (or provided start balances) + cash. Manual mode uses specified cash + cashbox."
   },
-
   pl: {
     tab_dashboard: "Panel", tab_statement: "Wyciąg", tab_invoices: "Faktury", tab_accounts: "Konta", tab_cash: "Kasa", tab_settings: "Ustawienia",
     kpi_due_today: "Do zapłaty dziś", kpi_unmatched: "Niesparowane transakcje", kpi_banks: "Bilans banków", kpi_cash: "Kasa (PLN)", kpi_total: "Dostępnie razem", kpi_gap_today: "Brak środków dziś",
-    btn_sync: "Synchronizuj", btn_ai_match: "Dopasowanie AI", btn_accept_safe: "Akceptuj bezpieczne pary", btn_pdf: "Raport PDF",
+    btn_sync: "Synchronizuj", btn_ai_match: "Dopasowanie AI", btn_accept_safe: "Akceptuj безпечные парy", btn_pdf: "Raport PDF",
     minpay_title: "Minimalna płatność (kara-stop)", btn_apply_minpay: "Oznacz jako opłacone",
     forecast_7d: "Prognoza 7 dni", forecast7d_note: "Liczy PLN-konta z wyciągu (włączone) + kasa.",
     forecast_30d: "Prognoza 30 dni", forecast30_note: "Autoprognoza z wyciągów + kasa na 30 dni.",
@@ -388,10 +387,9 @@
     calc_mode: "Tryb obliczania dostępnych środków", auto_mode_label: "Auto: z kont wyciągu (włączone) + kasa",
     parameters: "Parametry",
     param_cash: "Ręczna dostępna kasa dziś (PLN):", param_penalty: "Kara, %/dzień:", param_interval: "Interval sync, min:",
-    btn_save_settings: "Zapisz", btn_export_settings: "Eksportuj ustawienia", btn_import_settings: "Importuj ustawienia",
+    btn_save_settings: "Zapisz", btn_export_settings: "Eksportuj ustawienia", btn_import_settings: "Import ustawień",
     auto_mode_explain: "Tryb Auto: sumujemy włączone konta z wyciągów (lub startowe salda) + kasa. Tryb ręczny używa podanej kwoty + kasa."
   },
-
   uk: {
     tab_dashboard: "Пульт", tab_statement: "Виписка", tab_invoices: "Рахунки", tab_accounts: "Рахунки (банки)", tab_cash: "Каса", tab_settings: "Налаштування",
     kpi_due_today: "До сплати сьогодні", kpi_unmatched: "Непов'язані транзакції", kpi_banks: "Баланс банків", kpi_cash: "Каса (PLN)", kpi_total: "Доступно всього", kpi_gap_today: "Розрив каси сьогодні",
@@ -438,7 +436,7 @@
       if (v == null) return 0;
       let s = String(v).trim();
       if (!s) return 0;
-      s = s.replace(/\u00A0/g,'').replace(/\s/g, '').replace(/,/g, '.');
+      s = s.replace(/\u00A0/g,' ').replace(/\s/g, '').replace(/,/g, '.');
       s = s.replace(/[^\d\.\-]/g, '');
       const n = Number(s);
       return isNaN(n) ? 0 : n;
@@ -563,7 +561,7 @@
         return asNum(last["Saldo po operacji"]);
       }
       const start = Number((accMeta[accId] || {}).start || 0);
-      const sum = rows.reduce((s, r) => s + asNum(r["Kwota"] || r["Kwота"] || r.amount || 0), 0);
+      const sum = rows.reduce((s, r) => s + asNum(r["Kwota"] || r["Kwота"] || r.amount || r["Kwota_raw"] || 0), 0);
       return start + sum;
     }
 
@@ -615,7 +613,7 @@
     function scoreMatch(bill, tr) {
       let score = 0;
       const bAmt = asNum(bill["Kwota do zapłaty"] || bill["Kwата до заплаты"] || bill["Kwota"] || bill["Kwата"] || 0);
-      const tAmt = Math.abs(asNum(tr["Kwota"] || tr["Kwота"] || tr.amount || 0));
+      const tAmt = Math.abs(asNum(tr["Kwota"] || tr["Kwота"] || tr.amount || tr["Kwota_raw"] || 0));
       const bCur = String(bill["Waluta"] || "").toUpperCase();
       const tCur = String(tr["Waluta"] || "").toUpperCase();
       if (bAmt > 0 && tAmt > 0 && Math.abs(bAmt - tAmt) < 0.01 && (bCur === tCur || !bCur || !tCur)) score += 60;
@@ -668,22 +666,113 @@
       render();
     }
 
-    // normalize keys for an imported row
+    // ====== REPLACED normalizeRowKeys: tolerant amount extraction, keep many aliases ======
     function normalizeRowKeys(r) {
-      const kw = (r["Kwota"] || r["Kwота"] || r["amount"] || r.amount || "");
-      const kwNum = asNum(kw);
-      return {
-        "Data księgowania": r["Data księgowania"] || r.date || r["Дата"] || today(),
-        "ID transakcji": r["ID transakcji"] || r.id || ("IMG-" + Date.now() + "-" + Math.floor(Math.random()*9999)),
-        "ID konta": r["ID konta"] || r.account || r["IBAN"] || "UNKNOWN",
-        "Kontrahent": r["Kontrahent"] || r.counterparty || r["Контрагент"] || "",
-        "Tytuł/Opis": r["Tytuł/Opis"] || r.desc || r["Описание"] || (r.title || ""),
-        "Kwota": (Number.isFinite(kwNum) ? kwNum.toFixed(2) : (typeof kw === 'number' ? String(kw) : (kw || ""))),
-        "Waluta": r["Waluta"] || r.currency || "PLN",
-        "Status transakcji": r["Status transakcji"] || r.status || "imported",
-        "Saldo po operacji": r["Saldo po operacji"] || r.saldo || ""
-      };
+      const row = Object.assign({}, r || {});
+      // Try explicit keys first
+      const knownAmountKeys = [
+        "Kwota","Kwота","amount","Kwota_raw","Kwота_raw","Kwota do zapłaty","Kwота до заплаты","Kwota_do_zaplaty"
+      ];
+      let rawAmt = null;
+      for (const k of knownAmountKeys) {
+        if (row.hasOwnProperty(k) && row[k] !== undefined && row[k] !== null && String(row[k]).trim() !== "") {
+          rawAmt = String(row[k]);
+          break;
+        }
+      }
+      // If not found, scan all values for first numeric-like token
+      if (!rawAmt) {
+        for (const k of Object.keys(row)) {
+          const v = String(row[k] || "");
+          if (v.match(/-?\s*\d{1,3}(?:[ \u00A0]\d{3})*(?:[.,]\d{2})/)) {
+            rawAmt = v;
+            break;
+          }
+        }
+      }
+
+      // Normalize raw amount string and parse numeric
+      let finalNumber = null;
+      if (rawAmt !== null && rawAmt !== undefined && String(rawAmt).trim() !== "") {
+        let s = String(rawAmt).replace(/\u00A0/g,' ').trim();
+        // try to extract the most plausible numeric token (with decimals)
+        const tok = s.match(/-?\s*\d{1,3}(?:[ \u00A0]\d{3})*(?:[.,]\d+)?|-?\d+[.,]\d+/);
+        let candidate = tok ? tok[0] : s;
+        candidate = candidate.replace(/\s/g,'').replace(/\u00A0/g,'').replace(/−/g,'-').replace(',', '.');
+        // strip any trailing non-digit chars
+        candidate = candidate.match(/-?\d+(\.\d+)?/);
+        finalNumber = candidate ? Number(candidate[0]) : null;
+      }
+
+      // fallback numeric scan over all fields if still nothing
+      if (finalNumber === null) {
+        for (const k of Object.keys(row)) {
+          const v = String(row[k] || "");
+          const m = v.match(/-?\s*\d{1,3}(?:[ \u00A0]\d{3})*(?:[.,]\d+)?|-?\d+[.,]\d+/);
+          if (m) {
+            let c = m[0].replace(/\s/g,'').replace(/\u00A0/g,'').replace(',', '.').replace(/−/g,'-');
+            const mm = c.match(/-?\d+(\.\d+)?/);
+            if (mm) { finalNumber = Number(mm[0]); break; }
+          }
+        }
+      }
+
+      // currency detection
+      let currency = (row["Waluta"] || row["Walута"] || row["currency"] || "");
+      if (!currency && rawAmt) {
+        const curMatch = rawAmt.match(/\b(PLN|zł|zl|zlot|EUR|USD)\b/i);
+        currency = curMatch ? curMatch[1] : '';
+      }
+      currency = (currency || "PLN").toString().toUpperCase();
+      currency = currency.replace('ZŁ','PLN').replace('ZLOT','PLN');
+
+      // date & ids & other fields (keep fallbacks)
+      const dateVal = row["Data księgowania"] || row.date || row["Дата"] || today();
+      const idVal = row["ID transakcji"] || row.id || ("IMG-" + Date.now() + "-" + Math.floor(Math.random()*9999));
+      const accVal = row["ID konta"] || row.account || row["IBAN"] || "UNKNOWN";
+      const kontr = row["Kontrahent"] || row.counterparty || row["Контрагент"] || "";
+      const desc = row["Tytuł/Opis"] || row.desc || row["Описание"] || (row.title || "");
+
+      // Build canonical output plus common alias keys (to avoid breaking code that used typos)
+      const out = {};
+      out["Data księgowania"] = toISO(dateVal) || today();
+      out["Дата"] = out["Data księgowania"];
+      out["ID transakcji"] = idVal;
+      out["ID"] = idVal;
+      out["ID konta"] = accVal;
+      out["ID kontа"] = accVal; // cyrillic fallback
+      out["IBAN"] = accVal;
+      out["Kontrahent"] = kontr;
+      out["Kontragent"] = kontr;
+      out["Tytuł/Opis"] = desc;
+      out["Opis"] = desc;
+
+      // Store both latin and cyrillic spelling variants used in app
+      const numVal = (typeof finalNumber === 'number' && !isNaN(finalNumber)) ? finalNumber : null;
+      if (numVal !== null) {
+        out["Kwota"] = numVal.toFixed(2);
+        out["Kwота"] = numVal.toFixed(2); // cyrillic alias
+        out["amount"] = numVal;
+        out["Kwota_raw"] = rawAmt || String(numVal);
+        out["Kwота_raw"] = rawAmt || String(numVal);
+      } else {
+        // keep original if no numeric parsed
+        const fallback = (row["Kwota"] || row["Kwота"] || row["amount"] || row["Kwota_raw"] || "");
+        out["Kwota"] = (fallback === null || fallback === undefined) ? "" : String(fallback);
+        out["Kwота"] = out["Kwota"];
+        out["Kwota_raw"] = out["Kwota"];
+      }
+
+      out["Waluta"] = currency;
+      out["Walута"] = currency;
+      out["Status transakcji"] = row["Status transakcji"] || row["Status transakции"] || row["status"] || "imported";
+      out["Status transakции"] = out["Status transakcji"];
+      out["Saldo po operacji"] = row["Saldo po operacji"] || row.saldo || "";
+
+      out.__raw = row;
+      return out;
     }
+    // ====== end normalizeRowKeys ======
 
     // OCR function (kept robust). It pushes normalized rows into tx or bills.
     async function processImageFileFor(targetArrayName, file) {
@@ -701,7 +790,7 @@
         const currency = curMatch ? (curMatch[1].toUpperCase().replace('ZŁ','PLN').replace('ZLOT','PLN')) : 'PLN';
         const numMatch = tok.match(/-?\s*\d{1,3}(?:[ \u00A0]\d{3})*(?:[.,]\d{2})|\d+[.,]\d{2}/);
         if (!numMatch) return null;
-        let numStr = numMatch[0].replace(/\s/g,'').replace(/\u00A0/g,'').replace(',', '.').replace('−','-');
+        let numStr = numMatch[0].replace(/\s/g,'').replace(/\u00A0/g,'').replace(',', '.').replace(/−/g,'-');
         const negative = /-/.test(tok) || /^\-/.test(numStr);
         numStr = numStr.replace(/^\-/, '');
         const value = Number(numStr);
@@ -849,7 +938,7 @@
                 "Termin płatności": normalized["Data księgowania"],
                 "Numer faktury": "IMG-FV-" + Date.now() + "-" + Math.floor(Math.random()*9999),
                 "Dostawca": normalized["Kontrahent"],
-                "Kwota do zapłaty": Math.abs(asNum(normalized["Kwota"] || 0)).toFixed(2),
+                "Kwota do zapłaty": Math.abs(asNum(normalized["Kwota"] || normalized["Kwота"] || normalized["amount"] || 0)).toFixed(2),
                 "Waluta": normalized["Waluta"] || "PLN",
                 "Status faktury": "do zapłaty",
                 "Kandydat (AI)": "",
@@ -872,13 +961,13 @@
         const dateMatch = cleaned.match(/(\d{2}[.\-/]\d{2}[.\-/]\d{2,4})/);
         const baseObj = {
           "ID transakции": "IMG-" + Date.now(),
-          "Data księgowania": dateMatch ? toISO(dateMatch[1]) : (currentDateIso || (new Date().toISOString().slice(0,10))),
-          "ID konta": "UNKNOWN",
+          "Data księgования": dateMatch ? toISO(dateMatch[1]) : (currentDateIso || (new Date().toISOString().slice(0,10))),
+          "ID kontа": "UNKNOWN",
           "Kontrahent": cleaned.split("\n")[0] || "",
           "Tytuł/Opis": ("OCR: " + cleaned.split("\n").slice(0,3).join(" ")).slice(0,400),
           "Kwота": (fallbackAmt != null ? fallbackAmt.toFixed(2) : ""),
           "Waluta": amtMatch && amtMatch[2] ? amtMatch[2].toUpperCase() : "PLN",
-          "Status transakcji": "imported"
+          "Status transakции": "imported"
         };
         const normalized = normalizeRowKeys ? normalizeRowKeys(baseObj) : baseObj;
         if (targetArrayName === 'tx') {
@@ -888,13 +977,13 @@
           render();
         } else if (targetArrayName === 'bills') {
           bills.unshift({
-            "Termin płatności": normalized["Data księgования"],
-            "Numer faktуры": "IMG-FV-" + Date.now(),
+            "Termin płatności": normalized["Data księgowania"],
+            "Numer фактуры": "IMG-FV-" + Date.now(),
             "Dostawca": normalized["Kontrahent"],
-            "Kwота до заплаты": Math.abs(asNum(normalized["Kwота"] || 0)).toFixed(2),
-            "Waluta": normalized["Waluta"] || "PLN",
+            "Kwота до заплаты": Math.abs(asNum(normalized["Kwота"] || normalized["Kwota"] || 0)).toFixed(2),
+            "Waluta": normalized["Walута"] || "PLN",
             "Status фактуры": "do zapłaty",
-            "Kandydat (AI)": "",
+            "Kandydат (AI)": "",
             "AI score": ""
           });
           try { localStorage.setItem("bills_manual_import", JSON.stringify(bills)); } catch(e){}
@@ -1020,9 +1109,9 @@
       const t = today();
       const excl = $id("excludeBlacklist") ? document.getElementById("excludeBlacklist").checked : false;
       return bills.filter(r => {
-        const s = String(r["Status faktury"] || r["Status faktury"] || r["Status факуры"] || r["Status факуры"] || "").toLowerCase();
+        const s = String(r["Status фактуры"] || r["Status фактуры"] || r["Status факуры"] || r["Status факуры"] || "").toLowerCase();
         if (!["do zapłaty", "przeterminowane", "к оплате", "просрочено", "to pay"].includes(s)) return false;
-        const d = toISO(r["Termin płатności"] || r["Termin платности"] || r["Termin платежи"] || r["Termin платежи"]);
+        const d = toISO(r["Termin płatności"] || r["Termin платности"] || r["Termin платежи"] || r["Termin платежи"]);
         if (!d) return false;
         if (mode === "today") return d === t;
         if (mode === "7d") {
@@ -1047,7 +1136,7 @@
       const mode = planFilter ? planFilter.value : "7d";
       const cand = toDueList(mode).sort((a, b) => {
         const da = new Date(toISO(a["Termin płатności"] || a["Termin платности"] || a["Termin платежи"] || today()));
-        const db = new Date(toISO(b["Termin płатności"] || b["Termin платности"] || b["Termin платежи"] || today()));
+        const db = new Date(toISO(b["Termin плататности"] || b["Termin платности"] || b["Termin платежи"] || today()));
         const lateA = da < new Date(today());
         const lateB = db < new Date(today());
         if (lateA !== lateB) return lateB - lateA;
@@ -1076,7 +1165,7 @@
       tb.innerHTML = "";
       p.plan.forEach((x, i) => {
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${i + 1}</td><td>${x.r["Numer faktury"] || x.r["Numer фактуры"] || ""}</td><td>${x.r["Dostawca"] || ""}</td><td>${toISO(x.r["Termin płatności"] || x.r["Termin платности"] || x.r["Termin платежи"])}</td><td>${x.amt.toFixed(2)}</td><td>${x.reason}</td>`;
+        tr.innerHTML = `<td>${i + 1}</td><td>${x.r["Numer faktury"] || x.r["Numer фактуры"] || ""}</td><td>${x.r["Dostawca"] || ""}</td><td>${toISO(x.r["Termin płатności"] || x.r["Termin платности"] || x.r["Termin платежи"])}</td><td>${x.amt.toFixed(2)}</td><td>${x.reason}</td>`;
         tb.appendChild(tr);
       });
       const metaText = p.plan.length 
@@ -1092,7 +1181,7 @@
       const pct = pctVal / 100.0;
       const cand = bills.filter(r => 
         String((r["Waluta"] || r["Walута"] || "").toUpperCase()) === "PLN" &&
-        toISO(r["Termin płatności"] || r["Termin платности"] || r["Termin платежи"]) <= t &&
+        toISO(r["Termin płатności"] || r["Termin платности"] || r["Termin платежи"]) <= t &&
         ["do zapłaty", "przeterminowane", "к оплате", "просрочено"].includes(String(r["Status фактуры"] || r["Status фактуры"] || r["Status фактуры"] || "").toLowerCase())
       ).map(r => ({
         r,
@@ -1110,7 +1199,7 @@
 
     function renderForecast() {
       const t = new Date(today());
-      const list = toDueList("7d").map(r => ({ date: new Date(toISO(r["Termin płатності"] || r["Termin платности"] || r["Termin платежи"])), amt: asNum(r["Kwота до заплаты"] || r["Kwота до заплаты"] || r["Kwота do zapłaty"] || 0) }));
+      const list = toDueList("7d").map(r => ({ date: new Date(toISO(r["Termin платности"] || r["Termin платности"] || r["Termin платежи"])), amt: asNum(r["Kwота до заплаты"] || r["Kwота до заплаты"] || r["Kwота do zapłaty"] || 0) }));
       const days = [...Array(7)].map((_, i) => new Date(t.getTime() + i * 86400000));
       let left = availableTotal();
       const out = days.map(d => ({ d, due: 0, after: 0 }));
@@ -1170,7 +1259,7 @@
         String((r["Waluta"] || r["Walута"] || "").toUpperCase()) === "PLN" &&
         toISO(r["Termin платності"] || r["Termin платности"] || r["Termin платежи"]) <= today() &&
         ["do zapłaty", "przeterminowane", "к оплате", "просрочено"].includes(String(r["Status фактуры"] || r["Status фактуры"] || r["Status фактуры"] || "").toLowerCase())
-      ).reduce((s, r) => s + asNum(r["Kwота до заплаты"] || r["Kwота до заплаты"] || r["Kwота"] || 0), 0);
+      ).reduce((s, r) => s + asNum(r["Kwота до заплаты"] || r["Kwота до заплаты"] || r["Kwота"] || r["Kwota"] || 0), 0);
       if (elGap) elGap.textContent = Math.max(0, sumDueToday - avail).toFixed(2);
 
       // Transactions table
@@ -1179,13 +1268,16 @@
         txBody.innerHTML = "";
         (tx || []).forEach(r => {
           const tr = document.createElement("tr");
-          const amountHtml = fmtAmountRaw(r["Kwота"] || r["Kwота"] || r["amount"] || r["Kwота_raw"] || 0);
+          // prefer normalized numeric 'Kwota', fallback to raw variants
+          const amountSource = r["Kwota"] || r["Kwота"] || r["amount"] || r["Kwota_raw"] || r["Kwота_raw"] || 0;
+          const amountHtml = fmtAmountRaw(amountSource);
+          const currency = r["Waluta"] || r["Walута"] || "";
           tr.innerHTML = `<td>${toISO(r["Data księgowania"])}</td>
                           <td>${(r["ID konta"] || r["IBAN"] || "—")}</td>
                           <td>${(r["Kontrahent"] || "")}</td>
                           <td>${(r["Tytuł/Opis"] || r["Opis operacji"] || "")}</td>
                           <td>${amountHtml}</td>
-                          <td>${r["Walута"] || r["Waluta"] || ""}</td>
+                          <td>${currency}</td>
                           <td>${r["Status transakcji"] || ""}</td>`;
           txBody.appendChild(tr);
         });
@@ -1209,15 +1301,15 @@
             if ((dd - tt) / (1000 * 3600 * 24) > 7) return;
           }
           const cls = (s.includes("przetermin") || s.includes("проср")) ? "overdue" : "due";
-          const cand = r["Kandydat (AI)"] || "";
+          const cand = r["Kandydат (AI)"] || r["Kandydat (AI)"] || r["Kandydat (AI)"] || r["Kandydat (AI)"] || r["Kandydat (AI)"] || r["Kandydат (AI)"] || r["Kandydat (AI)"] || r["Kandydat (AI)"] || r["Kandydat (AI)"] || r["Kandydат (AI)"] || r["Kandydat (AI)"];
           const score = r["AI score"] || "";
           const tr = document.createElement("tr");
           tr.innerHTML = `<td>${d}</td>
                           <td>${r["Numer фактуры"] || r["Numer фактуры"] || ""}</td>
                           <td>${r["Dostawca"] || ""}</td>
-                          <td>${(r["Kwота до заплаты"] || r["Kwота до заплаты"] || "")}</td>
+                          <td>${(r["Kwота до заплаты"] || r["Kwота до заплаты"] || r["Kwота"] || "")}</td>
                           <td>${r["Waluta"] || ""}</td>
-                          <td><span class="badge ${cls}">${r["Status фактуры"] || r["Status фактуры"] || ""}</span></td>
+                          <td><span class="badge ${cls}">${r["Status фактуры"] || r["Status фактуры"] || r["Status фактуры"] || ""}</span></td>
                           <td>${cand ? ('<span class="badge cand">' + cand + '</span>') : '—'}</td>
                           <td>${score ? ('<span class="badge ai">' + score + '</span>') : '—'}</td>
                           <td>${cand ? ('<button class="btn secondary btn-accept" data-id="' + (r["Numer фактуры"] || r["Numer фактуры"] || "") + '">Принять</button>') : '—'}</td>`;
@@ -1242,7 +1334,7 @@
       t["Status transakcji"] = "Sparowane";
       t["Powiązana фактура (ID)"] = b["Numer фактуры"] || b["Numer фактуры"];
       b["Status фактуры"] = "Opłacone";
-      b["Data płatności"] = today();
+      b["Data płатności"] = today();
       b["Kandydат (AI)"] = b["AI score"] = "";
       render();
     }
@@ -1533,7 +1625,7 @@
     function initTabs(){ const tabs = $$('.tabs .tab'); if (!tabs.length) return; tabs.forEach(t => { t.removeEventListener('click', t._otd_cb); const cb = () => { $$(' .tabs .tab').forEach(x=>x.classList.remove('active')); $$('.section').forEach(s=>s.classList.remove('active')); t.classList.add('active'); const sec = t.dataset.sec || t.getAttribute('data-sec') || t.getAttribute('data-section') || t.getAttribute('data-tab'); if (sec) { const el = document.getElementById(sec); if (el) el.classList.add('active'); } if (typeof render === 'function') try { render(); } catch(e){} safeCall('renderPlan'); safeCall('renderForecast'); safeCall('renderKasa'); safeCall('renderAccounts'); }; t._otd_cb = cb; t.addEventListener('click', cb); }); }
     function unblackSections(){ $$('.section').forEach(sec=>{ try{ sec.style.display = ''; if (sec.children.length > 0) sec.classList.add('active'); } catch(e){} }); }
     function initLangButtons(){ const langButtons = $$('.lang button, .lang .btn'); if (!langButtons.length) return; langButtons.forEach(b=>{ b.removeEventListener('click', b._otd_cb); const cb = () => { const L = b.dataset.lang || b.getAttribute('data-lang') || b.textContent.trim().slice(0,2).toLowerCase(); if (typeof applyLang === 'function') { try { applyLang(L); } catch(e){} } else if (window.M && window.M[L]) { document.querySelectorAll('[data-i]').forEach(el=>{ const k = el.getAttribute('data-i'); if (window.M[L][k]) el.textContent = window.M[L][k]; }); } langButtons.forEach(x => x.classList.remove('on')); b.classList.add('on'); localStorage.setItem('otd_lang', L); safeCall('render'); }; b._otd_cb = cb; b.addEventListener('click', cb); }); const saved = localStorage.getItem('otd_lang') || 'ru'; const btn = langButtons.find(b=> (b.dataset.lang||'').toLowerCase()===saved); if (btn) btn._otd_cb(); }
-    function ensureForecasts(){ if (typeof renderForecast === 'function') { try { renderForecast(); } catch(e){} return; } const allTx = (window.tx && window.tx.slice()) || (() => { try { return JSON.parse(localStorage.getItem('tx_manual_import')||'[]'); } catch(e){ return []; } })(); const now = new Date(); const sumDays = (days) => { const cutoff = new Date(now.getTime() + days*86400000); return allTx.reduce((s, r) => { const date = (r['Data księgowania'] || r['Дата'] || r['date'] || r['Date']); const d = new Date(toISO(date)); if (isNaN(d)) return s; if (d <= cutoff) return s + Math.abs(Number(r['Kwота']||r['Kwота']||r['amount']||0)); return s; }, 0); }; const s7 = sumDays(7), s30 = sumDays(30); if ( $('#forecastBars') ) { $('#forecastBars').innerHTML = '<div class="muted">7d forecast (sum amounts): ' + s7.toFixed(2) + ' PLN</div>'; } if ( $('#forecast30Table') ) { $('#forecast30Table').innerHTML = '<div class="muted">30d forecast (sum amounts): ' + s30.toFixed(2) + ' PLN</div>'; } }
+    function ensureForecasts(){ if (typeof renderForecast === 'function') { try { renderForecast(); } catch(e){} return; } const allTx = (window.tx && window.tx.slice()) || (() => { try { return JSON.parse(localStorage.getItem('tx_manual_import')||'[]'); } catch(e){ return []; } })(); const now = new Date(); const sumDays = (days) => { const cutoff = new Date(now.getTime() + days*86400000); return allTx.reduce((s, r) => { const date = (r['Data księgowania'] || r['Дата'] || r['date'] || r['Date']); const d = new Date(toISO(date)); if (isNaN(d)) return s; if (d <= cutoff) return s + Math.abs(Number(r['Kwота']||r['Kwота']||r['amount']||r['Kwota_raw']||0)); return s; }, 0); }; const s7 = sumDays(7), s30 = sumDays(30); if ( $('#forecastBars') ) { $('#forecastBars').innerHTML = '<div class="muted">7d forecast (sum amounts): ' + s7.toFixed(2) + ' PLN</div>'; } if ( $('#forecast30Table') ) { $('#forecast30Table').innerHTML = '<div class="muted">30d forecast (sum amounts): ' + s30.toFixed(2) + ' PLN</div>'; } }
     function initStripeButtons(){ const btnIds = ['pay99','payNow','payAfterDemo','payNowBtn','payNowBtn2']; const btns = btnIds.map(id=>document.getElementById(id)).filter(Boolean); const more = Array.from(new Set([].concat(Array.from(document.querySelectorAll('button.pay-btn, button.btn.pay, button.pay, .pay-btn'))))); const unique = Array.from(new Set([].concat(btns, more))); if (!unique.length) return; unique.forEach(b=>{ b.removeEventListener('click', b._otd_cb); const cb = async (e) => { e.preventDefault(); const fallbackLink = localStorage.getItem('stripe_link') || localStorage.getItem('stripePaymentLink'); if (fallbackLink) { window.location.href = fallbackLink; return; } try { const resp = await fetch('/create-checkout-session', { method: 'POST', headers: {'Content-Type':'application/json'}, credentials: 'include', body: JSON.stringify({demo: true}) }); if (!resp.ok) { const txt = await resp.text().catch(()=>null); alert('Ошибка создания сессии: ' + (txt || resp.status)); return; } const json = await resp.json().catch(()=>null); if (json && json.url) { window.location.href = json.url; return; } if (json && json.session && json.session.url) { window.location.href = json.session.url; return; } alert('Сервер вернул неизвестный ответ. Проверь логи сервера.'); } catch(err){ alert('Не удалось связаться с сервером /create-checkout-session. Можно временно положить ссылку в localStorage.stripe_link'); } }; b._otd_cb = cb; b.addEventListener('click', cb); }); }
     function ensureRenderers(){ if (typeof renderInvoices === 'function') try { renderInvoices(); } catch(e) {} if (typeof render === 'function') try { render(); } catch(e) {} if (typeof renderAccounts === 'function') try { renderAccounts(); } catch(e) {} if (typeof renderKasa === 'function') try { renderKasa(); } catch(e) {} }
     function initAll(){ try { initTabs(); } catch(e){} try { unblackSections(); } catch(e){} try { initLangButtons(); } catch(e){} try { ensureForecasts(); } catch(e){} try { initStripeButtons(); } catch(e){} try { ensureRenderers(); } catch(e){} safeCall('render'); safeCall('renderPlan'); safeCall('renderKasa'); safeCall('renderAccounts'); safeCall('renderForecast'); }
@@ -1543,5 +1635,3 @@
   </script>
 </body>
 </html>
-
-
