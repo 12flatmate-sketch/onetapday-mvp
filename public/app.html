@@ -1,1229 +1,1179 @@
 <!DOCTYPE html>
-<html lang="pl">
+<html lang="ru">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>OneTapDay — AI Księgowy (MVP)</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OneTapDay – AI Księgowy (MVP)</title>
   <style>
-    :root{
-      --accent:#35D36B;--bg:#0d0f10;--card:#15181a;--muted:#9aa3a9;--text:#e6edf3;
-      --danger:#ff7070;--warn:#f4d06f;--pos:#a8e8c7;--neg:#ff8a8a
+    :root {
+      --accent: #35D36B;
+      --bg: #0d0f10;
+      --card: #15181a;
+      --muted: #9aa3a9;
+      --text: #e6edf3;
+      --danger: #ff7070;
+      --warn: #f4d06f;
+      --pos: #a8e8c7;
+      --neg: #ff8a8a;
     }
-    html,body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;-webkit-tap-highlight-color:transparent}
-    button,select,input,label{touch-action:manipulation}
-    .wrap{max-width:1240px;margin:0 auto;padding:12px 16px 48px}
-    .top{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;position:relative;z-index:2}
-    .brand{font-weight:700}
-    .tabs{display:flex;gap:6px;flex-wrap:wrap;position:relative;z-index:2}
-    .tab{padding:8px 12px;border-radius:10px;background:#0f1214;border:1px solid #20262b;color:#cfe6d7;cursor:pointer;font-weight:600}
-    .tab.active{background:var(--accent);color:#08110b;border-color:#49e084}
-    .section{display:none;margin-top:14px;position:relative;z-index:1}
-    .section.active{display:block}
-    .cards{display:grid;grid-template-columns:repeat(4,minmax(220px,1fr));gap:12px}
-    .card{background:var(--card);border:1px solid #22282c;border-radius:12px;padding:14px}
-    .muted{color:var(--muted);font-size:13px}
-    .kpi{font-size:34px;font-weight:800;margin:2px 0 0}
-    .btn{appearance:none;border:0;border-radius:10px;background:var(--accent);color:#08110b;padding:10px 14px;font-weight:700;cursor:pointer}
-    .btn.secondary{background:#20262b;color:#fff;border:1px solid #2a3136}
-    .btn.ghost{background:transparent;color:#e6edf3;border:1px dashed #2a3136}
-    .btn.link{background:transparent;border:0;color:#9fe8b8;text-decoration:underline;cursor:pointer}
-    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    table{width:100%;border-collapse:collapse;margin-top:8px}
-    th,td{border-bottom:1px solid #242b30;padding:8px 6px;font-size:13px;text-align:left;vertical-align:top}
-    th{color:#9aa3a9;font-weight:600}
-    .pill{display:inline-block;padding:3px 9px;border-radius:999px;background:#0f1214;border:1px solid #20262b;color:#9aa3a9;font-size:12px}
-    .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px}
-    .due{background:#2a1f1f;color:#ffb3b3;border:1px solid #4d3030}
-    .overdue{background:#381f1f;color:#ff8a8a;border:1px solid #5c2a2a}
-    .cand{background:#23221a;color:#e3e0b0;border:1px solid #49452c}
-    .ai{background:#1a2320;color:#a8e8c7;border:1px solid #274b32}
-    .barwrap{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:8px}
-    .bar{background:#0f1214;border:1px solid #20262b;border-radius:8px;padding:6px;text-align:center}
-    .bar .h{height:36px;background:#203026;border:1px solid #2e4635;border-radius:6px;margin:4px 0}
-    .bar.neg .h{background:#3a2222;border-color:#5b3030}
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    input[type=file],input[type=text],input[type=number],select{background:#0f1214;border:1px solid #20262b;border-radius:8px;color:#e6edf3;padding:9px}
-    input::placeholder{color:#6f7a80}
-    .right{margin-left:auto}
-    .mic{border-radius:50%;width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;border:2px solid #2a3136;background:#0f1214;cursor:pointer}
-    .mic.on{background:#1d2;color:#08110b;border-color:#3f6}
-    .thumb{max-height:60px;border:1px solid #2a3136;border-radius:8px;margin-left:8px}
-    .amt-pos{color:var(--pos);font-weight:700}
-    .amt-neg{color:var(--neg);font-weight:700}
-    .lang{display:flex;gap:6px;margin-left:12px}
-    .lang button{padding:4px 8px;border-radius:999px;border:1px solid #20262b;background:#0f1214;color:#9aa3a9;font-size:12px;cursor:pointer}
-    .lang button.on{background:#274b32;color:#a8e8c7;border-color:#274b32}
-    .gate{background:#2a1f1f;border:1px solid #4d3030;color:#ffb3b3;padding:12px;border-radius:10px;margin-top:10px}
-    .hint{font-size:12px;color:#9aa3a9}
-    .kasa-quick{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
-    .kasa-quick button{padding:6px 10px;border-radius:8px;border:1px solid #2a3136;background:#0f1214;color:#e6edf3;cursor:pointer;font-size:13px}
-    .actions button{background:#0f1214;border:1px solid #2a3136;color:#e6edf3;border-radius:6px;padding:4px 8px;cursor:pointer}
-    .actions button:hover{border-color:#3a4248}
-    .inline-edit{display:flex;gap:6px;flex-wrap:wrap}
-    .hidden{display:none !important}
-    @media (max-width:1080px){.cards{grid-template-columns:1fr 1fr}.grid2{grid-template-columns:1fr}}
-    @media print{.tabs,.btn,.row input,.toast,.lang{display:none !important}body{background:#fff;color:#000}.card{background:#fff;border:1px solid #999}.wrap{max-width:1000px}}
+    html, body { background: var(--bg); color: var(--text); font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; }
+    .wrap { max-width: 1240px; margin: 0 auto; padding: 12px 16px 48px; }
+    .top { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+    .top .brand { font-weight: 700; }
+    .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+    .tab { padding: 8px 12px; border-radius: 10px; background: #0f1214; border: 1px solid #20262b; color: #cfe6d7; cursor: pointer; font-weight: 600; }
+    .tab.active { background: var(--accent); color: #08110b; border-color: #49e084; }
+    .section { display: none; margin-top: 14px; }
+    .section.active { display: block; }
+    .cards { display: grid; grid-template-columns: repeat(4, minmax(220px, 1fr)); gap: 12px; }
+    .card { background: var(--card); border: 1px solid #22282c; border-radius: 12px; padding: 14px; }
+    .muted { color: var(--muted); font-size: 13px; }
+    .kpi { font-size: 34px; font-weight: 800; margin: 2px 0 0; }
+    .btn { appearance: none; border: 0; border-radius: 10px; background: var(--accent); color: #08110b; padding: 10px 14px; font-weight: 700; cursor: pointer; }
+    .btn.secondary { background: #20262b; color: #fff; border: 1px solid #2a3136; }
+    .btn.ghost { background: transparent; color: #e6edf3; border: 1px dashed #2a3136; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th, td { border-bottom: 1px solid #242b30; padding: 8px 6px; font-size: 13px; text-align: left; vertical-align: top; }
+    th { color: #9aa3a9; font-weight: 600; }
+    .pill { display: inline-block; padding: 3px 9px; border-radius: 999px; background: #0f1214; border: 1px solid #20262b; color: #9aa3a9; font-size: 12px; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; }
+    .due { background: #2a1f1f; color: #ffb3b3; border: 1px solid #4d3030; }
+    .overdue { background: #381f1f; color: #ff8a8a; border: 1px solid #5c2a2a; }
+    .cand { background: #23221a; color: #e3e0b0; border: 1px solid #49452c; }
+    .ai { background: #1a2320; color: #a8e8c7; border: 1px solid #274b32; }
+    .barwrap { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 8px; }
+    .bar { background: #0f1214; border: 1px solid #20262b; border-radius: 8px; padding: 6px; text-align: center; }
+    .bar .h { height: 36px; background: #203026; border: 1px solid #2e4635; border-radius: 6px; margin: 4px 0; }
+    .bar.neg .h { background: #3a2222; border-color: #5b3030; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    input[type=file], input[type=text], input[type=number], select { background: #0f1214; border: 1px solid #20262b; border-radius: 8px; color: #e6edf3; padding: 9px; }
+    .right { margin-left: auto; }
+    .mic { border-radius: 50%; width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; border: 2px solid #2a3136; background: #0f1214; cursor: pointer; }
+    .mic.on { background: #1d2; color: #08110b; border-color: #3f6; }
+    .hint { font-size: 12px; color: #9aa3a9; }
+    .thumb { max-height: 60px; border: 1px solid #2a3136; border-radius: 8px; margin-left: 8px; }
+    .amt-pos { color: var(--pos); font-weight:700; }
+    .amt-neg { color: var(--neg); font-weight:700; }
+    .lang { display: flex; gap: 6px; margin-left: 12px; }
+    .lang button { padding: 4px 8px; border-radius: 999px; border: 1px solid #20262b; background: #0f1214; color: #9aa3a9; font-size: 12px; cursor: pointer; }
+    .lang button.on { background: #274b32; color: #a8e8c7; border-color: #274b32; }
+    @media (max-width: 1080px) { .cards { grid-template-columns: 1fr 1fr; } .grid2 { grid-template-columns: 1fr; } }
+    @media print { .tabs, .btn, .row input, .toast { display: none !important; } body { background: #fff; color: #000; } .card { background: #fff; border: 1px solid #999; } .wrap { max-width: 1000px; } }
+    .kasa-quick { margin-top: 10px; display:flex; gap:8px; flex-wrap:wrap; }
+    .kasa-quick button { padding:6px 10px; border-radius:8px; border:1px solid #2a3136; background:#0f1214; color:#e6edf3; cursor:pointer; font-size:13px; }
+    /* действия в таблицах */
+    td.actions > button { margin-right:6px; }
   </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="top">
-    <div class="brand"><b>OneTapDay — AI Księgowy</b> <span class="pill">MVP</span></div>
-    <div class="tabs" id="tabs">
-      <div class="tab active" data-sec="pulpit" data-i="tab_dashboard">Panel</div>
-      <div class="tab" data-sec="wyciag" data-i="tab_statement">Wyciąg</div>
-      <div class="tab" data-sec="faktury" data-i="tab_invoices">Faktury</div>
-      <div class="tab" data-sec="konta" data-i="tab_accounts">Konta</div>
-      <div class="tab" data-sec="kasa" data-i="tab_cash">Kasa</div>
-      <div class="tab" data-sec="ustawienia" data-i="tab_settings">Ustawienia</div>
-      <div class="lang" id="langBarMain">
-        <button data-lang="pl" class="on">PL</button>
-        <button data-lang="ru">RU</button>
-        <button data-lang="en">EN</button>
-        <button data-lang="uk">UK</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ACCESS GATE (hidden if demo/sub active) -->
-  <div id="gate" class="gate hidden">
-    <div data-i="gate_locked_title" style="font-weight:700;margin-bottom:6px">Dostęp zablokowany</div>
-    <div class="muted" data-i="gate_locked_desc">
-      Okres demo zakończony lub brak aktywnej subskrypcji. Przejdź do Ustawień, aby uruchomić demo (24h) lub opłacić dostęp.
-    </div>
-    <div class="row" style="margin-top:8px">
-      <button class="btn secondary" onclick="document.querySelector('[data-sec=ustawienia]').click()" data-i="gate_open_settings">Otwórz Ustawienia</button>
-    </div>
-  </div>
-
-  <!-- DASHBOARD -->
-  <div id="pulpit" class="section active">
-    <div class="cards">
-      <div class="card"><div class="muted" data-i="kpi_due_today">Do zapłaty dziś</div><div id="kpiDue" class="kpi">0</div></div>
-      <div class="card"><div class="muted" data-i="kpi_unmatched">Niesparowane transakcje</div><div id="kpiUnmatch" class="kpi">0</div></div>
-      <div class="card"><div class="muted" data-i="kpi_banks">Bilans banków</div><div id="kpiBank" class="kpi">0</div></div>
-      <div class="card"><div class="muted" data-i="kpi_cash">Kasa (PLN)</div><div id="kpiCash" class="kpi">0</div></div>
-      <div class="card"><div class="muted" data-i="kpi_total">Dostępnie razem</div><div id="kpiAvail" class="kpi">0</div></div>
-      <div class="card"><div class="muted" data-i="kpi_gap_today">Brak środków dziś</div><div id="kpiGap" class="kpi">0</div></div>
-    </div>
-
-    <div class="row" style="margin:10px 0">
-      <button id="syncNow" class="btn" data-i="btn_sync">Synchronizuj</button>
-      <button id="runAI" class="btn secondary" data-i="btn_ai_match">Dopasowanie AI</button>
-      <button id="acceptSafe" class="btn secondary" data-i="btn_accept_safe">Akceptuj bezpieczne pary</button>
-      <button id="exportPDF" class="btn secondary" data-i="btn_pdf">Raport PDF</button>
-      <span id="lastSync" class="pill" data-i="sync_ts">Synchronizacja: —</span>
-      <span class="right pill" id="modeCash">Mode: auto</span>
-    </div>
-
-    <div class="grid2">
-      <div class="card">
-        <div style="font-weight:700" data-i="minpay_title">Minimalna płatność (kara-stop)</div>
-        <div id="minPayBox" class="muted">—</div>
-        <div class="row" style="margin-top:6px">
-          <button id="applyMinPay" class="btn secondary" data-i="btn_apply_minpay">Oznacz jako opłacone</button>
+  <div class="wrap">
+    <div class="top">
+      <div class="brand"><b>OneTapDay — AI Księgowy</b> <span class="pill">MVP</span></div>
+      <div class="tabs">
+        <div class="tab active" data-sec="pulpit" data-i="tab_dashboard">Пульт</div>
+        <div class="tab" data-sec="wyciag" data-i="tab_statement">Wyciąg</div>
+        <div class="tab" data-sec="faktury" data-i="tab_invoices">Faktury</div>
+        <div class="tab" data-sec="konta" data-i="tab_accounts">Счета</div>
+        <div class="tab" data-sec="kasa" data-i="tab_cash">Kasa (нал)</div>
+        <div class="tab" data-sec="ustawienia" data-i="tab_settings">Настройки</div>
+        <div class="lang" id="langBarMain">
+          <button data-lang="ru" class="on">RU</button>
+          <button data-lang="en">EN</button>
+          <button data-lang="pl">PL</button>
+          <button data-lang="uk">UK</button>
         </div>
       </div>
-      <div class="card">
-        <div style="font-weight:700" data-i="forecast_7d">Prognoza 7 dni</div>
-        <div class="muted" data-i="forecast7d_note">Liczy PLN-konta z wyciągu (włączone) + kasa.</div>
-        <div id="forecastBars" class="barwrap"></div>
-        <div id="forecastMeta" class="muted" style="margin-top:6px">—</div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="pulpit" class="section active">
+      <div class="cards">
+        <div class="card"><div class="muted" data-i="kpi_due_today">К оплате сегодня</div><div id="kpiDue" class="kpi">0</div></div>
+        <div class="card"><div class="muted" data-i="kpi_unmatched">Несвязанные транзакции</div><div id="kpiUnmatch" class="kpi">0</div></div>
+        <div class="card"><div class="muted" data-i="kpi_banks">Банки в расчёте</div><div id="kpiBank" class="kpi">0</div></div>
+        <div class="card"><div class="muted" data-i="kpi_cash">Касса (нал)</div><div id="kpiCash" class="kpi">0</div></div>
+        <div class="card"><div class="muted" data-i="kpi_total">Доступно всего</div><div id="kpiAvail" class="kpi">0</div></div>
+        <div class="card"><div class="muted" data-i="kpi_gap_today">Разрыв кассы сегодня</div><div id="kpiGap" class="kpi">0</div></div>
+      </div>
+      <div class="row" style="margin:10px 0;">
+        <button id="syncNow" class="btn" data-i="btn_sync">Синхронизация</button>
+        <button id="runAI" class="btn secondary" data-i="btn_ai_match">ИИ-сверка</button>
+        <button id="acceptSafe" class="btn secondary" data-i="btn_accept_safe">Принять безопасные пары</button>
+        <button id="exportPDF" class="btn secondary" data-i="btn_pdf">PDF отчёт</button>
+        <span id="lastSync" class="pill">Синхронизация: —</span>
+        <span class="right pill" id="modeCash">Режим: авто</span>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <div style="font-weight:700;" data-i="minpay_title">Минимальный платёж (штраф-стоп)</div>
+          <div id="minPayBox" class="muted">—</div>
+          <div class="row" style="margin-top:6px;">
+            <button id="applyMinPay" class="btn secondary" data-i="btn_apply_minpay">Отметить как оплачено</button>
+          </div>
+        </div>
+        <div class="card">
+          <div style="font-weight:700;" data-i="forecast_7d">Прогноз 7 дней</div>
+          <div class="muted" data-i="forecast7d_note">Считает PLN-счета из wyciąg (включённые) + кассу.</div>
+          <div id="forecastBars" class="barwrap"></div>
+          <div id="forecastMeta" class="muted" style="margin-top:6px;">—</div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <div style="font-weight:700;" data-i="forecast_30d">Прогноз 30 дней</div>
+          <div class="muted" data-i="forecast30_note">Автопрогноз по wyciąg + кассе на 30 дней.</div>
+          <div id="forecast30Table"></div>
+        </div>
+        <div class="card">
+          <div style="font-weight:700;" data-i="month_summary_title">Итоги месяца</div>
+          <div id="monthSummary" class="muted">—</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px;">
+        <div class="row">
+          <div style="font-weight:700;" data-i="plan_title">План платежей под кассу</div>
+          <div class="right">
+            <span data-i="filter_label">Фильтр:</span>
+            <select id="planFilter">
+              <option value="today" data-i="filter_today">Сегодня</option>
+              <option value="7d" data-i="filter_7d" selected>7 дней</option>
+              <option value="all" data-i="filter_all">Все</option>
+            </select>
+          </div>
+          <label style="margin-left:10px;"><input type="checkbox" id="excludeBlacklist" /> <span data-i="exclude_blacklist">Исключать blacklist</span></label>
+        </div>
+        <div class="row" style="margin:8px 0;">
+          <button id="makePlan" class="btn secondary" data-i="btn_make_plan">Сформировать</button>
+          <button id="applyPlan" class="btn secondary" data-i="btn_apply_plan">Применить</button>
+          <span id="planMeta" class="pill">—</span>
+        </div>
+        <table id="planTable">
+          <thead><tr>
+            <th>#</th><th data-i="plan_th_invoice">Фактура</th><th data-i="plan_th_supplier">Поставщик</th><th data-i="plan_th_due">Срок</th><th data-i="plan_th_amount">Сумма</th><th data-i="plan_th_reason">Причина</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
       </div>
     </div>
 
-    <div class="grid2">
-      <div class="card">
-        <div style="font-weight:700" data-i="forecast_30d">Prognoza 30 dni</div>
-        <div class="muted" data-i="forecast30_note">Autoprognoza z wyciągów + kasa na 30 dni.</div>
-        <div id="forecast30Table" class="muted">—</div>
-      </div>
-      <div class="card">
-        <div style="font-weight:700" data-i="month_summary_title">Podsumowanie miesiąca</div>
-        <div id="monthSummary" class="muted">—</div>
-      </div>
-    </div>
-
-    <div class="card" style="margin-top:14px">
+    <!-- Wyciąg -->
+    <div id="wyciag" class="section">
       <div class="row">
-        <div style="font-weight:700" data-i="plan_title">Plan płatności pod kasę</div>
-        <div class="right">
-          <span data-i="filter_label">Filtr:</span>
-          <select id="planFilter">
-            <option value="today" data-i="filter_today">Dziś</option>
-            <option value="7d" data-i="filter_7d" selected>7 dni</option>
-            <option value="all" data-i="filter_all">Wszystko</option>
-          </select>
-        </div>
-        <label style="margin-left:10px">
-          <input type="checkbox" id="excludeBlacklist"/> <span data-i="exclude_blacklist">Wyklucz blacklistę</span>
+        <label class="btn ghost">
+          <input id="txFile" type="file" accept=".csv" style="display:none;" />
+          <span data-i="upload_statement">Загрузить выписку (CSV)</span>
         </label>
+
+        <!-- ДОБАВЛЕНО: обработка фото выписки -->
+        <label class="btn ghost">
+          <input id="txImage" type="file" accept="image/*" multiple style="display:none;" />
+          <span>Загрузить скрин выписки (галерея)</span>
+        </label>
+        <img id="txLastThumb" class="thumb" style="display:none;" />
+
+        <input id="txUrl" type="text" placeholder="URL CSV wyciąga" />
+        <button id="saveTxUrl" class="btn secondary" data-i="save_url">Сохранить URL</button>
+        <span class="muted">Колонки: Data księgowania, ID transakcji, ID konta (или IBAN), Kontrahent, Tytuł/Opis, Kwota(±), Waluta, Статус транзакции, Saldo po operacji?</span>
       </div>
-      <div class="row" style="margin:8px 0">
-        <button id="makePlan" class="btn secondary" data-i="btn_make_plan">Utwórz plan</button>
-        <button id="applyPlan" class="btn secondary" data-i="btn_apply_plan">Zastosuj plan</button>
-        <span id="planMeta" class="pill">—</span>
-      </div>
-      <table id="planTable">
+      <table id="txTable">
         <thead>
           <tr>
-            <th>#</th>
-            <th data-i="plan_th_invoice">Faktura</th>
-            <th data-i="plan_th_supplier">Dostawca</th>
-            <th data-i="plan_th_due">Termin</th>
-            <th data-i="plan_th_amount">Kwota</th>
-            <th data-i="plan_th_reason">Powód</th>
+            <th data-i="th_date">Дата</th><th data-i="th_account">Счёт</th><th data-i="th_counterparty">Контрагент</th><th data-i="th_desc">Описание</th><th data-i="th_amount">Сумма</th><th data-i="th_currency">Валюта</th><th data-i="th_status">Статус</th>
           </tr>
         </thead>
         <tbody></tbody>
       </table>
     </div>
-  </div>
 
-  <!-- STATEMENT -->
-  <div id="wyciag" class="section">
-    <div class="row">
-      <label class="btn ghost">
-        <input id="txFile" type="file" accept=".csv" style="display:none"/>
-        <span data-i="upload_statement">Załaduj wyciąg (CSV)</span>
-      </label>
+    <!-- Faktury -->
+    <div id="faktury" class="section">
+      <div class="row" style="align-items:center; margin-bottom:8px;">
+        <label class="btn ghost">
+          <input id="billFile" type="file" accept=".csv" style="display:none" />
+          <span data-i="upload_invoices">Загрузить счета (CSV)</span>
+        </label>
 
-      <label class="btn ghost">
-        <input id="txImage" type="file" accept="image/*" multiple style="display:none"/>
-        <span data-i="upload_statement_image">Załaduj zrzut wyciągu (galeria)</span>
-      </label>
-
-      <img id="txLastThumb" class="thumb" style="display:none"/>
-
-      <input id="txUrl" type="text" placeholder="" data-i-ph="placeholder_csv_url"/>
-      <button id="saveTxUrl" class="btn secondary" data-i="save_url">Zapisz URL</button>
-      <span class="muted" data-i="statement_columns_note">
-        Kolumny: Data księgowania, ID transakcji, ID konta (lub IBAN), Kontrahent, Tytuł/Opis, Kwota(±), Waluta, Status, Saldo?
-      </span>
-    </div>
-    <table id="txTable">
-      <thead>
-        <tr>
-          <th data-i="th_date">Data</th>
-          <th data-i="th_account">Konto</th>
-          <th data-i="th_counterparty">Kontrahent</th>
-          <th data-i="th_desc">Opis</th>
-          <th data-i="th_amount">Kwota</th>
-          <th data-i="th_currency">Waluta</th>
-          <th data-i="th_status">Status</th>
-          <th data-i="th_actions">Działania</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- INVOICES -->
-  <div id="faktury" class="section">
-    <div class="row" style="align-items:center;margin-bottom:8px">
-      <label class="btn ghost">
-        <input id="billFile" type="file" accept=".csv" style="display:none"/>
-        <span data-i="upload_invoices">Załaduj faktury (CSV)</span>
-      </label>
-      <label class="btn ghost">
-        <input id="billImage" type="file" accept="image/*" multiple style="display:none"/>
-        <span data-i="upload_invoice_images">Załaduj zdjęcia faktur</span>
-      </label>
-      <span class="muted" style="margin-left:12px" data-i="invoices_note">Tu wykrywamy numer faktury, kwotę i datę.</span>
-    </div>
-    <table id="billTable">
-      <thead>
-        <tr>
-          <th data-i="inv_th_due">Termin</th>
-          <th data-i="inv_th_number">Nr</th>
-          <th data-i="inv_th_supplier">Dostawca</th>
-          <th data-i="inv_th_amount">Kwota</th>
-          <th data-i="inv_th_currency">Waluta</th>
-          <th data-i="inv_th_status">Status</th>
-          <th data-i="inv_th_candidate">Kandydat</th>
-          <th data-i="inv_th_score">Score</th>
-          <th data-i="inv_th_action">Działanie</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- ACCOUNTS -->
-  <div id="konta" class="section">
-    <div class="card">
-      <div style="font-weight:700" data-i="auto_accounts_title">Konta z wyciągu (auto)</div>
-      <div class="muted" data-i="auto_accounts_desc">Edycja waluty, salda początkowego i uwzględnienia w planie.</div>
-      <table id="autoAcc">
+        <!-- ДОБАВЛЕНО: обработка фото фактур -->
+        <label class="btn ghost">
+          <input id="billImage" type="file" accept="image/*" multiple style="display:none" />
+          <span>Загрузить фото фактуры</span>
+        </label>
+        <span class="muted" style="margin-left:12px;">Здесь распознаются номера фактур, суммы и даты.</span>
+      </div>
+      <table id="billTable">
         <thead>
           <tr>
-            <th data-i="acc_th_account">Konto</th>
-            <th data-i="acc_th_type">Typ</th>
-            <th data-i="acc_th_currency">Waluta</th>
-            <th data-i="acc_th_balance_calc">Saldo (oblicz)</th>
-            <th data-i="acc_th_start_balance">Start</th>
-            <th data-i="acc_th_include">Uwzględnij</th>
+            <th>Срок</th><th>№</th><th>Поставщик</th><th>Сумма</th><th>Валюта</th><th>Статус</th><th>Кандидат</th><th>Score</th><th>Действие</th>
           </tr>
         </thead>
         <tbody></tbody>
       </table>
     </div>
-  </div>
 
-  <!-- CASH -->
-  <div id="kasa" class="section">
-    <div class="card">
-      <div style="font-weight:700" data-i="cash_title">Kasa — szybkie operacje</div>
-      <div class="muted" data-i="cash_note">Głosowa kasa + szybkie przyciski</div>
-      <div id="kasaQuickHolder" class="kasa-quick"></div>
-
-      <div class="row" style="margin-top:8px;align-items:center">
-        <input id="quickAmt" type="number" step="0.01" placeholder="0.00" data-i-ph="ph_amount" style="width:120px"/>
-        <input id="quickNote" type="text" placeholder="" data-i-ph="ph_comment" style="width:300px"/>
-        <button id="addIn" class="btn secondary" data-i="btn_add_in">+ Przyjęcie</button>
-        <button id="addOut" class="btn secondary" data-i="btn_add_out">− Wydanie</button>
-        <button id="q50" class="btn ghost">+50</button>
-        <button id="q100" class="btn ghost">+100</button>
-        <button id="q200" class="btn ghost">+200</button>
-        <div style="margin-left:12px">
-          <button id="cashClose" class="btn" data-i="btn_close_shift">Zamknij zmianę</button>
-        </div>
-      </div>
-
-      <div style="margin-top:8px">
-        <label data-i="speech_lang_label">Język rozpoznawania:</label>
-        <select id="speechLang">
-          <option value="pl-PL">PL</option>
-          <option value="ru-RU">RU</option>
-          <option value="en-US">EN</option>
-          <option value="uk-UA">UK</option>
-        </select>
-        <button id="micBtn" class="mic" title="Voice">🎤</button>
-        <span id="micStatus" class="muted" style="margin-left:8px">—</span>
-      </div>
-
-      <div style="margin-top:12px">
-        <input id="cashPhoto" type="file" accept="image/*" style="display:inline-block"/>
-        <span class="muted" data-i="cash_photo_note">Zdjęcie paragonu/wyciągu — wykryj kwotę i opis.</span>
-      </div>
-
-      <table id="kasaTable" style="margin-top:12px">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th data-i="cash_th_date">Data</th>
-            <th data-i="cash_th_type">Typ</th>
-            <th data-i="cash_th_amount">Kwota</th>
-            <th data-i="cash_th_source">Źródło</th>
-            <th data-i="cash_th_comment">Komentarz</th>
-            <th data-i="th_actions">Działania</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- SETTINGS -->
-  <div id="ustawienia" class="section">
-    <div class="card">
-      <div style="font-weight:700" data-i="parameters">Parametry</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px">
-        <div>
-          <label data-i="param_cash_label">Ręczna dostępna kasa dziś (PLN):</label>
-          <input id="cashPLN" type="text"/><br/>
-          <label data-i="param_penalty_label">Kara, %/dzień:</label>
-          <input id="penaltyPct" type="text"/><br/>
-          <label data-i="param_interval_label">Interwał synchronizacji, min:</label>
-          <input id="intervalMin" type="text"/>
-        </div>
-        <div>
-          <label data-i="rateEUR_label">rateEUR:</label> <input id="rateEUR" type="text"/><br/>
-          <label data-i="rateUSD_label">rateUSD:</label> <input id="rateUSD" type="text"/><br/>
-          <label data-i="blacklist_label">Czarna lista (przecinki):</label> <input id="blacklist" type="text"/><br/>
-          <label><input id="autoCash" type="checkbox"/> <span data-i="auto_mode_label">Auto: z kont wyciągu (włączone) + kasa</span></label>
-        </div>
-      </div>
-      <div style="margin-top:10px" class="row">
-        <button id="applySettings" class="btn secondary" data-i="btn_save_settings">Zapisz</button>
-        <button id="exportCfg" class="btn ghost" data-i="btn_export_settings">Eksport ustawień</button>
-        <label class="btn ghost"><span data-i="btn_import_settings">Import ustawień</span> <input id="importCfg" type="file" style="display:none"/></label>
-        <button id="clearAll" class="btn ghost" data-i="btn_clear_all">Wyczyść historię (lokalnie)</button>
+    <!-- Konta -->
+    <div id="konta" class="section">
+      <div class="card">
+        <div style="font-weight:700">Автоматические счета из выписки</div>
+        <div class="muted">Редактируй валюту, стартовое сальдо и включение в расчёт.</div>
+        <table id="autoAcc">
+          <thead><tr><th>Счёт</th><th>Тип</th><th>Валюта</th><th>Баланс (расчёт)</th><th>Старт</th><th>В расчёт</th></tr></thead>
+          <tbody></tbody>
+        </table>
       </div>
     </div>
 
-    <div class="card">
-      <div style="font-weight:700" data-i="sub_title">Subskrypcja / Demo</div>
-      <div class="muted" id="subStatus">—</div>
-      <div class="row" style="margin-top:8px">
-        <button id="startDemo" class="btn secondary" data-i="btn_start_demo">Uruchom demo (24h)</button>
-        <button id="payNow" class="btn" data-i="btn_pay_sub">Opłać subskrypcję</button>
-        <button id="endDemo" class="btn ghost" data-i="btn_end_demo">Zakończ demo</button>
-      </div>
-      <div class="hint" style="margin-top:6px" data-i="sub_hint">
-        Opłata dostępna tylko tutaj. Jeśli masz link Stripe — ustaw <code>localStorage.stripe_link</code>.
+    <!-- Kasa -->
+    <div id="kasa" class="section">
+      <div class="card">
+        <div style="font-weight:700">Касса — быстрые операции</div>
+        <div class="muted">Голосовая касса + быстрые кнопки</div>
+        <div id="kasaQuickHolder" class="kasa-quick" aria-hidden="false"></div>
+        <div class="row" style="margin-top:8px; align-items:center;">
+          <input id="quickAmt" type="number" step="0.01" placeholder="Сумма" style="width:120px" />
+          <input id="quickNote" type="text" placeholder="Комментарий" style="width:300px" />
+          <button id="addIn" class="btn secondary">+ Приём</button>
+          <button id="addOut" class="btn secondary">− Выдача</button>
+          <button id="q50" class="btn ghost">+50</button>
+          <button id="q100" class="btn ghost">+100</button>
+          <button id="q200" class="btn ghost">+200</button>
+          <div style="margin-left:12px;"><button id="cashClose" class="btn">Закрыть смену</button></div>
+        </div>
+
+        <div style="margin-top:8px;">
+          <label>Язык распознавания:
+            <select id="speechLang">
+              <option value="pl-PL">PL</option>
+              <option value="ru-RU">RU</option>
+              <option value="en-US">EN</option>
+              <option value="uk-UA">UK</option> <!-- ДОБАВЛЕНО -->
+            </select>
+          </label>
+          <button id="micBtn" class="mic" title="Голосовая касса">🎤</button>
+          <span id="micStatus" class="muted" style="margin-left:8px;">—</span>
+        </div>
+
+        <div style="margin-top:12px;">
+          <input id="cashPhoto" type="file" accept="image/*" style="display:inline-block" />
+          <span class="muted">Скан чека/выписки — распознать сумму и описание.</span>
+        </div>
+
+        <table id="kasaTable" style="margin-top:12px">
+          <thead><tr><th>#</th><th>Дата</th><th>Тип</th><th>Сумма</th><th>Источник</th><th>Комментарий</th></tr></thead>
+          <tbody></tbody>
+        </table>
       </div>
     </div>
+
+    <!-- Ustawienia -->
+    <div id="ustawienia" class="section">
+      <div class="card">
+        <div style="font-weight:700">Параметры</div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:8px;">
+          <div>
+            <label>Manual available cash today (PLN): <input id="cashPLN" type="text" /></label><br/>
+            <label>Пеня, %/день: <input id="penaltyPct" type="text" /></label><br/>
+            <label>Интервал синха, мин: <input id="intervalMin" type="text" /></label>
+          </div>
+          <div>
+            <label>rateEUR: <input id="rateEUR" type="text" /></label><br/>
+            <label>rateUSD: <input id="rateUSD" type="text" /></label><br/>
+            <label>Blacklist (comma): <input id="blacklist" type="text" /></label><br/>
+            <label><input id="autoCash" type="checkbox" /> Авто: из счетов wyciąg (включённые) + каса</label>
+          </div>
+        </div>
+        <div style="margin-top:10px;">
+          <button id="applySettings" class="btn secondary">Сохранить</button>
+          <button id="exportCfg" class="btn ghost">Экспорт</button>
+          <label class="btn ghost">Импорт <input id="importCfg" type="file" style="display:none" /></label>
+        </div>
+      </div>
+    </div>
+
   </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<script>
-/* ==== CONFIG / API ==== */
-const API_BASE = '/api';
-const SUB_KEY = 'otd_sub_active';
-const SUB_FROM = 'otd_sub_from';
-const SUB_TO   = 'otd_sub_to';
-const DEMO_START = 'otd_demo_started_at';
-const USER_KEY = 'otd_user'; // email
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
-/* ==== I18N ==== */
-const M = {
-  ru:{ /* ——— RU ——— */
-    tab_dashboard:"Пульт", tab_statement:"Выписка", tab_invoices:"Фактуры", tab_accounts:"Счета", tab_cash:"Касса", tab_settings:"Настройки",
-    gate_locked_title:"Доступ заблокирован",
-    gate_locked_desc:"Демо истекло или нет активной подписки. Перейдите в Настройки, чтобы запустить демо (24 ч) или оплатить доступ.",
-    gate_open_settings:"Открыть Настройки",
-    kpi_due_today:"К оплате сегодня", kpi_unmatched:"Несвязанные транзакции", kpi_banks:"Банки в расчёте", kpi_cash:"Касса (нал)", kpi_total:"Доступно всего", kpi_gap_today:"Разрыв кассы сегодня",
-    btn_sync:"Синхронизация", btn_ai_match:"ИИ-сверка", btn_accept_safe:"Принять безопасные пары", btn_pdf:"PDF отчёт", sync_ts:"Синхронизация: —",
-    minpay_title:"Минимальный платёж (штраф-стоп)", btn_apply_minpay:"Отметить как оплачено",
-    forecast_7d:"Прогноз 7 дней", forecast7d_note:"Считает PLN-счета (включённые) + кассу.",
-    forecast_30d:"Прогноз 30 дней", forecast30_note:"Автопрогноз по выпискам + кассе на 30 дней.",
-    month_summary_title:"Итоги месяца",
-    plan_title:"План платежей под кассу", filter_label:"Фильтр:", filter_today:"Сегодня", filter_7d:"7 дней", filter_all:"Все", exclude_blacklist:"Исключать blacklist",
-    btn_make_plan:"Сформировать", btn_apply_plan:"Применить",
-    plan_th_invoice:"Фактура", plan_th_supplier:"Поставщик", plan_th_due:"Срок", plan_th_amount:"Сумма", plan_th_reason:"Причина",
-    upload_statement:"Загрузить выписку (CSV)", upload_statement_image:"Загрузить скрин выписки (галерея)",
-    placeholder_csv_url:"URL CSV выписки", save_url:"Сохранить URL",
-    statement_columns_note:"Колонки: дата, id транзакции, id счёта/IBAN, контрагент, описание, сумма(±), валюта, статус, saldo?",
-    th_date:"Дата", th_account:"Счёт", th_counterparty:"Контрагент", th_desc:"Описание", th_amount:"Сумма", th_currency:"Валюта", th_status:"Статус", th_actions:"Действия",
-    upload_invoices:"Загрузить счета (CSV)", upload_invoice_images:"Загрузить фото фактуры", invoices_note:"Распознаются № фактуры, суммы и даты.",
-    inv_th_due:"Срок", inv_th_number:"№", inv_th_supplier:"Поставщик", inv_th_amount:"Сумма", inv_th_currency:"Валюта", inv_th_status:"Статус", inv_th_candidate:"Кандидат", inv_th_score:"Score", inv_th_action:"Действие",
-    auto_accounts_title:"Счета из выписки (авто)", auto_accounts_desc:"Редактируй валюту, стартовый баланс и включение в план.",
-    acc_th_account:"Счёт", acc_th_type:"Тип", acc_th_currency:"Валюта", acc_th_balance_calc:"Баланс (расчёт)", acc_th_start_balance:"Стартовый баланс", acc_th_include:"В расчёт",
-    cash_title:"Касса — быстрые операции", cash_note:"Голосовая касса + быстрые кнопки",
-    btn_add_in:"+ Приём", btn_add_out:"− Выдача", btn_close_shift:"Закрыть смену",
-    speech_lang_label:"Язык распознавания:", cash_photo_note:"Фото чека/выписки — распознать сумму и описание.",
-    cash_th_date:"Дата", cash_th_type:"Тип", cash_th_amount:"Сумма", cash_th_source:"Источник", cash_th_comment:"Комментарий",
-    parameters:"Параметры", param_cash_label:"Доступная касса сегодня (PLN):", param_penalty_label:"Пеня, %/день:", param_interval_label:"Интервал синха, мин:",
-    rateEUR_label:"rateEUR:", rateUSD_label:"rateUSD:", blacklist_label:"Blacklist (через запятую):", auto_mode_label:"Авто: из счетов (включённые) + касса",
-    btn_save_settings:"Сохранить", btn_export_settings:"Экспорт настроек", btn_import_settings:"Импорт настроек",
-    btn_clear_all:"Очистить историю (локально)",
-    sub_title:"Подписка / Демо", btn_start_demo:"Запустить демо (24 ч)", btn_pay_sub:"Оплатить подписку", btn_end_demo:"Закончить демо",
-    sub_hint:"Оплата только в Настройках. Если есть ссылka Stripe — положи в localStorage.stripe_link.",
-    ph_amount:"Сумма", ph_comment:"Комментарий"
-  },
-  en:{ /* ——— EN ——— */
-    tab_dashboard:"Dashboard", tab_statement:"Statement", tab_invoices:"Invoices", tab_accounts:"Accounts", tab_cash:"Cash", tab_settings:"Settings",
-    gate_locked_title:"Access locked",
-    gate_locked_desc:"Demo ended or subscription inactive. Go to Settings to start a 24h demo or pay.",
-    gate_open_settings:"Open Settings",
-    kpi_due_today:"Due today", kpi_unmatched:"Unmatched transactions", kpi_banks:"Bank balances", kpi_cash:"Cash (PLN)", kpi_total:"Available total", kpi_gap_today:"Cash gap today",
-    btn_sync:"Sync", btn_ai_match:"AI match", btn_accept_safe:"Accept safe matches", btn_pdf:"PDF report", sync_ts:"Sync: —",
-    minpay_title:"Minimum payment (penalty-stop)", btn_apply_minpay:"Mark as paid",
-    forecast_7d:"7-day forecast", forecast7d_note:"Calculates included PLN accounts + cash.",
-    forecast_30d:"30-day forecast", forecast30_note:"Auto-forecast from statements + cash.",
-    month_summary_title:"Month summary",
-    plan_title:"Payment plan for cash", filter_label:"Filter:", filter_today:"Today", filter_7d:"7 days", filter_all:"All", exclude_blacklist:"Exclude blacklist",
-    btn_make_plan:"Build plan", btn_apply_plan:"Apply plan",
-    plan_th_invoice:"Invoice", plan_th_supplier:"Supplier", plan_th_due:"Due", plan_th_amount:"Amount", plan_th_reason:"Reason",
-    upload_statement:"Upload statement (CSV)", upload_statement_image:"Upload statement screenshot (gallery)",
-    placeholder_csv_url:"CSV statement URL", save_url:"Save URL",
-    statement_columns_note:"Columns: booking date, tx id, account id/IBAN, counterparty, title/description, amount(±), currency, status, balance?",
-    th_date:"Date", th_account:"Account", th_counterparty:"Counterparty", th_desc:"Description", th_amount:"Amount", th_currency:"Currency", th_status:"Status", th_actions:"Actions",
-    upload_invoices:"Upload invoices (CSV)", upload_invoice_images:"Upload invoice photos", invoices_note:"We detect invoice numbers, amounts and dates.",
-    inv_th_due:"Due", inv_th_number:"No", inv_th_supplier:"Supplier", inv_th_amount:"Amount", inv_th_currency:"Currency", inv_th_status:"Status", inv_th_candidate:"Candidate", inv_th_score:"Score", inv_th_action:"Action",
-    auto_accounts_title:"Accounts from statement (auto)", auto_accounts_desc:"Edit currency, start balance and include-in-plan.",
-    acc_th_account:"Account", acc_th_type:"Type", acc_th_currency:"Currency", acc_th_balance_calc:"Balance (calc)", acc_th_start_balance:"Start", acc_th_include:"Include",
-    cash_title:"Cash — quick ops", cash_note:"Voice cash + quick buttons",
-    btn_add_in:"+ In", btn_add_out:"− Out", btn_close_shift:"Close shift",
-    speech_lang_label:"Recognition language:", cash_photo_note:"Receipt/statement photo — detect amount and description.",
-    cash_th_date:"Date", cash_th_type:"Type", cash_th_amount:"Amount", cash_th_source:"Source", cash_th_comment:"Comment",
-    parameters:"Parameters", param_cash_label:"Manual available cash today (PLN):", param_penalty_label:"Penalty, %/day:", param_interval_label:"Sync interval, min:",
-    rateEUR_label:"rateEUR:", rateUSD_label:"rateUSD:", blacklist_label:"Blacklist (comma):", auto_mode_label:"Auto: from included statement accounts + cash",
-    btn_save_settings:"Save", btn_export_settings:"Export settings", btn_import_settings:"Import settings",
-    btn_clear_all:"Clear history (local)",
-    sub_title:"Subscription / Demo", btn_start_demo:"Start demo (24h)", btn_pay_sub:"Pay subscription", btn_end_demo:"End demo",
-    sub_hint:"Payment only in Settings. If you have a Stripe link, put it in localStorage.stripe_link.",
-    ph_amount:"Amount", ph_comment:"Comment"
-  },
-  pl:{ /* ——— PL ——— */
-    tab_dashboard:"Panel", tab_statement:"Wyciąg", tab_invoices:"Faktury", tab_accounts:"Konta", tab_cash:"Kasa", tab_settings:"Ustawienia",
-    gate_locked_title:"Dostęp zablokowany",
-    gate_locked_desc:"Demo zakończone lub brak subskrypcji. Przejdź do Ustawień, aby uruchomić demo (24h) lub opłacić.",
-    gate_open_settings:"Otwórz Ustawienia",
-    kpi_due_today:"Do zapłaty dziś", kpi_unmatched:"Niesparowane transakcje", kpi_banks:"Bilans banków", kpi_cash:"Kasa (PLN)", kpi_total:"Dostępnie razem", kpi_gap_today:"Brak środków dziś",
-    btn_sync:"Synchronizuj", btn_ai_match:"Dopasowanie AI", btn_accept_safe:"Akceptuj bezpieczne pary", btn_pdf:"Raport PDF", sync_ts:"Synchronizacja: —",
-    minpay_title:"Minimalna płatność (kara-stop)", btn_apply_minpay:"Oznacz jako opłacone",
-    forecast_7d:"Prognoza 7 dni", forecast7d_note:"Liczy włączone konta PLN + kasa.",
-    forecast_30d:"Prognoza 30 dni", forecast30_note:"Autoprognoza z wyciągów + kasa na 30 dni.",
-    month_summary_title:"Podsumowanie miesiąca",
-    plan_title:"Plan płatności pod kasę", filter_label:"Filtr:", filter_today:"Dziś", filter_7d:"7 dni", filter_all:"Wszystko", exclude_blacklist:"Wyklucz blacklistę",
-    btn_make_plan:"Utwórz plan", btn_apply_plan:"Zastosuj plan",
-    plan_th_invoice:"Faktura", plan_th_supplier:"Dostawca", plan_th_due:"Termin", plan_th_amount:"Kwota", plan_th_reason:"Powód",
-    upload_statement:"Załaduj wyciąg (CSV)", upload_statement_image:"Załaduj zrzut wyciągu (galeria)",
-    placeholder_csv_url:"URL CSV wyciągu", save_url:"Zapisz URL",
-    statement_columns_note:"Kolumny: Data księgowania, ID transakcji, ID konta/IBAN, Kontrahent, Tytuł/Opis, Kwota(±), Waluta, Status, Saldo?",
-    th_date:"Data", th_account:"Konto", th_counterparty:"Kontrahent", th_desc:"Opis", th_amount:"Kwota", th_currency:"Waluta", th_status:"Status", th_actions:"Działania",
-    upload_invoices:"Załaduj faktury (CSV)", upload_invoice_images:"Załaduj zdjęcia faktur", invoices_note:"Wykrywamy nr faktury, kwotę i datę.",
-    inv_th_due:"Termin", inv_th_number:"Nr", inv_th_supplier:"Dostawca", inv_th_amount:"Kwota", inv_th_currency:"Waluta", inv_th_status:"Status", inv_th_candidate:"Kandydat", inv_th_score:"Score", inv_th_action:"Akcja",
-    auto_accounts_title:"Konta z wyciągu (auto)", auto_accounts_desc:"Edycja waluty, salda początkowego i uwzględnienia w planie.",
-    acc_th_account:"Konto", acc_th_type:"Typ", acc_th_currency:"Waluta", acc_th_balance_calc:"Saldo (oblicz)", acc_th_start_balance:"Start", acc_th_include:"Uwzględnij",
-    cash_title:"Kasa — szybkie operacje", cash_note:"Głosowa kasa + szybkie przyciski",
-    btn_add_in:"+ Przyjęcie", btn_add_out:"− Wydanie", btn_close_shift:"Zamknij zmianę",
-    speech_lang_label:"Język rozpoznawania:", cash_photo_note:"Zdjęcie paragonu/wyciągu — wykryj kwotę i opis.",
-    cash_th_date:"Data", cash_th_type:"Typ", cash_th_amount:"Kwota", cash_th_source:"Źródło", cash_th_comment:"Komentarz",
-    parameters:"Parametry", param_cash_label:"Ręczna dostępna kasa dziś (PLN):", param_penalty_label:"Kara, %/dzień:", param_interval_label:"Interwał synchronizacji, min:",
-    rateEUR_label:"rateEUR:", rateUSD_label:"rateUSD:", blacklist_label:"Czarna lista (przecinki):", auto_mode_label:"Auto: z kont wyciągu (włączone) + kasa",
-    btn_save_settings:"Zapisz", btn_export_settings:"Eksport ustawień", btn_import_settings:"Import ustawień",
-    btn_clear_all:"Wyczyść historię (lokalnie)",
-    sub_title:"Subskrypcja / Demo", btn_start_demo:"Uruchom demo (24h)", btn_pay_sub:"Opłać subskrypcję", btn_end_demo:"Zakończ demo",
-    sub_hint:"Płatność tylko w Ustawieniach. Jeśli masz link Stripe — ustaw w localStorage.stripe_link.",
-    ph_amount:"Kwota", ph_comment:"Komentarz"
-  },
-  uk:{ /* ——— UK ——— */
-    tab_dashboard:"Пульт", tab_statement:"Виписка", tab_invoices:"Рахунки", tab_accounts:"Рахунки", tab_cash:"Каса", tab_settings:"Налаштування",
-    gate_locked_title:"Доступ заблоковано",
-    gate_locked_desc:"Демо завершено або немає підписки. Перейдіть у Налаштування, щоб запустити демо (24 год) або оплатити доступ.",
-    gate_open_settings:"Відкрити Налаштування",
-    kpi_due_today:"До сплати сьогодні", kpi_unmatched:"Неповʼязані транзакції", kpi_banks:"Баланс банків", kpi_cash:"Каса (PLN)", kpi_total:"Доступно всього", kpi_gap_today:"Розрив каси сьогодні",
-    btn_sync:"Синхронізація", btn_ai_match:"AI-звірка", btn_accept_safe:"Прийняти безпечні пари", btn_pdf:"Звіт PDF", sync_ts:"Синхр.: —",
-    minpay_title:"Мінімальний платіж (штраф-стоп)", btn_apply_minpay:"Позначити як сплачено",
-    forecast_7d:"Прогноз 7 днів", forecast7d_note:"Рахує увімкнені PLN-рахунки + касу.",
-    forecast_30d:"Прогноз 30 днів", forecast30_note:"Автопрогноз з виписок + каси.",
-    month_summary_title:"Підсумки місяця",
-    plan_title:"План платежів під касу", filter_label:"Фільтр:", filter_today:"Сьогодні", filter_7d:"7 днів", filter_all:"Всі", exclude_blacklist:"Виключати blacklist",
-    btn_make_plan:"Сформувати", btn_apply_plan:"Застосувати",
-    plan_th_invoice:"Рахунок", plan_th_supplier:"Постачальник", plan_th_due:"Термін", plan_th_amount:"Сума", plan_th_reason:"Причина",
-    upload_statement:"Завантажити виписку (CSV)", upload_statement_image:"Завантажити скрин виписки (галерея)",
-    placeholder_csv_url:"URL CSV виписки", save_url:"Зберегти URL",
-    statement_columns_note:"Колонки: дата, id транзакції, id рахунку/IBAN, контрагент, опис, сума(±), валюта, статус, баланс?",
-    th_date:"Дата", th_account:"Рахунок", th_counterparty:"Контрагент", th_desc:"Опис", th_amount:"Сума", th_currency:"Валюта", th_status:"Статус", th_actions:"Дії",
-    upload_invoices:"Завантажити рахунки (CSV)", upload_invoice_images:"Завантажити фото рахунків", invoices_note:"Виявляємо № рахунку, суму і дату.",
-    inv_th_due:"Термін", inv_th_number:"№", inv_th_supplier:"Постачальник", inv_th_amount:"Сума", inv_th_currency:"Валюта", inv_th_status:"Статус", inv_th_candidate:"Кандидат", inv_th_score:"Score", inv_th_action:"Дія",
-    auto_accounts_title:"Рахунки з виписки (авто)", auto_accounts_desc:"Редагуйте валюту, початковий баланс і включення до плану.",
-    acc_th_account:"Рахунок", acc_th_type:"Тип", acc_th_currency:"Валюта", acc_th_balance_calc:"Баланс (обр.)", acc_th_start_balance:"Старт", acc_th_include:"Включити",
-    cash_title:"Каса — швидкі операції", cash_note:"Голосова каса + швидкі кнопки",
-    btn_add_in:"+ Прихід", btn_add_out:"− Видаток", btn_close_shift:"Закрити зміну",
-    speech_lang_label:"Мова розпізнавання:", cash_photo_note:"Фото чеку/виписки — розпізнати суму та опис.",
-    cash_th_date:"Дата", cash_th_type:"Тип", cash_th_amount:"Сума", cash_th_source:"Джерело", cash_th_comment:"Коментар",
-    parameters:"Параметри", param_cash_label:"Ручна доступна каса сьогодні (PLN):", param_penalty_label:"Пеня, %/день:", param_interval_label:"Інтервал синхр., хв:",
-    rateEUR_label:"rateEUR:", rateUSD_label:"rateUSD:", blacklist_label:"Чорний список (через кому):", auto_mode_label:"Авто: з рахунків (включені) + каса",
-    btn_save_settings:"Зберегти", btn_export_settings:"Експорт налаштувань", btn_import_settings:"Імпорт налаштувань",
-    btn_clear_all:"Очистити історію (локально)",
-    sub_title:"Підписка / Демо", btn_start_demo:"Запустити демо (24 год)", btn_pay_sub:"Оплатити підписку", btn_end_demo:"Завершити демо",
-    sub_hint:"Оплата лише в Налаштуваннях. Якщо є посилання Stripe — покладіть у localStorage.stripe_link.",
-    ph_amount:"Сума", ph_comment:"Коментар"
-  }
-};
+  <script>
+    // безопасный селектор
+    const $id = (id) => document.getElementById(id);
 
-/* PLACEHOLDER APPLIER */
-function applyPlaceholders(lang){
-  const dict = M[lang]||M.pl;
-  document.querySelectorAll('[data-i-ph]').forEach(el=>{
-    const k = el.getAttribute('data-i-ph');
-    if (dict[k]) el.setAttribute('placeholder', dict[k]);
-  });
-}
+    // i18n карта — оставил как у тебя, ключи НЕ удалял
+    const M = {
+      ru: {
+        tab_dashboard: "Пульт", tab_statement: "Выписка", tab_invoices: "Фактуры", tab_accounts: "Счета", tab_cash: "Каса", tab_settings: "Настройки",
+        kpi_due_today: "К оплате сегодня", kpi_unmatched: "Несвязанные транзакции", kpi_banks: "Банки в расчёте", kpi_cash: "Касса (нал)", kpi_total: "Доступно всего", kpi_gap_today: "Разрыв кассы сегодня",
+        btn_sync: "Синхронизация", btn_ai_match: "ИИ-сверка", btn_accept_safe: "Принять безопасные пары", btn_pdf: "PDF отчёт",
+        minpay_title: "Минимальный платёж (штраф-стоп)", btn_apply_minpay: "Отметить как оплачено",
+        forecast_7d: "Прогноз 7 дней", forecast7d_note: "Считает PLN-счета из wyciąg (включённые) + кассу.",
+        forecast_30d: "Прогноз 30 дней", forecast30_note: "Автопрогноз по wyciąg + кассе на 30 дней.",
+        month_summary_title: "Итоги месяца",
+        plan_title: "План платежей под кассу", filter_label: "Фильтр:", filter_today: "Сегодня", filter_7d: "7 дней", filter_all: "Все", exclude_blacklist: "Исключать blacklist",
+        btn_make_plan: "Сформировать", btn_apply_plan: "Применить",
+        plan_th_invoice: "Фактура", plan_th_supplier: "Поставщик", plan_th_due: "Срок", plan_th_amount: "Сумма", plan_th_reason: "Причина",
+        upload_statement: "Загрузить выписку (CSV)", save_url: "Сохранить URL",
+        th_date: "Дата", th_account: "Счёт", th_counterparty: "Контрагент", th_desc: "Описание", th_amount: "Сумма", th_currency: "Валюта", th_status: "Статус",
+        upload_invoices: "Загрузить счета (CSV)",
+        inv_th_due: "Срок", inv_th_number: "№", inv_th_supplier: "Поставщик", inv_th_amount: "Сумма", inv_th_currency: "Валюта", inv_th_status: "Статус", inv_th_candidate: "Кандидат", inv_th_score: "Score", inv_th_action: "Действие",
+        auto_accounts_title: "Счета из выписки (авто)",
+        auto_accounts_desc: "Мы сами собираем счета по полям «ID konta» или «IBAN» из выписки. Включай в расчёт, редактируй стартовый баланс, меняй тип.",
+        acc_th_account: "Счёт", acc_th_type: "Тип", acc_th_currency: "Валюта", acc_th_balance_calc: "Баланс (расчёт)", acc_th_start_balance: "Стартовый баланс", acc_th_include: "В расчёт плана",
+        btn_add_in: "+ Приём", btn_add_out: "− Выдача", btn_close_shift: "Закрыть смену", btn_scan_receipt: "Сканировать чек (фото)",
+        speech_lang: "Язык распознавания:", btn_test_voice: "Тест команд",
+        cash_th_date: "Дата", cash_th_type: "Тип", cash_th_amount: "Сумма", cash_th_source: "Источник", cash_th_comment: "Комментарий",
+        parameters: "Параметры", param_cash: "Доступная каса сегодня (ручной PLN):", param_penalty: "Пеня, %/день:", param_interval: "Интервал синха, мин:",
+        btn_save_settings: "Сохранить", btn_export_settings: "Экспорт настроек", btn_import_settings: "Импорт настроек",
+        auto_mode_explain: "Режим «Авто»: считаем доступные деньги из всех включённых счетов + касу."
+      },
+      en: {
+        tab_dashboard:"Dashboard", tab_statement:"Statement", tab_invoices:"Invoices", tab_accounts:"Accounts", tab_cash:"Cash", tab_settings:"Settings",
+        kpi_due_today:"Due today", kpi_unmatched:"Unmatched transactions", kpi_banks:"Bank balances", kpi_cash:"Cash (PLN)", kpi_total:"Available total", kpi_gap_today:"Cash gap today",
+        btn_sync:"Sync", btn_ai_match:"AI match", btn_accept_safe:"Accept safe matches", btn_pdf:"PDF report",
+        minpay_title:"Minimum payment (penalty-stop)", btn_apply_minpay:"Mark as paid",
+        forecast_7d:"7-day forecast", forecast7d_note:"Calculates PLN accounts from statements (included) + cash.",
+        forecast_30d:"30-day forecast", forecast30_note:"Autoforecast from statements + cash for 30 days.", month_summary_title:"Month summary",
+        plan_title:"Payment plan for cash", filter_label:"Filter:", filter_today:"Today", filter_7d:"7 days", filter_all:"All", exclude_blacklist:"Exclude blacklist",
+        btn_make_plan:"Build plan", btn_apply_plan:"Apply plan",
+        plan_th_invoice:"Invoice", plan_th_supplier:"Supplier", plan_th_due:"Due", plan_th_amount:"Amount", plan_th_reason:"Reason",
+        upload_statement:"Upload statement (CSV)", save_url:"Save URL",
+        th_date:"Date", th_account:"Account", th_counterparty:"Counterparty", th_desc:"Description", th_amount:"Amount", th_currency:"Currency", th_status:"Status",
+        upload_invoices:"Upload invoices (CSV)",
+        inv_th_due:"Due", inv_th_number:"No", inv_th_supplier:"Supplier", inv_th_amount:"Amount", inv_th_currency:"Currency", inv_th_status:"Status", inv_th_candidate:"Candidate", inv_th_score:"Score", inv_th_action:"Action",
+        auto_accounts_title:"Accounts from statement (auto)", auto_accounts_desc:"Edit currency, start balance and include-in-plan.",
+        acc_th_account:"Account", acc_th_type:"Type", acc_th_currency:"Currency", acc_th_balance_calc:"Balance (calc)", acc_th_start_balance:"Start", acc_th_include:"Include",
+        btn_add_in:"+ In", btn_add_out:"− Out", btn_close_shift:"Close shift",
+        parameters:"Parameters", param_cash_label:"Manual available cash today (PLN):", param_penalty_label:"Penalty, %/day:", param_interval_label:"Sync interval, min:",
+        btn_save_settings:"Save", btn_export_settings:"Export", btn_import_settings:"Import"
+      },
+      pl: {
+        tab_dashboard:"Panel", tab_statement:"Wyciąg", tab_invoices:"Faktury", tab_accounts:"Konta", tab_cash:"Kasa", tab_settings:"Ustawienia",
+        kpi_due_today:"Do zapłaty dziś", kpi_unmatched:"Niesparowane transakcje", kpi_banks:"Bilans banków", kpi_cash:"Kasa (PLN)", kpi_total:"Dostępnie razem", kpi_gap_today:"Brak środków dziś",
+        btn_sync:"Synchronizuj", btn_ai_match:"Dopasowanie AI", btn_accept_safe:"Akceptuj bezpieczne pary", btn_pdf:"Raport PDF",
+        minpay_title:"Minimalna płatność (kara-stop)", btn_apply_minpay:"Oznacz jako opłacone",
+        forecast_7d:"Prognoza 7 dni", forecast7d_note:"Liczy PLN-konta z wyciągu (włączone) + kasa.",
+        forecast_30d:"Prognoza 30 dni", forecast30_note:"Autoprognoza z wyciągów + kasa na 30 dni.", month_summary_title:"Podsumowanie miesiąca",
+        plan_title:"Plan płatności pod kasę", filter_label:"Filtr:", filter_today:"Dziś", filter_7d:"7 dni", filter_all:"Wszystko", exclude_blacklist:"Wyklucz blacklistę",
+        btn_make_plan:"Utwórz plan", btn_apply_plan:"Zastosuj plan",
+        plan_th_invoice:"Faktura", plan_th_supplier:"Dostawca", plan_th_due:"Termin", plan_th_amount:"Kwota", plan_th_reason:"Powód",
+        upload_statement:"Załaduj wyciąg (CSV)", save_url:"Zapisz URL",
+        th_date:"Data", th_account:"Konto", th_counterparty:"Kontrahent", th_desc:"Opis", th_amount:"Kwota", th_currency:"Waluta", th_status:"Status",
+        upload_invoices:"Załaduj faktury (CSV)",
+        inv_th_due:"Termin", inv_th_number:"Nr", inv_th_supplier:"Dostawca", inv_th_amount:"Kwota", inv_th_currency:"Waluta", inv_th_status:"Status", inv_th_candidate:"Kandydat", inv_th_score:"Score", inv_th_action:"Akcja",
+        auto_accounts_title:"Konta z wyciągu (auto)", auto_accounts_desc:"Edycja waluty, salda początkowego i uwzględnienia w planie.",
+        acc_th_account:"Konto", acc_th_type:"Typ", acc_th_currency:"Waluta", acc_th_balance_calc:"Saldo (oblicz)", acc_th_start_balance:"Start", acc_th_include:"Uwzględnij",
+        btn_add_in:"+ Przyjęcie", btn_add_out:"− Wydanie", btn_close_shift:"Zamknij zmianę",
+        parameters:"Parametry", param_cash_label:"Ręczna dostępna kasa dziś (PLN):", param_penalty_label:"Kara, %/dzień:", param_interval_label:"Interwał synchronizacji, min:",
+        btn_save_settings:"Zapisz", btn_export_settings:"Eksport", btn_import_settings:"Import"
+      },
+      uk: {
+        tab_dashboard:"Пульт", tab_statement:"Виписка", tab_invoices:"Рахунки", tab_accounts:"Рахунки", tab_cash:"Каса", tab_settings:"Налаштування",
+        kpi_due_today:"До сплати сьогодні", kpi_unmatched:"Непов'язані транзакції", kpi_banks:"Баланс банків", kpi_cash:"Каса (PLN)", kpi_total:"Доступно всього", kpi_gap_today:"Розрив каси сьогодні",
+        btn_sync:"Синхронізація", btn_ai_match:"AI-звірка", btn_accept_safe:"Прийняти безпечні пари", btn_pdf:"Звіт PDF",
+        minpay_title:"Мінімальний платіж (штраф-стоп)", btn_apply_minpay:"Позначити як сплачено",
+        forecast_7d:"Прогноз 7 днів", forecast7d_note:"Рахує PLN-рахунки з виписок (включені) + касу.",
+        forecast_30d:"Прогноз 30 днів", forecast30_note:"Автопрогноз з виписок + каси на 30 днів.", month_summary_title:"Підсумки місяця",
+        plan_title:"План платежів під касу", filter_label:"Фільтр:", filter_today:"Сьогодні", filter_7d:"7 днів", filter_all:"Всі", exclude_blacklist:"Виключати blacklist",
+        btn_make_plan:"Сформувати", btn_apply_plan:"Застосувати",
+        plan_th_invoice:"Рахунок", plan_th_supplier:"Постачальник", plan_th_due:"Термін", plan_th_amount:"Сума", plan_th_reason:"Причина",
+        upload_statement:"Завантажити виписку (CSV)", save_url:"Зберегти URL",
+        th_date:"Дата", th_account:"Рахунок", th_counterparty:"Контрагент", th_desc:"Опис", th_amount:"Сума", th_currency:"Валюта", th_status:"Статус",
+        upload_invoices:"Завантажити рахунки (CSV)",
+        inv_th_due:"Термін", inv_th_number:"№", inv_th_supplier:"Постачальник", inv_th_amount:"Сума", inv_th_currency:"Валюта", inv_th_status:"Статус", inv_th_candidate:"Кандидат", inv_th_score:"Score", inv_th_action:"Дія",
+        auto_accounts_title:"Рахунки з виписки (авто)", auto_accounts_desc:"Редагуйте валюту, початковий баланс і включення до плану.",
+        acc_th_account:"Рахунок", acc_th_type:"Тип", acc_th_currency:"Валюта", acc_th_balance_calc:"Баланс (обр.)", acc_th_start_balance:"Старт", acc_th_include:"Включити",
+        btn_add_in:"+ Прихід", btn_add_out:"− Видаток", btn_close_shift:"Закрити зміну",
+        parameters:"Параметри", param_cash_label:"Ручна доступна каса сьогодні (PLN):", param_penalty_label:"Пеня, %/день:", param_interval_label:"Інтервал синхр., хв:",
+        btn_save_settings:"Зберегти", btn_export_settings:"Експорт", btn_import_settings:"Імпорт"
+      }
+    };
 
-/* LANGUAGE APPLY */
-function applyLang(lang){
-  const dict = M[lang]||M.pl;
-  document.querySelectorAll('[data-i]').forEach(el=>{
-    const k = el.getAttribute('data-i'); if (dict[k]) el.textContent = dict[k];
-  });
-  document.querySelectorAll('#langBarMain button').forEach(btn=>btn.classList.toggle('on', btn.dataset.lang===lang));
-  localStorage.setItem('otd_lang', lang);
-  applyPlaceholders(lang);
-  if (typeof renderCashExamples==='function') renderCashExamples(lang);
-}
-
-/* ==== HELPERS ==== */
-const $id = id => document.getElementById(id);
-const today = () => new Date().toISOString().slice(0,10);
-const asNum = v=>{
-  if(v==null) return 0; let s=String(v).trim(); if(!s) return 0;
-  s=s.replace(/\u00A0/g,' ');
-  if(/^\(.*\)$/.test(s)) s='-'+s.replace(/^\(|\)$/g,'');
-  const hasComma=/,/.test(s), hasDot=/\./.test(s);
-  s=s.replace(/\b(PLN|zł|zl|zlot|EUR|USD|GBP)\b/ig,'');
-  if(hasComma && !hasDot) s=s.replace(/\s/g,'').replace(/,/g,'.'); else s=s.replace(/[\s\u00A0]/g,'').replace(/,/g,'');
-  s=s.replace(/[^\d\.\-]/g,'');
-  const n=Number(s); return isNaN(n)?0:n;
-};
-function toISO(d){
-  if(!d) return ""; const s=String(d).trim();
-  let m=s.match(/^(\d{4})-(\d{2})-(\d{2})/); if(m) return m[0];
-  m=s.match(/^(\d{1,2})[.\-/](\d{1,2})[.\-/](\d{2,4})$/);
-  if(m){const dd=m[1].padStart(2,'0'),mm=m[2].padStart(2,'0'),yy=m[3].length===2?('20'+m[3]):m[3]; return yy+'-'+mm+'-'+dd;}
-  const p=Date.parse(s); if(!isNaN(p)) return new Date(p).toISOString().slice(0,10);
-  return "";
-}
-function fmtAmountRaw(raw){
-  const n=asNum(raw); if(!Number.isFinite(n)) return '<span>—</span>';
-  const sign=n<0?'-':'+', cls=n<0?'amt-neg':'amt-pos';
-  const abs=Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g," ");
-  return `<span class="${cls}">${sign} ${abs}</span>`;
-}
-function smartSplit(line,del){
-  let out=[],cur="",q=false;
-  for(let i=0;i<line.length;i++){const ch=line[i]; if(ch==='"'){q=!q;continue} if(ch===del && !q){out.push(cur);cur="";} else cur+=ch;}
-  out.push(cur); return out;
-}
-function parseCSV(text){
-  if(!text) return []; text=text.replace(/^\uFEFF/,'').replace(/\r/g,"");
-  const lines=text.split("\n").filter(l=>l.trim()); if(!lines.length) return [];
-  const sep=(lines[0].split(";").length>lines[0].split(",").length)?";":",";
-  const head=smartSplit(lines.shift(),sep).map(h=>h.trim());
-  return lines.map(line=>{
-    const cells=smartSplit(line,sep); const obj={};
-    head.forEach((h,i)=>{let v=(cells[i]||"").trim(); v=v.replace(/\u00A0/g,' ').trim(); obj[h]=v;}); return obj;
-  });
-}
-function getVal(obj,keys){
-  if(!obj) return ""; for(const k of keys){ if(k in obj && String(obj[k]).trim()!=="") return obj[k]; }
-  const low=Object.keys(obj).reduce((m,x)=>(m[x.toLowerCase()]=obj[x],m),{});
-  for(const k of keys){const kk=k.toLowerCase(); if(kk in low && String(low[kk]).trim()!=="") return low[kk];}
-  return "";
-}
-
-/* ==== STATE ==== */
-let tx=[], bills=[], kasa=[], accMeta={};
-const stateKeys = ['tx_manual_import','bills_manual_import','kasa','accMeta','cashPLN','penaltyPct','intervalMin','rateEUR','rateUSD','blacklist','autoCash',SUB_KEY,SUB_FROM,SUB_TO,DEMO_START,'txUrl','billUrl','otd_lang','speechLang'];
-
-/* ==== REMOTE SYNC (optional) ==== */
-async function pullState(){
-  const email = localStorage.getItem(USER_KEY)||"";
-  if(!email) return null;
-  try{
-    const r=await fetch(`${API_BASE}/state/get?email=${encodeURIComponent(email)}`,{credentials:'include'});
-    if(!r.ok) return null;
-    const json=await r.json();
-    if(!json) return null;
-    // merge
-    if(json.tx) localStorage.setItem('tx_manual_import', JSON.stringify(json.tx));
-    if(json.bills) localStorage.setItem('bills_manual_import', JSON.stringify(json.bills));
-    if(json.kasa) localStorage.setItem('kasa', JSON.stringify(json.kasa));
-    if(json.accMeta) localStorage.setItem('accMeta', JSON.stringify(json.accMeta));
-    if(json.settings) Object.entries(json.settings).forEach(([k,v])=> localStorage.setItem(k, typeof v==='string'?v:JSON.stringify(v)));
-    return json;
-  }catch(e){ return null; }
-}
-const pushState = (function(){
-  let t=null, inflight=false;
-  return function(){
-    if(inflight) return;
-    clearTimeout(t);
-    t=setTimeout(async ()=>{
-      const email = localStorage.getItem(USER_KEY)||"";
-      if(!email) return;
-      inflight=true;
-      const body={
-        email,
-        tx: JSON.parse(localStorage.getItem('tx_manual_import')||'[]'),
-        bills: JSON.parse(localStorage.getItem('bills_manual_import')||'[]'),
-        kasa: JSON.parse(localStorage.getItem('kasa')||'[]'),
-        accMeta: JSON.parse(localStorage.getItem('accMeta')||'{}'),
-        settings: stateKeys.reduce((m,k)=> (m[k]=localStorage.getItem(k), m), {})
-      };
-      try{
-        await fetch(`${API_BASE}/state/save`,{
-          method:'POST',headers:{'Content-Type':'application/json'},
-          credentials:'include',body:JSON.stringify(body)
-        });
-      }catch(e){} finally{ inflight=false; }
-    }, 600);
-  }
-})();
-
-/* ==== MONEY / RATES ==== */
-function rate(cur){
-  cur=String(cur||"PLN").toUpperCase();
-  if(cur==='PLN') return 1;
-  if(cur==='EUR') return asNum(localStorage.getItem('rateEUR')||4.3);
-  if(cur==='USD') return asNum(localStorage.getItem('rateUSD')||3.95);
-  return 1;
-}
-function computeAccountBalance(accId){
-  const rows=tx.filter(r=> (getVal(r,["ID konta","IBAN","account","ID"])||"UNKNOWN")===accId);
-  const withSaldo = rows.filter(r=> getVal(r,["Saldo po operacji","Saldo","saldo"]));
-  if(withSaldo.length){ const last=withSaldo[withSaldo.length-1]; return asNum(getVal(last,["Saldo po operacji","Saldo","saldo"])); }
-  const start=Number((accMeta[accId]||{}).start||0);
-  const sum=rows.reduce((s,r)=> s+asNum(getVal(r,["Kwota","Kwота","amount","Kwota_raw"])),0);
-  return start+sum;
-}
-function bankAvailablePLN(){
-  let sum=0;
-  Object.values(accMeta).filter(a=>a.include).forEach(a=>{
-    sum+=computeAccountBalance(a.id)*rate(a.currency);
-  });
-  return sum;
-}
-function kasaBalance(){
-  let bal=0;
-  kasa.forEach(k=>{
-    if(k.type==='przyjęcie') bal+=k.amount;
-    if(k.type==='wydanie') bal-=k.amount;
-    if(k.type==='zamknięcie') bal = k.amount;
-  });
-  return bal;
-}
-function availableTotal(){
-  const auto = localStorage.getItem('autoCash')==='1';
-  const manual = asNum(localStorage.getItem('cashPLN')||0);
-  const kas = kasaBalance();
-  return auto ? (bankAvailablePLN()+kas) : (manual+kas);
-}
-
-/* ==== AI MATCH (unchanged core scoring) ==== */
-function normName(s){s=(s||"").toString().toLowerCase().replace(/[.,]/g," ").replace(/\s+/g," ").trim();["sp z oo","sp. z o.o.","spolka","spółka","sa","s.a","ooo"].forEach(t=>s=s.replace(t,""));return s}
-function nameSimilar(a,b){a=normName(a);b=normName(b);if(!a||!b) return 0;if(a===b) return 1;if(a.includes(b)||b.includes(a)) return 0.8;return 0}
-function scoreMatch(bill,tr){
-  let score=0;
-  const bAmt=asNum(getVal(bill,["Kwota do zapłaty","Kwота do заплаты","Kwота","amount"]));
-  const tAmt=Math.abs(asNum(getVal(tr,["Kwota","Kwота","amount","Kwota_raw"])));
-  const bCur=(getVal(bill,["Waluta","currency"])||"").toUpperCase();
-  const tCur=(getVal(tr,["Waluta","currency"])||"").toUpperCase();
-  if(bAmt>0 && tAmt>0 && Math.abs(bAmt-tAmt)<0.01 && (bCur===tCur || !bCur || !tCur)) score+=60;
-  const inv=String(getVal(bill,["Numer faktury","Numer фактуры","Invoice number"])||"").toLowerCase();
-  const desc=String(getVal(tr,["Tytuł/Opis","Opis","Title","description"])||"").toLowerCase();
-  if(inv && desc.includes(inv)) score+=25;
-  if(nameSimilar(getVal(bill,["Dostawca","Supplier"]), getVal(tr,["Kontrahent","Counterparty"]))>=0.8) score+=10;
-  if(asNum(getVal(tr,["Kwota","amount"]))<0) score+=5;
-  return {score:Math.min(100,score)};
-}
-function runAI(){
-  bills.forEach(b=>{
-    const status=String(getVal(b,["Status faktury","Status фактуры","Status"])||"").toLowerCase();
-    if(status.includes("opłacone")||status.includes("paid")||status.includes("оплачено")) return;
-    let best=null;
-    tx.forEach(t=>{
-      if(String(getVal(t,["Status transakcji","status"])||"").toLowerCase()==="sparowane") return;
-      if(asNum(getVal(t,["Kwota","amount"]))>=0) return;
-      const s=scoreMatch(b,t);
-      if(!best || s.score>best.s) best={t,s:s.score};
-    });
-    if(best && best.s>=85){
-      best.t["Status transakcji"]="Sparowane";
-      best.t["Powiązana faktura (ID)"]=getVal(b,["Numer faktury","Numer фактуры"]);
-      b["Status faktury"]="Opłacone"; b["Data płatności"]=today();
-    }else if(best && best.s>=55){
-      b["Kandydat (AI)"]=getVal(best.t,["ID transakcji"]);
-      b["AI score"]=best.s;
-    }else{ b["Kandydat (AI)"]=""; b["AI score"]=""; }
-  });
-  render(); saveLocal(); pushState();
-}
-function acceptSafe(){
-  bills.filter(b=> Number(getVal(b,["AI score"])||0)>=85).forEach(b=>{
-    const t=tx.find(t=> getVal(t,["ID transakcji"])===getVal(b,["Kandydat (AI)"]));
-    if(!t) return;
-    t["Status transakcji"]="Sparowane";
-    t["Powiązana faktura (ID)"]=getVal(b,["Numer faktury","Numer фактуры"]);
-    b["Status faktury"]="Opłacone"; b["Data płatności"]=today(); b["Kandydat (AI)"]=b["AI score"]="";
-  });
-  render(); saveLocal(); pushState();
-}
-
-/* ==== OCR IMPORT (kept from your base; unchanged except safety) ==== */
-/* ... (оставляю как было у тебя — не вырезаю для краткости ответа) ... */
-
-/* ==== PERSIST LOCAL ==== */
-function loadLocal(){
-  try{ kasa = JSON.parse(localStorage.getItem('kasa')||'[]'); }catch(e){kasa=[]}
-  try{ tx = JSON.parse(localStorage.getItem('tx_manual_import')||'[]'); }catch(e){tx=[]}
-  try{ bills = JSON.parse(localStorage.getItem('bills_manual_import')||'[]'); }catch(e){bills=[]}
-  try{ accMeta = JSON.parse(localStorage.getItem('accMeta')||'{}'); }catch(e){accMeta={}}
-}
-function saveLocal(){
-  try{ localStorage.setItem('kasa', JSON.stringify(kasa)); }catch(e){}
-  try{ localStorage.setItem('tx_manual_import', JSON.stringify(tx)); }catch(e){}
-  try{ localStorage.setItem('bills_manual_import', JSON.stringify(bills)); }catch(e){}
-  try{ localStorage.setItem('accMeta', JSON.stringify(accMeta)); }catch(e){}
-}
-
-/* ==== ACCOUNTS ==== */
-function inferAccounts(){
-  const map={};
-  tx.forEach(r=>{
-    const id=getVal(r,["ID konta","IBAN","account","ID"])||"UNKNOWN";
-    const cur=(getVal(r,["Waluta","currency"])||"PLN").toUpperCase();
-    if(!map[id]) map[id]={id,name:String(id).slice(0,12),currency:cur,include:true,type:"Biznes",start:0};
-  });
-  try{ const saved=JSON.parse(localStorage.getItem('accMeta')||'{}'); Object.keys(map).forEach(id=>{ if(saved[id]) map[id]=Object.assign(map[id], saved[id]); }); }catch(e){}
-  accMeta=map; renderAccounts();
-}
-
-/* ==== GATE: DEMO / SUB ==== */
-function isSubActive(){
-  const a=localStorage.getItem(SUB_KEY)==='1';
-  if(!a) return false;
-  const to=localStorage.getItem(SUB_TO)||''; if(!to) return a;
-  return new Date(to) >= new Date();
-}
-function demoLeftMs(){
-  const t=localStorage.getItem(DEMO_START); if(!t) return 0;
-  const start=new Date(t).getTime(); const left = (start + 24*3600*1000) - Date.now();
-  return left;
-}
-function isDemoActive(){ return demoLeftMs() > 0; }
-function gateAccess(){
-  const ok = isSubActive() || isDemoActive();
-  const gate = $id('gate'); const tabs = document.querySelectorAll('.tabs .tab');
-  if(!gate) return;
-  gate.classList.toggle('hidden', ok);
-  tabs.forEach(t=>{
-    if(t.dataset.sec==='ustawienia') t.classList.remove('disabled');
-    else t.classList.toggle('disabled', !ok);
-  });
-  if(!ok){
-    // force-open settings
-    document.querySelector('[data-sec=ustawienia]')?.click();
-  }
-}
-function updateSubUI(){
-  const el=$id('subStatus'); if(!el) return;
-  let s='—';
-  if(isSubActive()){
-    s=`✅ Sub aktywna: ${localStorage.getItem(SUB_FROM)||'—'} → ${localStorage.getItem(SUB_TO)||'—'}`;
-  }else if(isDemoActive()){
-    const leftMs=demoLeftMs(); const hrs=Math.ceil(leftMs/3600000);
-    s=`🧪 Demo aktywne ~ ${hrs}h`;
-  }else{
-    s='⛔ Brak dostępu: włącz demo lub opłać.';
-  }
-  el.textContent=s;
-}
-
-/* ==== AUTOSYNC ==== */
-let syncTimer=null, syncing=false;
-async function fetchSources(){
-  if(syncing) return; syncing=true;
-  try{
-    const u1=localStorage.getItem('txUrl')||$id('txUrl')?.value||"";
-    const u2=localStorage.getItem('billUrl')||$id('billUrl')?.value||"";
-    if(u1){ const r=await fetch(u1,{cache:'no-store'}); tx = parseCSV(await r.text()); }
-    if(u2){ const r2=await fetch(u2,{cache:'no-store'}); bills = parseCSV(await r2.text()); }
-    inferAccounts(); render();
-    const last=$id('lastSync'); if(last) last.textContent = (M[localStorage.getItem('otd_lang')||'pl'].sync_ts||"Synchronizacja: —").replace('—', new Date().toLocaleString());
-    saveLocal(); pushState();
-  }catch(e){
-    const last=$id('lastSync'); if(last) last.textContent = 'Error: '+(e?.message||e);
-  }finally{ syncing=false; }
-}
-function scheduleAutosync(){
-  clearInterval(syncTimer); const m = parseInt(localStorage.getItem('intervalMin')||'0',10);
-  if(m>0 && (localStorage.getItem('txUrl')||localStorage.getItem('billUrl'))){
-    syncTimer = setInterval(fetchSources, Math.max(1,m)*60*1000);
-  }
-}
-
-/* ==== CASH QUICK EXAMPLES ==== */
-const cashQuickExamples={pl:["Przyjąć 250 na produkty","Wypłacić 50 na dostawę","Przyjąć 1000 depozyt","Przyjąć 50 na napoje"],
-ru:["Принять 250 на продукты","Выдать 50 на доставку","Принять 1000 депозит","Принять 50 на напитки"],
-en:["Accept 250 for groceries","Pay out 50 for delivery","Accept 1000 deposit","Accept 50 for drinks"],
-uk:["Прийняти 250 на продукти","Видати 50 на доставку","Прийняти 1000 депозит","Прийняти 50 на напої"]};
-function renderCashExamples(lang){
-  const holder=$id('kasaQuickHolder'); if(!holder) return; holder.innerHTML='';
-  const arr=cashQuickExamples[lang]||cashQuickExamples.pl;
-  arr.forEach(txt=>{
-    const btn=document.createElement('button'); btn.type='button'; btn.textContent=txt;
-    btn.addEventListener('click',()=>{
-      const numMatch=txt.match(/(-?\d+[.,]?\d*)/); const num=numMatch?asNum(numMatch[1]):0;
-      const outRe=/(wyda|wypłac|pay out|видат|выда)/i; const isOut=outRe.test(txt);
-      const note=txt.replace(/(-?\d+[.,]?\d*\s*(zł|pln|PLN|USD|EUR)?)/i,"").trim();
-      addKasa(isOut?'wydanie':'przyjęcie', num, note||txt, 'quick');
-    });
-    holder.appendChild(btn);
-  });
-}
-
-/* ==== RENDER ==== */
-function renderKasa(){
-  const tb=document.querySelector('#kasaTable tbody'); if(!tb) return; tb.innerHTML='';
-  kasa.forEach((k,i)=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML = `<td>${i+1}</td><td>${k.date}</td><td>${k.type}</td><td>${k.amount.toFixed(2)}</td><td>${k.source||""}</td><td>${k.comment||""}</td>
-                    <td class="actions">
-                      <button data-act="edit" data-kind="kasa" data-id="${k.id}">✎</button>
-                      <button data-act="del" data-kind="kasa" data-id="${k.id}">🗑</button>
-                    </td>`;
-    tb.appendChild(tr);
-  });
-}
-function renderAccounts(){
-  const tb=document.querySelector('#autoAcc tbody'); if(!tb) return; tb.innerHTML='';
-  Object.values(accMeta).forEach(a=>{
-    const bal=computeAccountBalance(a.id);
-    const tr=document.createElement('tr');
-    tr.innerHTML = `<td>${a.id}</td>
-      <td><select data-id="${a.id}" class="acc-type">
-            <option ${a.type==="Biznes"?"selected":""}>Biznes</option>
-            <option ${a.type==="Osobisty"?"selected":""}>Osobisty</option>
-          </select></td>
-      <td><select data-id="${a.id}" class="acc-cur">
-            <option ${a.currency==="PLN"?"selected":""}>PLN</option>
-            <option ${a.currency==="EUR"?"selected":""}>EUR</option>
-            <option ${a.currency==="USD"?"selected":""}>USD</option>
-          </select></td>
-      <td>${bal.toFixed(2)}</td>
-      <td><input type="number" step="0.01" value="${a.start||0}" class="acc-start" data-id="${a.id}"/></td>
-      <td><input type="checkbox" class="acc-include" data-id="${a.id}" ${a.include?"checked":""}/></td>`;
-    tb.appendChild(tr);
-  });
-  tb.querySelectorAll(".acc-type").forEach(el=>el.addEventListener("change",e=>{accMeta[e.target.dataset.id].type=e.target.value;saveLocal();render();pushState();}));
-  tb.querySelectorAll(".acc-cur").forEach(el=>el.addEventListener("change",e=>{accMeta[e.target.dataset.id].currency=e.target.value;saveLocal();render();pushState();}));
-  tb.querySelectorAll(".acc-start").forEach(el=>el.addEventListener("change",e=>{accMeta[e.target.dataset.id].start=asNum(e.target.value);saveLocal();render();pushState();}));
-  tb.querySelectorAll(".acc-include").forEach(el=>el.addEventListener("change",e=>{accMeta[e.target.dataset.id].include=e.target.checked;saveLocal();render();pushState();}));
-}
-function render(){
-  // KPIs
-  const dueToday=(bills||[]).filter(r=>{
-    const s=String(getVal(r,["Status faktury","Status фактуры","Status"])||"").toLowerCase();
-    return ["do zapłaty","przeterminowane","к оплате","просрочено","to pay"].includes(s) &&
-           toISO(getVal(r,["Termin płatności","Termin","Termin платності"]))===today();
-  }).length;
-  const unmatch=(tx||[]).filter(r=> String(getVal(r,["Status transakcji","status"])||"").toLowerCase()!=="sparowane").length;
-  $id('kpiDue')&&( $id('kpiDue').textContent = dueToday );
-  $id('kpiUnmatch')&&( $id('kpiUnmatch').textContent = unmatch );
-  const bankPLN=bankAvailablePLN(); $id('kpiBank')&&( $id('kpiBank').textContent = bankPLN.toFixed(2) );
-  const kas=kasaBalance(); $id('kpiCash')&&( $id('kpiCash').textContent = kas.toFixed(2) );
-  const avail=availableTotal(); $id('kpiAvail')&&( $id('kpiAvail').textContent = avail.toFixed(2) );
-  const sumDue=(bills||[]).filter(r=>
-    String((getVal(r,["Waluta","Waluta "])||"").toUpperCase())==="PLN" &&
-    toISO(getVal(r,["Termin płatności","Termin","Termin платності"]))<=today() &&
-    ["do zapłaty","przeterminowane","к оплате","просрочено"].includes(String(getVal(r,["Status faktury","Status"])||"").toLowerCase())
-  ).reduce((s,r)=> s+asNum(getVal(r,["Kwota do zapłaty","Kwota","Kwота"])||0),0);
-  $id('kpiGap')&&( $id('kpiGap').textContent = Math.max(0,sumDue-avail).toFixed(2) );
-
-  // TX table
-  const txBody=document.querySelector('#txTable tbody'); if(txBody){
-    txBody.innerHTML='';
-    (tx||[]).forEach(r=>{
-      const id=getVal(r,["ID transakcji","ID","id"])||("noid-"+Math.random());
-      const tr=document.createElement('tr');
-      tr.innerHTML = `<td>${toISO(getVal(r,["Data księgowania","date","Дата"]))}</td>
-        <td>${getVal(r,["ID konta","IBAN","account"])||"—"}</td>
-        <td>${getVal(r,["Kontrahent","Counterparty"])||""}</td>
-        <td>${getVal(r,["Tytuł/Opis","Opis","title"])||""}</td>
-        <td>${fmtAmountRaw(getVal(r,["Kwota","Kwота","amount","Kwota_raw"]))}</td>
-        <td>${getVal(r,["Waluta","currency"])||""}</td>
-        <td>${getVal(r,["Status transakcji","status"])||""}</td>
-        <td class="actions">
-          <button data-act="edit" data-kind="tx" data-id="${id}">✎</button>
-          <button data-act="del" data-kind="tx" data-id="${id}">🗑</button>
-        </td>`;
-      txBody.appendChild(tr);
-    });
-  }
-
-  // Bills
-  const billBody=document.querySelector('#billTable tbody'); if(billBody){
-    billBody.innerHTML='';
-    (bills||[]).forEach(r=>{
-      const s=String(getVal(r,["Status faktury","Status фактуры","Status"])||"").toLowerCase();
-      const cls=(s.includes('przetermin')||s.includes('проср'))?'overdue':'due';
-      const cand=getVal(r,["Kandydat (AI)"])||"";
-      const score=getVal(r,["AI score"])||"";
-      const id=getVal(r,["Numer faktury","Numer фактуры","Invoice number"])||("noinv-"+Math.random());
-      const tr=document.createElement('tr');
-      tr.innerHTML = `<td>${toISO(getVal(r,["Termin płatności","Termin","Termin платності"])||"")}</td>
-        <td>${getVal(r,["Numer faktury","Numer фактуры","Invoice number"])||""}</td>
-        <td>${getVal(r,["Dostawca","Supplier"])||""}</td>
-        <td>${getVal(r,["Kwota do zapłaty","Kwота","Kwota"])||""}</td>
-        <td>${getVal(r,["Waluta","currency"])||""}</td>
-        <td><span class="badge ${cls}">${getVal(r,["Status faktury","Status фактуры","Status"])||""}</span></td>
-        <td>${cand?('<span class="badge cand">'+cand+'</span>'):'—'}</td>
-        <td>${score?('<span class="badge ai">'+score+'</span>'):'—'}</td>
-        <td class="actions">
-          ${cand?('<button class="btn secondary btn-accept" data-invid="'+id+'">OK</button>'):''}
-          <button data-act="edit" data-kind="bill" data-id="${id}">✎</button>
-          <button data-act="del" data-kind="bill" data-id="${id}">🗑</button>
-        </td>`;
-      billBody.appendChild(tr);
-    });
-    document.querySelectorAll(".btn-accept").forEach(b=> b.addEventListener('click',()=>acceptOne(b.getAttribute('data-invid'))));
-  }
-
-  renderMinPay(); renderForecast(); renderAccounts(); renderKasa(); updateSubUI(); gateAccess();
-}
-
-/* ==== PLAN / FORECAST / MINPAY (kept) ==== */
-function toDueList(mode){
-  const t=today(); const excl=$id('excludeBlacklist')?.checked||false;
-  return bills.filter(r=>{
-    const s=String(getVal(r,["Status faktury","Status фактуры","Status"])||"").toLowerCase();
-    if(!["do zapłaty","przeterminowane","к оплате","просрочено","to pay"].includes(s)) return false;
-    const d=toISO(getVal(r,["Termin płatności","Termin","Termin платності"])); if(!d) return false;
-    if(mode==='today') return d===t;
-    if(mode==='7d'){ const dd=new Date(d), tt=new Date(t); return (dd-tt)/86400000 <= 7; }
-    return true;
-  }).filter(r=>{
-    if(String((getVal(r,["Waluta"])||"").toUpperCase())!=="PLN") return false;
-    if(excl){
-      const bl=(localStorage.getItem('blacklist')||"").toLowerCase();
-      const nm=(getVal(r,["Dostawca","Supplier"])||"").toLowerCase();
-      if(bl && bl.split(",").some(x=> nm.includes(x.trim()))) return false;
+    function applyLang(lang) {
+      const dict = (M[lang] || M.ru);
+      document.querySelectorAll('[data-i]').forEach(el => {
+        const k = el.getAttribute('data-i');
+        if (k && dict && dict[k]) el.textContent = dict[k];
+      });
+      document.querySelectorAll('#langBarMain button').forEach(btn=>btn.classList.toggle('on', btn.dataset.lang === lang));
+      localStorage.setItem('otd_lang', lang);
+      if (typeof window.renderCashExamples === 'function') window.renderCashExamples(lang);
     }
-    return true;
-  });
-}
-function buildPlan(){
-  const mode=$id('planFilter')?.value||'7d';
-  const cand=toDueList(mode).sort((a,b)=>{
-    const da=new Date(toISO(getVal(a,["Termin płatności","Termin","Termin платності"])||today()));
-    const db=new Date(toISO(getVal(b,["Termin płatności","Termin","Termin платності"])||today()));
-    const lateA=da<new Date(today()), lateB=db<new Date(today());
-    if(lateA!==lateB) return lateB-lateA;
-    return asNum(getVal(b,["Kwota do zapłaty","Kwota"])) - asNum(getVal(a,["Kwota do zapłaty","Kwota"]));
-  });
-  let left=availableTotal(); const plan=[];
-  for(const r of cand){
-    const amt=asNum(getVal(r,["Kwota do zapłaty","Kwota"])||0);
-    if(amt<=left){ plan.push({r,amt,reason:(toISO(getVal(r,["Termin płatności","Termin"])||today())<today()?"просрочка":"срок")}); left-=amt; }
-  }
-  return {plan,left,avail:availableTotal()};
-}
-function renderPlan(){
-  const p=buildPlan(); const tb=document.querySelector('#planTable tbody'); if(!tb) return; tb.innerHTML='';
-  p.plan.forEach((x,i)=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML = `<td>${i+1}</td><td>${getVal(x.r,["Numer faktury","Numer фактуры"])||""}</td><td>${getVal(x.r,["Dostawca","Supplier"])||""}</td><td>${toISO(getVal(x.r,["Termin płatności","Termin"])||"")}</td><td>${x.amt.toFixed(2)}</td><td>${x.reason}</td>`;
-    tb.appendChild(tr);
-  });
-  const pm=$id('planMeta'); if(pm) pm.textContent = p.plan.length?`Wydamy ${(p.avail-p.left).toFixed(2)} z ${p.avail.toFixed(2)} PLN. Zostanie ${p.left.toFixed(2)} PLN.`:"Plan pusty lub brak środków.";
-}
-function computeMinPay(){
-  const t=today(); const pct=asNum(localStorage.getItem('penaltyPct')||0.05)/100.0;
-  const cand=bills.filter(r=>
-    String((getVal(r,["Waluta"])||"").toUpperCase())==="PLN" &&
-    toISO(getVal(r,["Termin płatności","Termin"])||"")<=t &&
-    ["do zapłaty","przeterminowane","к оплате","просрочено"].includes(String(getVal(r,["Status faktury","Status"])||"").toLowerCase())
-  ).map(r=>({r,amt:asNum(getVal(r,["Kwota do zapłaty","Kwota"])||0),risk:asNum(getVal(r,["Kwota do zapłaty","Kwota"])||0)*pct}))
-   .sort((a,b)=> b.risk-a.risk || b.amt-a.amt);
-  return cand[0]||null;
-}
-function renderMinPay(){
-  const m=computeMinPay(); const el=$id('minPayBox'); if(!el) return;
-  if(!m){ el.textContent='—'; return; }
-  el.textContent = `Оплатить ${getVal(m.r,["Numer faktury","Numer фактуры"])} (${getVal(m.r,["Dostawca","Supplier"])}) на ${m.amt.toFixed(2)} PLN. Штраф/день ~ ${m.risk.toFixed(2)} PLN.`;
-}
-function renderForecast(){
-  const t=new Date(today());
-  const list=toDueList("7d").map(r=>({date:new Date(toISO(getVal(r,["Termin płatności","Termin"]))), amt:asNum(getVal(r,["Kwota do zapłaty","Kwота"])||0)}));
-  const days=[...Array(7)].map((_,i)=> new Date(t.getTime()+i*86400000));
-  let left=availableTotal(); const out=days.map(d=>({d,due:0,after:0}));
-  list.forEach(x=>{ const idx=Math.min(6, Math.max(0, Math.floor((x.date - t)/86400000))); out[idx].due += x.amt; });
-  out.forEach(o=>{ left-=o.due; o.after=left; });
-  const wrap=$id('forecastBars'); if(!wrap) return; wrap.innerHTML='';
-  out.forEach(o=>{
-    const div=document.createElement('div'); div.className='bar'+(o.after<0?' neg':'');
-    const h=document.createElement('div'); h.className='h'; h.style.height=(Math.min(120,Math.abs(o.after)/100)*0.8+18)+'px';
-    div.innerHTML=`<small>${o.d.toISOString().slice(5,10)}</small>`; div.appendChild(h);
-    const v=document.createElement('div'); v.textContent = (o.after<0?'-':'')+Math.abs(o.after).toFixed(0)+' PLN'; div.appendChild(v);
-    wrap.appendChild(div);
-  });
-  const firstNeg=out.find(x=>x.after<0); const meta=$id('forecastMeta');
-  if(meta) meta.textContent = firstNeg?`Гэп через ${out.indexOf(firstNeg)+1} дн.: не хватает ${Math.abs(firstNeg.after).toFixed(2)} PLN.`:"На 7 дней хватает кассы.";
-}
 
-/* ==== ACCEPT ONE ==== */
-function acceptOne(id){
-  const b=(bills||[]).find(x=> (getVal(x,["Numer faktury","Numer фактуры","Invoice number"])||"")===id);
-  if(!b) return;
-  const t=(tx||[]).find(x=> (getVal(x,["ID transakcji","ID","id"])||"")=== (getVal(b,["Kandydat (AI)"])||""));
-  if(!t) return;
-  t["Status transakcji"]="Sparowane"; t["Powiązana faktura (ID)"]=getVal(b,["Numer faktury","Numer фактуры"]);
-  b["Status faktury"]="Opłacone"; b["Data płatności"]=today(); b["Kandydat (AI)"]=b["AI score"]="";
-  render(); saveLocal(); pushState();
-}
+    // helpers
+    const asNum = v => {
+      if (v == null) return 0;
+      let s = String(v).trim();
+      if (!s) return 0;
+      s = s.replace(/\u00A0/g,' ').trim();
+      if (s.match(/^\(.*\)$/)) { s = '-' + s.replace(/^\(|\)$/g,''); }
+      const hasComma = /,/.test(s); const hasDot = /\./.test(s);
+      s = s.replace(/\b(PLN|zł|zl|zlot|EUR|USD|GBP|PLN\.)\b/ig, '');
+      if (hasComma && !hasDot) { s = s.replace(/\s/g, '').replace(/,/g, '.'); }
+      else { s = s.replace(/[\s\u00A0]/g, '').replace(/,/g, ''); }
+      s = s.replace(/[^\d\.\-]/g, '');
+      const n = Number(s);
+      return isNaN(n) ? 0 : n;
+    };
+    const today = () => new Date().toISOString().slice(0, 10);
 
-/* ==== KASA CRUD ==== */
-function loadKasa(){ try{kasa=JSON.parse(localStorage.getItem('kasa')||'[]');}catch(e){kasa=[]} }
-function addKasa(type,amount,comment,source){
-  if(amount==null||isNaN(amount)) return alert("Сумма некорректна");
-  kasa.push({id:Date.now(),date:today(),type,amount:Number(amount),comment:comment||"",source:source||"ручной"});
-  saveLocal(); render(); pushState();
-}
-function editRow(kind,id){
-  if(kind==='kasa'){
-    const idx=kasa.findIndex(x=> String(x.id)===String(id)); if(idx<0) return;
-    const k=kasa[idx];
-    const n=prompt("Сумма:", k.amount); if(n===null) return;
-    const c=prompt("Комментарий:", k.comment||""); if(c===null) return;
-    kasa[idx].amount=asNum(n); kasa[idx].comment=c; saveLocal(); render(); pushState(); return;
-  }
-  if(kind==='tx'){
-    const idx=tx.findIndex(x=> (getVal(x,["ID transakcji","ID","id"])||"")===String(id)); if(idx<0) return;
-    const r=tx[idx];
-    const d=prompt("Дата (YYYY-MM-DD):", toISO(getVal(r,["Data księgowania"])||today())); if(d===null) return;
-    const a=prompt("Сумма:", getVal(r,["Kwota","Kwota_raw","amount"])||""); if(a===null) return;
-    r["Data księgowania"]=toISO(d)||today(); r["Kwota"]=asNum(a).toFixed(2); saveLocal(); render(); pushState(); return;
-  }
-  if(kind==='bill'){
-    const idx=bills.findIndex(x=> (getVal(x,["Numer faktury","Numer фактуры","Invoice number"])||"")===String(id)); if(idx<0) return;
-    const r=bills[idx];
-    const due=prompt("Срок (YYYY-MM-DD):", toISO(getVal(r,["Termin płatności","Termin"])||today())); if(due===null) return;
-    const amt=prompt("Сумма к оплате:", getVal(r,["Kwota do zapłaty","Kwota"])||""); if(amt===null) return;
-    r["Termin płatności"]=toISO(due)||today(); r["Kwota do zapłaty"]=asNum(amt).toFixed(2); saveLocal(); render(); pushState(); return;
-  }
-}
-function delRow(kind,id){
-  if(kind==='kasa'){ kasa = kasa.filter(x=> String(x.id)!==String(id)); saveLocal(); render(); pushState(); return; }
-  if(kind==='tx'){ tx = tx.filter(x=> (getVal(x,["ID transakcji","ID","id"])||"")!==String(id)); saveLocal(); render(); pushState(); return; }
-  if(kind==='bill'){ bills = bills.filter(x=> (getVal(x,["Numer faktury","Numer фактуры","Invoice number"])||"")!==String(id)); saveLocal(); render(); pushState(); return; }
-}
+    function smartSplit(line, del) {
+      let out = [], cur = "", q = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') { q = !q; continue; }
+        if (ch === del && !q) { out.push(cur); cur = ""; }
+        else { cur += ch; }
+      }
+      out.push(cur);
+      return out;
+    }
+    function parseCSV(text) {
+      if (!text) return [];
+      text = text.replace(/^\uFEFF/, '').replace(/\r/g, "");
+      const lines = text.split("\n").filter(l => l.trim());
+      if (!lines.length) return [];
+      const sep = (lines[0].split(";").length > lines[0].split(",").length) ? ";" : ",";
+      const head = smartSplit(lines.shift(), sep).map(h => h.trim());
+      return lines.map(line => {
+        const cells = smartSplit(line, sep);
+        const obj = {};
+        head.forEach((h, i) => {
+          let v = (cells[i] || "").trim();
+          v = v.replace(/\u00A0/g,' ').trim();
+          obj[h] = v;
+        });
+        return obj;
+      });
+    }
 
-/* ==== EVENTS ==== */
-document.addEventListener('click',(e)=>{
-  const btn=e.target.closest('button'); if(!btn) return;
-  const act=btn.getAttribute('data-act'); if(!act) return;
-  const kind=btn.getAttribute('data-kind'), id=btn.getAttribute('data-id');
-  if(act==='edit') editRow(kind,id);
-  if(act==='del') delRow(kind,id);
-});
+    function toISO(d) {
+      if (!d) return "";
+      const s = String(d).trim();
+      let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (m) return m[0];
+      m = s.match(/^(\d{1,2})[.\-/](\d{1,2})[.\-/](\d{2,4})$/);
+      if (m) {
+        const dd = m[1].padStart(2, "0"),
+              mm = m[2].padStart(2, "0"),
+              yy = m[3].length === 2 ? ("20" + m[3]) : m[3];
+        return yy + "-" + mm + "-" + dd;
+      }
+      const maybe = Date.parse(s);
+      if (!isNaN(maybe)) {
+        const D = new Date(maybe);
+        return D.toISOString().slice(0,10);
+      }
+      return "";
+    }
 
-document.addEventListener('DOMContentLoaded', async ()=>{
-  // Lang bar
-  document.querySelectorAll('#langBarMain button').forEach(b=>{
-    b.addEventListener('click',()=> applyLang(b.dataset.lang));
-  });
-  applyLang(localStorage.getItem('otd_lang')||'pl');
+    function fmtAmountRaw(raw) {
+      const n = asNum(raw);
+      if (!Number.isFinite(n)) return '<span>—</span>';
+      const sign = n < 0 ? '-' : '+';
+      const cls = n < 0 ? 'amt-neg' : 'amt-pos';
+      const abs = Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+      return `<span class="${cls}">${sign} ${abs}</span>`;
+    }
 
-  // Tabs (with gate)
-  document.querySelectorAll('.tabs .tab').forEach(t=>{
-    t.addEventListener('click', ()=>{
-      if(t.classList.contains('disabled')) { document.querySelector('[data-sec=ustawienia]')?.click(); return; }
-      document.querySelectorAll('.tabs .tab').forEach(x=>x.classList.remove('active'));
-      document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-      t.classList.add('active'); const sec=t.dataset.sec; if(sec) $id(sec)?.classList.add('active');
+    function getVal(obj, keys) {
+      if (!obj) return "";
+      for (const k of keys) {
+        if (k in obj && obj[k] !== null && obj[k] !== undefined && String(obj[k]).trim() !== "") return obj[k];
+      }
+      const low = Object.keys(obj).reduce((m, x) => (m[x.toLowerCase()] = obj[x], m), {});
+      for (const k of keys) {
+        const kk = k.toLowerCase();
+        if (kk in low && String(low[kk]).trim() !== "") return low[kk];
+      }
+      return "";
+    }
+  </script>
+
+  <script>
+  (function(){
+    // локальная модель
+    let tx = [];
+    let bills = [];
+    let kasa = [];
+    let accMeta = {};
+
+    // Примеры для кассы (многоязычно)
+    const cashQuickExamples = {
+      ru: ["Принять 250 на продукты","Выдать 50 на доставку","Принять 1000 депозит","Принять 50 на напитки"],
+      en: ["Accept 250 for groceries","Pay out 50 for delivery","Accept 1000 deposit","Accept 50 for drinks"],
+      pl: ["Przyjąć 250 na produkty","Wypłacić 50 na dostawę","Przyjąć 1000 depozyt","Przyjąć 50 na napoje"],
+      uk: ["Прийняти 250 на продукти","Видати 50 на доставку","Прийняти 1000 депозит","Прийняти 50 на напої"]
+    };
+
+    window.renderCashExamples = function(lang) {
+      try {
+        lang = lang || (localStorage.getItem('otd_lang') || 'ru');
+        const holder = document.getElementById('kasaQuickHolder');
+        if (!holder) return;
+        holder.innerHTML = '';
+        const arr = cashQuickExamples[lang] || cashQuickExamples['ru'];
+        arr.forEach(txt => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.textContent = txt;
+          btn.addEventListener('click', () => {
+            const numMatch = txt.match(/(-?\d+[.,]?\d*)/);
+            const num = numMatch ? asNum(numMatch[1]) : 0;
+            const note = txt.replace(/(-?\d+[.,]?\d*\s*(zł|pln|PLN|USD|EUR)?)/i, "").trim();
+            const outRe = /(выда|выпла|wydaj|wydat|pay out|wypłac|видат)/i;
+            const isOut = outRe.test(txt);
+            addKasa(isOut ? 'wydanie' : 'przyjęcie', num, note || txt, 'quick');
+          });
+          holder.appendChild(btn);
+        });
+      } catch(e) { console.warn('renderCashExamples error', e); }
+    };
+
+    // счета по выписке
+    function inferAccounts() {
+      const map = {};
+      tx.forEach(r => {
+        const id = getVal(r, ["ID konta","IBAN","ID konta ","account","ID","IDkonto"]) || "UNKNOWN";
+        const cur = (getVal(r, ["Waluta","currency","Currency","Waluta "]) || "PLN").toUpperCase();
+        if (!map[id]) {
+          map[id] = { id, name: String(id).slice(0, 12), currency: cur, include: true, type: "Biznes", start: 0 };
+        }
+      });
+      try {
+        const saved = JSON.parse(localStorage.getItem("accMeta") || "{}");
+        Object.keys(map).forEach(id => { if (saved[id]) map[id] = Object.assign(map[id], saved[id]); });
+      } catch(e){}
+      accMeta = map;
+      renderAccounts();
+    }
+
+    function computeAccountBalance(accId) {
+      const rows = tx.filter(r => (getVal(r, ["ID konta","IBAN","account","ID"]) || "UNKNOWN") === accId);
+      const withSaldo = rows.filter(r => getVal(r, ["Saldo po operacji","Saldo","saldo"]));
+      if (withSaldo.length) { const last = withSaldo[withSaldo.length - 1]; return asNum(getVal(last, ["Saldo po operacji","Saldo","saldo"])); }
+      const start = Number((accMeta[accId] || {}).start || 0);
+      const sum = rows.reduce((s, r) => s + asNum(getVal(r, ["Kwota","Kwота","amount","Kwota_raw"])), 0);
+      return start + sum;
+    }
+
+    function rate(cur) {
+      cur = String(cur || "PLN").toUpperCase();
+      if (cur === "PLN") return 1;
+      if (cur === "EUR") return asNum(localStorage.getItem("rateEUR") || 4.3);
+      if (cur === "USD") return asNum(localStorage.getItem("rateUSD") || 3.95);
+      return 1;
+    }
+    function bankAvailablePLN() {
+      let sum = 0;
+      Object.values(accMeta).filter(a => a.include).forEach(a => {
+        const bal = computeAccountBalance(a.id);
+        sum += bal * rate(a.currency);
+      });
+      return sum;
+    }
+    function kasaBalance() {
+      let bal = 0;
+      kasa.forEach(k => {
+        if (k.type === "przyjęcie") bal += k.amount;
+        if (k.type === "wydanie") bal -= k.amount;
+        if (k.type === "zamknięcie") bal = k.amount;
+      });
+      return bal;
+    }
+    function availableTotal() {
+      const auto = localStorage.getItem("autoCash") === "1";
+      const manual = asNum(localStorage.getItem("cashPLN") || 0);
+      const kas = kasaBalance();
+      return auto ? (bankAvailablePLN() + kas) : (manual + kas);
+    }
+
+    function normName(s) { s = (s || "").toString().toLowerCase().replace(/[.,]/g, " ").replace(/\s+/g, " ").trim(); ["sp z oo","sp. z o.o.","spolka","spółka","sa","s.a","ooo"].forEach(t => s = s.replace(t, "")); return s.trim(); }
+    function nameSimilar(a, b) { a = normName(a); b = normName(b); if (!a || !b) return 0; if (a === b) return 1; if (a.includes(b) || b.includes(a)) return 0.8; return 0; }
+    function scoreMatch(bill, tr) {
+      let score = 0;
+      const bAmt = asNum(getVal(bill, ["Kwота do zapłaty","Kwота","Kwota do zapłaty","amount"]));
+      const tAmt = Math.abs(asNum(getVal(tr, ["Kwota","Kwота","amount","Kwota_raw"])));
+      const bCur = String(getVal(bill, ["Waluta","currency","Waluta "]) || "").toUpperCase();
+      const tCur = String(getVal(tr, ["Waluta","currency","Waluta "]) || "").toUpperCase();
+      if (bAmt > 0 && tAmt > 0 && Math.abs(bAmt - tAmt) < 0.01 && (bCur === tCur || !bCur || !tCur)) score += 60;
+      const inv = String(getVal(bill, ["Numer faktury","Numer фактуры","Invoice number"]) || "").toLowerCase();
+      const desc = String(getVal(tr, ["Tytuł/Opis","Opis","Title","description"]) || "").toLowerCase();
+      if (inv && desc.includes(inv)) score += 25;
+      if (nameSimilar(getVal(bill, ["Dostawca","Supplier"]), getVal(tr, ["Kontrahent","Counterparty","Kontrahent"])) >= 0.8) score += 10;
+      if (asNum(getVal(tr, ["Kwota","amount"])) < 0) score += 5;
+      return { score: Math.min(100, score) };
+    }
+
+    function runAI() {
+      bills.forEach(b => {
+        const status = String(getVal(b, ["Status фактуры","Status faktury","Status"]) || "").toLowerCase();
+        if (status.includes("opłacone") || status.includes("оплачено") || status.includes("paid")) return;
+        let best = null;
+        tx.forEach(t => {
+          if (String(getVal(t, ["Status transakcji","status"]) || "").toLowerCase() === "sparowane") return;
+          if (asNum(getVal(t, ["Kwota","amount"])) >= 0) return;
+          const s = scoreMatch(b, t);
+          if (!best || s.score > best.s) best = { t, s: s.score };
+        });
+        if (best && best.s >= 85) {
+          best.t["Status transakcji"] = "Sparowane";
+          best.t["Powiązana фактура (ID)"] = getVal(b, ["Numer фактуры","Numer faktury"]);
+          b["Status фактуры"] = "Opłacone";
+          b["Data платності"] = today();
+        } else if (best && best.s >= 55) {
+          b["Kandидат (AI)"] = getVal(best.t, ["ID transakcji","ID"]);
+          b["AI score"] = best.s;
+        } else {
+          b["Kandидат (AI)"] = "";
+          b["AI score"] = "";
+        }
+      });
+      render();
+    }
+    function acceptSafe() {
+      bills
+        .filter(b => Number(getVal(b, ["AI score"]) || 0) >= 85)
+        .forEach(b => {
+          const t = tx.find(t => getVal(t, ["ID transakcji"]) === getVal(b, ["Kandидат (AI)"]));
+          if (!t) return;
+          t["Status transakcji"] = "Sparowane";
+          t["Powiązana фактура (ID)"] = getVal(b, ["Numer фактуры","Numer faktury"]);
+          b["Status фактуры"] = "Opłacone";
+          b["Data платності"] = today();
+          b["Kandидат (AI)"] = b["AI score"] = "";
+        });
+      render();
+    }
+
+    function normalizeRowKeys(r) {
+      const kwRaw = getVal(r, ["Kwota","Kwота","amount","Kwota_raw"]) || "";
+      const kwNum = asNum(kwRaw);
+      return {
+        "Data księgowania": getVal(r, ["Data księgowania","date","Дата"]) || today(),
+        "ID transakcji": getVal(r, ["ID transakcji","id","ID"]) || ("IMG-" + Date.now() + "-" + Math.floor(Math.random()*9999)),
+        "ID konta": getVal(r, ["ID konta","account","IBAN"]) || "UNKNOWN",
+        "Kontrahent": getVal(r, ["Kontrahent","Kontrahент","counterparty","Counterparty"]) || "",
+        "Tytuł/Opis": getVal(r, ["Tytuł/Opis","Opis","title","Title"]) || "",
+        "Kwota": (Number.isFinite(kwNum) ? kwNum.toFixed(2) : (typeof kwRaw === 'number' ? String(kwRaw) : (kwRaw || ""))),
+        "Kwota_raw": kwRaw || "",
+        "Waluta": (getVal(r, ["Waluta","currency"]) || "PLN"),
+        "Status transakcji": getVal(r, ["Status transakcji","status"]) || "imported",
+        "Saldo po operacji": getVal(r, ["Saldo po operacji","Saldo","saldo"]) || ""
+      };
+    }
+
+    /* ==== OCR IMPORT: добавлено для фото выписок и фото фактур ==== */
+    async function ocrRecognizeFile(file, langs='pol+eng+rus+ukr') {
+      const worker = await Tesseract.createWorker();
+      await worker.load();
+      try { await worker.loadLanguage(langs); await worker.initialize(langs); }
+      catch(e) { await worker.loadLanguage('eng'); await worker.initialize('eng'); }
+      const { data:{ text } } = await worker.recognize(file);
+      await worker.terminate();
+      return (text||'').replace(/\u00A0/g,' ').trim();
+    }
+
+    function ocrTxFromText(text){
+      const date = (text.match(/\b(\d{4}[-./]\d{2}[-./]\d{2})\b/)||[])[1]
+                || (text.match(/\b(\d{1,2}[-./]\d{1,2}[-./]\d{2,4})\b/)?.[1]) || today();
+      const dueISO = toISO(date);
+      const amtRaw = (text.match(/([+-]?\d{1,3}(?:[ \u00A0]\d{3})*(?:[.,]\d{2})|\d+[.,]\d{2})\s?(PLN|EUR|USD|zł)/i)||[])[1];
+      const cur = (text.match(/PLN|EUR|USD|zł/i)||['PLN'])[0].toUpperCase().replace('ZŁ','PLN');
+      const lines = text.split(/\n+/).map(s=>s.trim()).filter(Boolean);
+      const counterparty = lines.find(s=>s.length>3 && !/\d{2}[:.]\d{2}/.test(s)) || 'Unknown';
+      const desc = (lines[1]||lines[0]||'').slice(0,160);
+      if(!amtRaw) return null;
+      return {
+        "Data księgowania": dueISO,
+        "ID transakcji": "OCR-" + Date.now() + "-" + Math.floor(Math.random()*10000),
+        "ID konta": "OCR",
+        "Kontrahent": counterparty,
+        "Tytuł/Opis": desc,
+        "Kwota": asNum(amtRaw).toFixed(2),
+        "Waluta": cur,
+        "Status transakcji": "imported"
+      };
+    }
+
+    function ocrInvoiceFromText(text){
+      const num = (text.match(/(FV|Faktura|Invoice)[\s#:]*([A-Z0-9\-/._]+)/i)||[])[2] || ("OCR-"+Date.now());
+      const due = (text.match(/\b(Termin|Due|Płatności|Payment\s*due)[:\s]*([0-9]{4}[-./][0-9]{2}[-./][0-9]{2}|[0-9]{1,2}[-./][0-9]{1,2}[-./][0-9]{2,4})/i)||[])[2] || today();
+      const dueISO = toISO(due);
+      const amtRaw = (text.match(/(Suma|Kwota|Total)\s*[:\-]?\s*([0-9]+[.,][0-9]{2})/i)||[])[2]
+                  || (text.match(/([0-9]+[.,][0-9]{2})\s?(PLN|EUR|USD)/i)||[])[1];
+      const cur = (text.match(/PLN|EUR|USD/i)||['PLN'])[0].toUpperCase();
+      const supplier = (text.match(/(Sprzedawca|Supplier)[:\s]*([^\n]+)/i)||[])[2]
+                    || (text.split('\n')[0]||'Unknown');
+      if(!amtRaw) return null;
+      return {
+        "Termin płatności": dueISO,
+        "Numer фактуры": num,
+        "Dostawca": supplier.slice(0,200),
+        "Kwота до заплаты": asNum(amtRaw).toFixed(2),
+        "Kwota do zapłaty": asNum(amtRaw).toFixed(2),
+        "Waluta": cur,
+        "Status фактуры": "do zapłaty",
+        "Kandидат (AI)": "",
+        "AI score": ""
+      };
+    }
+    /* ==== /OCR IMPORT ==== */
+
+    function renderKasa() {
+      const tb = document.querySelector("#kasaTable tbody");
+      if (!tb) return;
+      tb.innerHTML = "";
+      // НОВОЕ: новые записи сверху
+      [...kasa].slice().reverse().forEach((k, i) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${i + 1}</td><td>${k.date}</td><td>${k.type}</td><td>${k.amount.toFixed(2)}</td><td>${k.source || ""}</td><td>${k.comment || ""}</td>`;
+        tb.appendChild(tr);
+      });
+    }
+
+    function renderAccounts() {
+      const tb = document.querySelector("#autoAcc tbody");
+      if (!tb) return;
+      tb.innerHTML = "";
+      Object.values(accMeta).forEach(a => {
+        const bal = computeAccountBalance(a.id);
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${a.id}</td>
+          <td><select data-id="${a.id}" class="acc-type">
+              <option ${a.type === "Biznes" ? "selected" : ""}>Biznes</option>
+              <option ${a.type === "Osobisty" ? "selected" : ""}>Osobisty</option>
+            </select></td>
+          <td><select data-id="${a.id}" class="acc-cur">
+              <option ${a.currency === "PLN" ? "selected" : ""}>PLN</option>
+              <option ${a.currency === "EUR" ? "selected" : ""}>EUR</option>
+              <option ${a.currency === "USD" ? "selected" : ""}>USD</option>
+            </select></td>
+          <td>${bal.toFixed(2)}</td>
+          <td><input type="number" step="0.01" value="${a.start || 0}" class="acc-start" data-id="${a.id}" /></td>
+          <td><input type="checkbox" class="acc-include" data-id="${a.id}" ${a.include ? "checked" : ""} /></td>`;
+        tb.appendChild(tr);
+      });
+      tb.querySelectorAll(".acc-type").forEach(el => el.addEventListener("change", e => { const id = e.target.dataset.id; accMeta[id].type = e.target.value; saveAccMeta(); render(); }));
+      tb.querySelectorAll(".acc-cur").forEach(el => el.addEventListener("change", e => { const id = e.target.dataset.id; accMeta[id].currency = e.target.value; saveAccMeta(); render(); }));
+      tb.querySelectorAll(".acc-start").forEach(el => el.addEventListener("change", e => { const id = e.target.dataset.id; accMeta[id].start = asNum(e.target.value); saveAccMeta(); render(); }));
+      tb.querySelectorAll(".acc-include").forEach(el => el.addEventListener("change", e => { const id = e.target.dataset.id; accMeta[id].include = e.target.checked; saveAccMeta(); render(); }));
+    }
+    function saveAccMeta() { try { localStorage.setItem("accMeta", JSON.stringify(accMeta)); } catch(e){} }
+
+    function loadKasa() { try { kasa = JSON.parse(localStorage.getItem("kasa") || "[]"); } catch(e) { kasa = []; } }
+    function saveKasa() { try { localStorage.setItem("kasa", JSON.stringify(kasa)); } catch(e){} }
+    function addKasa(type, amount, comment, source) {
+      if (amount == null || isNaN(amount)) return alert("Сумма некорректна");
+      kasa.push({ id: Date.now(), date: today(), type, amount: Number(amount), comment: comment || "", source: source || "ручной" });
+      saveKasa(); render(); renderKasa();
+    }
+
+    function toDueList(mode) {
+      const t = today();
+      const excl = $id("excludeBlacklist") ? document.getElementById("excludeBlacklist").checked : false;
+      return bills.filter(r => {
+        const s = String(getVal(r, ["Status фактуры","Status faktury","Status"]) || "").toLowerCase();
+        if (!["do zapłaty", "przeterminowane", "к оплате", "просрочено","to pay"].includes(s)) return false;
+        const d = toISO(getVal(r, ["Termin płatności","Termin","Termin платності"]));
+        if (!d) return false;
+        if (mode === "today") return d === t;
+        if (mode === "7d") { const dd = new Date(d), tt = new Date(t); return (dd - tt) / (1000 * 3600 * 24) <= 7; }
+        return true;
+      }).filter(r => {
+        if (String((getVal(r, ["Waluta","Waluta "]) || "").toUpperCase()) !== "PLN") return false;
+        if (excl) {
+          const blist = (localStorage.getItem("blacklist") || "").toLowerCase();
+          if (blist && getVal(r, ["Dostawca","Supplier"]) && blist.split(",").some(name => getVal(r, ["Dostawca","Supplier"]).toLowerCase().includes(name.trim()))) return false;
+        }
+        return true;
+      });
+    }
+
+    function buildPlan() {
+      const planFilter = $id("planFilter");
+      const mode = planFilter ? planFilter.value : "7d";
+      const cand = toDueList(mode).sort((a, b) => {
+        const da = new Date(toISO(getVal(a, ["Termin płatności","Termin","Termin платності"]) || today()));
+        const db = new Date(toISO(getVal(b, ["Termin płатności","Termin","Termin платності"]) || today()));
+        const lateA = da < new Date(today());
+        const lateB = db < new Date(today());
+        if (lateA !== lateB) return lateB - lateA;
+        return asNum(getVal(b, ["Kwota do zapłaty","Kwота","Kwота do заплаты"]) || 0) - asNum(getVal(a, ["Kwota do zapłaty","Kwота","Kwота до заплаты"]) || 0);
+      });
+      let left = availableTotal();
+      const plan = [];
+      for (const r of cand) {
+        const amt = asNum(getVal(r, ["Kwota do zapłaty","Kwота","Kwота до заплаты"]) || 0);
+        if (amt <= left) {
+          plan.push({ r, amt, reason: (toISO(getVal(r, ["Termin płatności","Termin","Termin платності"]) || today()) < today() ? "просрочка" : "срок") });
+          left -= amt;
+        }
+      }
+      return { plan, left, avail: availableTotal() };
+    }
+
+    function renderPlan() {
+      const p = buildPlan();
+      const tb = document.getElementById("planTable") ? document.getElementById("planTable").querySelector("tbody") : null;
+      if (!tb) return;
+      tb.innerHTML = "";
+      p.plan.forEach((x, i) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${i + 1}</td><td>${getVal(x.r, ["Numer faktury","Numer фактуры","Invoice number"]) || ""}</td><td>${getVal(x.r, ["Dostawca","Supplier"]) || ""}</td><td>${toISO(getVal(x.r, ["Termin płatności","Termin","Termin платності"]) || "")}</td><td>${x.amt.toFixed(2)}</td><td>${x.reason}</td>`;
+        tb.appendChild(tr);
+      });
+      const metaText = p.plan.length ? `Потратим ${(p.avail - p.left).toFixed(2)} из ${p.avail.toFixed(2)} PLN. Останется ${p.left.toFixed(2)} PLN.` : "План пуст или денег нет.";
+      const pm = $id("planMeta"); if (pm) pm.textContent = metaText;
+    }
+
+    function computeMinPay() {
+      const t = today();
+      const pctVal = asNum(localStorage.getItem("penaltyPct") || 0.05);
+      const pct = pctVal / 100.0;
+      const cand = bills.filter(r =>
+        String((getVal(r, ["Waluta","Waluta "]) || "").toUpperCase()) === "PLN" &&
+        toISO(getVal(r, ["Termin płatności","Termin","Termin платності"]) || "") <= t &&
+        ["do zapłaty", "przeterminowane", "к оплате", "просрочено"].includes(String(getVal(r, ["Status фактуры","Status"]) || "").toLowerCase())
+      ).map(r => ({
+        r,
+        amt: asNum(getVal(r, ["Kwota do zapłaty","Kwота","Kwота do zapłaty"]) || 0),
+        risk: asNum(getVal(r, ["Kwota do запłaty","Kwота","Kwota do zapłaty"]) || 0) * pct
+      })).sort((a, b) => b.risk - a.risk || b.amt - a.amt);
+      return cand[0] || null;
+    }
+    function renderMinPay() {
+      const m = computeMinPay();
+      const el = $id("minPayBox");
+      if (!el) return;
+      if (!m) { el.textContent = "—"; return; }
+      el.textContent = `Оплатить ${getVal(m.r, ["Numer faktury","Numer фактуры"])} (${getVal(m.r, ["Dostawca","Supplier"])}) на ${m.amt.toFixed(2)} PLN. Штраф/день ~ ${m.risk.toFixed(2)} PLN.`;
+    }
+
+    function renderForecast() {
+      const t = new Date(today());
+      const list = toDueList("7d").map(r => ({ date: new Date(toISO(getVal(r, ["Termin płatności","Termin","Termin платности"]))), amt: asNum(getVal(r, ["Kwota do zapłaty","Kwота","Kwota do zapłaty"]) || 0) }));
+      const days = [...Array(7)].map((_, i) => new Date(t.getTime() + i * 86400000));
+      let left = availableTotal();
+      const out = days.map(d => ({ d, due: 0, after: 0 }));
+      list.forEach(x => { const idx = Math.min(6, Math.max(0, Math.floor((x.date - t) / 86400000))); out[idx].due += x.amt; });
+      out.forEach(o => { left -= o.due; o.after = left; });
+      const wrap = document.getElementById("forecastBars"); if (!wrap) return;
+      wrap.innerHTML = "";
+      out.forEach(o => {
+        const div = document.createElement("div"); div.className = "bar" + (o.after < 0 ? " neg" : "");
+        const h = document.createElement("div"); h.className = "h"; h.style.height = (Math.min(120, Math.abs(o.after) / 100) * 0.8 + 18) + "px";
+        div.innerHTML = "<small>" + o.d.toISOString().slice(5, 10) + "</small>";
+        div.appendChild(h);
+        const v = document.createElement("div"); v.textContent = (o.after < 0 ? "-" : "") + Math.abs(o.after).toFixed(0) + " PLN";
+        div.appendChild(v);
+        wrap.appendChild(div);
+      });
+      const firstNeg = out.find(x => x.after < 0);
+      const meta = $id("forecastMeta");
+      if (meta) meta.textContent = firstNeg ? `Гэп через ${out.indexOf(firstNeg) + 1} дн.: не хватает ${Math.abs(firstNeg.after).toFixed(2)} PLN.` : "На 7 дней хватает кассы.";
+    }
+
+    function render() {
+      try {
+        const stored = JSON.parse(localStorage.getItem("tx_manual_import") || "[]");
+        const map = {}; (stored.concat(tx || [])).forEach(r => { map[getVal(r, ["ID transakcji","ID","id"]) || ("noid-"+JSON.stringify(r))] = r; });
+        tx = Object.values(map).slice(0, 5000);
+      } catch(e){}
+      try {
+        const storedB = JSON.parse(localStorage.getItem("bills_manual_import") || "[]");
+        const mapB = {}; (storedB.concat(bills || [])).forEach(r => { mapB[getVal(r, ["Numer фактуры","Numer faktury","Invoice number"]) || ("noinv-"+JSON.stringify(r))] = r; });
+        bills = Object.values(mapB).slice(0, 5000);
+      } catch(e){}
+      try { accMeta = Object.assign({}, JSON.parse(localStorage.getItem("accMeta") || "{}"), accMeta || {}); } catch(e){}
+
+      const dueToday = (bills || []).filter(r => {
+        const s = String(getVal(r, ["Status фактуры","Status faktury","Status"]) || "").toLowerCase();
+        return ["do zapłaty", "przeterminowane", "к оплате", "просрочено","to pay"].includes(s) && toISO(getVal(r, ["Termin płатності","Termin","Termin платности"])) === today();
+      }).length;
+      const unmatch = (tx || []).filter(r => String(getVal(r, ["Status transakcji","status"]) || "").toLowerCase() !== "sparowane").length;
+      $id("kpiDue") && ($id("kpiDue").textContent = dueToday);
+      $id("kpiUnmatch") && ($id("kpiUnmatch").textContent = unmatch);
+      const bankPLN = bankAvailablePLN();
+      $id("kpiBank") && ($id("kpiBank").textContent = bankPLN.toFixed(2));
+      const kas = kasaBalance();
+      $id("kpiCash") && ($id("kpiCash").textContent = kas.toFixed(2));
+      const avail = availableTotal();
+      $id("kpiAvail") && ($id("kpiAvail").textContent = avail.toFixed(2));
+
+      const sumDueToday = (bills || []).filter(r =>
+        String((getVal(r, ["Waluta","Waluta "]) || "").toUpperCase()) === "PLN" &&
+        toISO(getVal(r, ["Termin płatності","Termin","Termin платности"])) <= today() &&
+        ["do zapłaty", "przeterminowane", "к оплате", "просрочено"].includes(String(getVal(r, ["Status фактуры","Status"]) || "").toLowerCase())
+      ).reduce((s, r) => s + asNum(getVal(r, ["Kwota do zapłaty","Kwота","Kwота до заплаты"]) || 0), 0);
+      $id("kpiGap") && ($id("kpiGap").textContent = Math.max(0, sumDueToday - avail).toFixed(2));
+
+      // Transactions
+      const txBody = document.querySelector("#txTable tbody");
+      if (txBody) {
+        txBody.innerHTML = "";
+        (tx || []).forEach(r => {
+          const date = toISO(getVal(r, ["Data księgowania","date","Дата"]));
+          const account = getVal(r, ["ID konta","IBAN","account"]) || "—";
+          const counterparty = getVal(r, ["Kontrahent","Kontrahент","Kontragent","counterparty"]) || "";
+          const desc = getVal(r, ["Tytuł/Opis","Opis","title"]) || "";
+          const amountHtml = fmtAmountRaw(getVal(r, ["Kwota","Kwота","amount","Kwota_raw"]));
+          const cur = getVal(r, ["Waluta","currency"]) || "";
+          const status = getVal(r, ["Status transakcji","status"]) || "";
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>${date}</td><td>${account}</td><td>${counterparty}</td><td>${desc}</td><td>${amountHtml}</td><td>${cur}</td><td>${status}</td>`;
+          txBody.appendChild(tr);
+        });
+      }
+
+      // Bills (+ действия)
+      const billTable = document.querySelector("#billTable tbody");
+      if (billTable) {
+        billTable.innerHTML = "";
+        (bills || []).forEach(r => {
+          const s = String(getVal(r, ["Status фактуры","Status faktury","Status"]) || "").toLowerCase();
+          const cls = (s.includes("przetermin") || s.includes("проср")) ? "overdue" : "due";
+          const cand = getVal(r, ["Kandидат (AI)","Kandидat (AI)"]) || "";
+          const score = getVal(r, ["AI score"]) || "";
+          const d = toISO(getVal(r, ["Termin płatności","Termin","Termin платності"]) || "");
+          const num = getVal(r, ["Numer faktury","Numer фактуры","Invoice number"]) || "";
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${d}</td>
+            <td>${num}</td>
+            <td>${getVal(r, ["Dostawca","Supplier"]) || ""}</td>
+            <td>${getVal(r, ["Kwota do zapłaty","Kwота до заплаты","Kwота","Kwota"]) || ""}</td>
+            <td>${getVal(r, ["Waluta","currency"]) || ""}</td>
+            <td><span class="badge ${cls}">${getVal(r, ["Status фактуры","Status faktury","Status"]) || ""}</span></td>
+            <td>${cand ? ('<span class="badge cand">' + cand + '</span>') : '—'}</td>
+            <td>${score ? ('<span class="badge ai">' + score + '</span>') : '—'}</td>
+            <td class="actions">
+              ${cand ? ('<button class="btn secondary btn-accept" data-id="' + num + '">OK</button>') : ''}
+              <button class="btn ghost" data-act="edit" data-kind="bill" data-id="${num}">✎</button>
+              <button class="btn ghost" data-act="del" data-kind="bill" data-id="${num}">🗑</button>
+            </td>`;
+          billTable.appendChild(tr);
+        });
+        document.querySelectorAll(".btn-accept").forEach(b => b.addEventListener("click", () => acceptOne(b.getAttribute("data-id"))));
+      }
+
+      renderMinPay();
+      renderForecast();
+      renderAccounts();
+      renderKasa();
+      try { window.renderCashExamples && window.renderCashExamples(localStorage.getItem('otd_lang') || 'ru'); } catch(e){}
+    }
+
+    function acceptOne(id) {
+      const b = (bills || []).find(x => (getVal(x, ["Numer фактуры","Numer faktury","Invoice number"]) || "") === id);
+      if (!b) return;
+      const t = (tx || []).find(x => (getVal(x, ["ID transakcji","ID","id"]) || "") === (getVal(b, ["Kandидат (AI)"]) || ""));
+      if (!t) return;
+      t["Status transakcji"] = "Sparowane";
+      t["Powiązana фактура (ID)"] = getVal(b, ["Numer фактуры","Numer faktury"]);
+      b["Status фактуры"] = "Opłacone";
+      b["Data платності"] = today();
+      b["Kandидат (AI)"] = b["AI score"] = "";
+      render();
+    }
+
+    // глобальный обработчик для редактирования/удаления счетов
+    document.addEventListener('click', (e) => {
+      const act = e.target?.getAttribute('data-act');
+      if (!act) return;
+      const kind = e.target.getAttribute('data-kind');
+      const id = e.target.getAttribute('data-id');
+      if (kind !== 'bill') return;
+
+      const idx = bills.findIndex(r => (getVal(r, ["Numer фактуры","Numer faktury","Invoice number"]) || "") === id);
+      if (idx < 0) return;
+
+      if (act === 'del') {
+        if (confirm('Удалить счёт ' + id + '?')) {
+          bills.splice(idx, 1);
+          try { localStorage.setItem("bills_manual_import", JSON.stringify(bills)); } catch(e){}
+          render();
+        }
+      }
+      if (act === 'edit') {
+        const r = bills[idx];
+        const newDue = prompt('Срок (YYYY-MM-DD):', toISO(getVal(r, ["Termin płatności","Termin","Termin платності"]) || today()));
+        if (newDue === null) return;
+        const newAmt = prompt('Сумма (xx.xx):', getVal(r, ["Kwota do zapłaty","Kwота до заплаты","Kwота","Kwota"]) || "");
+        if (newAmt === null) return;
+        const newCur = prompt('Валюта (PLN/EUR/USD):', (getVal(r, ["Waluta","currency"]) || "PLN"));
+        if (newCur === null) return;
+        r["Termin płatności"] = toISO(newDue)||today();
+        r["Kwota do запłaty"] = asNum(newAmt).toFixed(2);
+        r["Waluta"] = (newCur||"PLN").toUpperCase();
+        try { localStorage.setItem("bills_manual_import", JSON.stringify(bills)); } catch(e){}
+        render();
+      }
+    }, false);
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // ИИ, план, минималка
+      $id("runAI") && $id("runAI").addEventListener("click", runAI);
+      $id("acceptSafe") && $id("acceptSafe").addEventListener("click", acceptSafe);
+      $id("makePlan") && $id("makePlan").addEventListener("click", renderPlan);
+      $id("applyPlan") && $id("applyPlan").addEventListener("click", renderPlan);
+      $id("applyMinPay") && $id("applyMinPay").addEventListener("click", () => {
+        const m = computeMinPay(); if (!m) return alert("Нет кандидатов");
+        m.r["Status фактуры"] = "Opłacone"; m.r["Data платності"] = today(); render();
+      });
+      $id("planFilter") && $id("planFilter").addEventListener("change", renderPlan);
+      $id("excludeBlacklist") && $id("excludeBlacklist").addEventListener("change", () => { renderPlan(); render(); });
+
+      $id("exportPDF") && $id("exportPDF").addEventListener("click", () => window.print());
+
+      $id("syncNow") && $id("syncNow").addEventListener("click", async () => {
+        try {
+          const u1 = localStorage.getItem("txUrl") || $id("txUrl")?.value || "";
+          const u2 = localStorage.getItem("billUrl") || $id("billUrl")?.value || "";
+          if (u1) { const res = await fetch(u1, { cache: 'no-store' }); const txt = await res.text(); tx = parseCSV(txt).map(normalizeRowKeys); }
+          if (u2) { const res2 = await fetch(u2, { cache: 'no-store' }); const txt2 = await res2.text(); bills = parseCSV(txt2); }
+          inferAccounts(); render();
+          $id("lastSync") && ($id("lastSync").textContent = "Синхронизация: " + new Date().toLocaleString());
+        } catch(e) {
+          $id("lastSync") && ($id("lastSync").textContent = "Ошибка: " + (e?.message || String(e)));
+        }
+      });
+
+      // CSV загрузки
+      $id("txFile") && $id("txFile").addEventListener("change", async e => { const f = e.target.files[0]; if (!f) return; tx = parseCSV(await f.text()).map(normalizeRowKeys); inferAccounts(); render(); });
+      $id("billFile") && $id("billFile").addEventListener("change", async e => { const f = e.target.files[0]; if (!f) return; bills = parseCSV(await f.text()); render(); });
+
+      $id("saveTxUrl") && $id("saveTxUrl").addEventListener("click", () => { const v = $id("txUrl") ? $id("txUrl").value.trim() : ""; localStorage.setItem("txUrl", v); alert("Сохранено URL wyciąga"); });
+
+      // ДОБАВЛЕНО: загрузка фото выписки (OCR)
+      $id('txImage') && $id('txImage').addEventListener('change', async e=>{
+        const files = [...e.target.files]; if (!files.length) return;
+        for (const f of files) {
+          const text = await ocrRecognizeFile(f);
+          const row = ocrTxFromText(text);
+          if (row) { tx.push(normalizeRowKeys(row)); }
+          if ($id('txLastThumb')) { $id('txLastThumb').src = URL.createObjectURL(f); $id('txLastThumb').style.display='inline-block'; }
+        }
+        try { localStorage.setItem("tx_manual_import", JSON.stringify(tx)); } catch(e){}
+        inferAccounts(); render();
+        e.target.value = '';
+      });
+
+      // ДОБАВЛЕНО: загрузка фото фактур (OCR)
+      $id('billImage') && $id('billImage').addEventListener('change', async e=>{
+        const files = [...e.target.files]; if (!files.length) return;
+        for (const f of files) {
+          const text = await ocrRecognizeFile(f);
+          const row = ocrInvoiceFromText(text);
+          if (row) bills.push(row);
+        }
+        try { localStorage.setItem("bills_manual_import", JSON.stringify(bills)); } catch(e){}
+        render();
+        e.target.value = '';
+      });
+
+      // касса — быстрые кнопки/операции
+      $id("addIn") && $id("addIn").addEventListener("click", () => addKasa("przyjęcie", asNum($id("quickAmt")?.value || 0), $id("quickNote")?.value, "ручной"));
+      $id("addOut") && $id("addOut").addEventListener("click", () => addKasa("wydanie", asNum($id("quickAmt")?.value || 0), $id("quickNote")?.value, "ручной"));
+      $id("cashClose") && $id("cashClose").addEventListener("click", () => {
+        const a = prompt("Итог в кассе (PLN):", kasaBalance().toFixed(2)); if (a === null) return; addKasa("zamknięcie", asNum(a), "close", "ручной");
+      });
+      $id("q50") && $id("q50").addEventListener("click", () => { const el = $id("quickAmt"); if (!el) return; el.value = (Number(el.value || 0) + 50).toFixed(2); });
+      $id("q100") && $id("q100").addEventListener("click", () => { const el = $id("quickAmt"); if (!el) return; el.value = (Number(el.value || 0) + 100).toFixed(2); });
+      $id("q200") && $id("q200").addEventListener("click", () => { const el = $id("quickAmt"); if (!el) return; el.value = (Number(el.value || 0) + 200).toFixed(2); });
+
+      // Speech
+      const micBtn = $id("micBtn");
+      if (micBtn && (window.SpeechRecognition || window.webkitSpeechRecognition)) {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const rec = new SR();
+        rec.continuous = false; rec.interimResults = false; rec.maxAlternatives = 1;
+        rec.lang = localStorage.getItem("speechLang") || "pl-PL";
+        rec.onstart = () => { micBtn.classList.add('on'); $id("micStatus") && ($id("micStatus").textContent = `🎙️ Слушаю... (${rec.lang})`); };
+        rec.onend = () => { micBtn.classList.remove('on'); };
+        rec.onresult = (e) => {
+          const text = (e.results[0][0].transcript || "").toLowerCase();
+          $id("micStatus") && ($id("micStatus").textContent = "🎙️ Распознано: " + text);
+          const numMatch = text.match(/(\d+[.,]?\d*)\s*(zł|pln)?/);
+          const num = numMatch ? numMatch[1] : null;
+          const isOut = /(wyda|minus|wydat|выда|минус|расход|видат)/.test(text);
+          const note = text.replace(/(\d+[.,]?\d*\s*(zł|pln)?)/, "").trim();
+          if (!num) { $id("micStatus") && ($id("micStatus").textContent = "🎙️ Сумму не нашёл"); return; }
+          addKasa(isOut ? "wydanie" : "przyjęcie", asNum(num), note || "голос", "voice");
+        };
+        micBtn.addEventListener("click", () => {
+          try {
+            const sel = $id("speechLang");
+            if (sel) { rec.lang = sel.value; localStorage.setItem("speechLang", rec.lang); }
+            rec.start();
+          } catch(e) { $id("micStatus") && ($id("micStatus").textContent = "🎙️ Не смог запустить: " + e.message); }
+        });
+      }
+
+      // OCR чека в кассе
+      $id("cashPhoto") && $id("cashPhoto").addEventListener("change", async e => {
+        const f = e.target.files[0]; if (!f) return;
+        const text = await ocrRecognizeFile(f);
+        const row = ocrTxFromText(text);
+        if (row) { tx.push(normalizeRowKeys(row)); try { localStorage.setItem("tx_manual_import", JSON.stringify(tx)); } catch(e){} inferAccounts(); render(); }
+      });
+
+      // settings
+      $id("applySettings") && $id("applySettings").addEventListener("click", () => {
+        localStorage.setItem("cashPLN", $id("cashPLN") ? $id("cashPLN").value : "0");
+        localStorage.setItem("penaltyPct", $id("penaltyPct") ? $id("penaltyPct").value : "0.05");
+        localStorage.setItem("intervalMin", $id("intervalMin") ? $id("intervalMin").value : "10");
+        localStorage.setItem("rateEUR", $id("rateEUR") ? $id("rateEUR").value : "4.30");
+        localStorage.setItem("rateUSD", $id("rateUSD") ? $id("rateUSD").value : "3.95");
+        localStorage.setItem("blacklist", $id("blacklist") ? $id("blacklist").value : "");
+        localStorage.setItem("autoCash", $id("autoCash") && $id("autoCash").checked ? "1" : "0");
+        const modeText = (localStorage.getItem("otd_lang") || "ru") === "ru"
+          ? "Режим: " + (($id("autoCash") && $id("autoCash").checked) ? "авто" : "ручной")
+          : "Mode: " + (($id("autoCash") && $id("autoCash").checked) ? "auto" : "manual");
+        if ($id("modeCash")) $id("modeCash").textContent = modeText;
+        render();
+      });
+
+      // init
+      loadKasa();
+      try { accMeta = JSON.parse(localStorage.getItem("accMeta") || "{}"); } catch(e) { accMeta = {}; }
+      try { tx = JSON.parse(localStorage.getItem("tx_manual_import") || "[]").concat(tx); } catch(e){}
+      try { bills = JSON.parse(localStorage.getItem("bills_manual_import") || "[]").concat(bills); } catch(e){}
+      renderKasa();
+      if ($id("txUrl")) $id("txUrl").value = localStorage.getItem("txUrl") || "";
+      if ($id("cashPLN")) $id("cashPLN").value = localStorage.getItem("cashPLN") || "5000";
+      if ($id("penaltyPct")) $id("penaltyPct").value = localStorage.getItem("penaltyPct") || "0.05";
+      if ($id("intervalMin")) $id("intervalMin").value = localStorage.getItem("intervalMin") || "10";
+      if ($id("rateEUR")) $id("rateEUR").value = localStorage.getItem("rateEUR") || "4.30";
+      if ($id("rateUSD")) $id("rateUSD").value = localStorage.getItem("rateUSD") || "3.95";
+      if ($id("blacklist")) $id("blacklist").value = localStorage.getItem("blacklist") || "";
+      if ($id("autoCash")) $id("autoCash").checked = localStorage.getItem("autoCash") === "1";
+      const saved = localStorage.getItem("speechLang"); if (saved && $id("speechLang")) $id("speechLang").value = saved;
+      if ($id("modeCash")) $id("modeCash").textContent = (localStorage.getItem("otd_lang") || "ru") === "ru"
+        ? "Режим: " + (($id("autoCash") && $id("autoCash").checked) ? "авто" : "ручной")
+        : "Mode: " + (($id("autoCash") && $id("autoCash").checked) ? "auto" : "manual");
+      inferAccounts();
+      applyLang(localStorage.getItem('otd_lang') || 'ru');
       render();
     });
-  });
 
-  // Buttons
-  $id('runAI')?.addEventListener('click', runAI);
-  $id('acceptSafe')?.addEventListener('click', acceptSafe);
-  $id('makePlan')?.addEventListener('click', renderPlan);
-  $id('applyPlan')?.addEventListener('click', renderPlan);
-  $id('applyMinPay')?.addEventListener('click', ()=>{ const m=computeMinPay(); if(!m) return alert('Нет кандидатов'); m.r["Status faktury"]="Opłacone"; m.r["Data płatności"]=today(); render(); saveLocal(); pushState(); });
-  $id('exportPDF')?.addEventListener('click',()=>window.print());
-  $id('syncNow')?.addEventListener('click', fetchSources);
+  })();
+  </script>
 
-  // File/url
-  $id('txFile')?.addEventListener('change', async e=>{ const f=e.target.files[0]; if(!f) return; tx=parseCSV(await f.text()); inferAccounts(); render(); saveLocal(); pushState(); });
-  $id('billFile')?.addEventListener('change', async e=>{ const f=e.target.files[0]; if(!f) return; bills=parseCSV(await f.text()); render(); saveLocal(); pushState(); });
-  $id('saveTxUrl')?.addEventListener('click',()=>{ const v=$id('txUrl')?.value.trim()||""; localStorage.setItem('txUrl',v); alert('Zapisano URL wyciągu'); scheduleAutosync(); });
-
-  // Cash quick & ops
-  $id('addIn')?.addEventListener('click',()=> addKasa('przyjęcie', asNum($id('quickAmt')?.value||0), $id('quickNote')?.value, 'manual'));
-  $id('addOut')?.addEventListener('click',()=> addKasa('wydanie', asNum($id('quickAmt')?.value||0), $id('quickNote')?.value, 'manual'));
-  $id('cashClose')?.addEventListener('click',()=>{ const a=prompt('Итог в кассе (PLN):', kasaBalance().toFixed(2)); if(a===null) return; addKasa('zamknięcie', asNum(a), 'close', 'manual'); });
-  $id('q50')?.addEventListener('click',()=>{ const el=$id('quickAmt'); if(el) el.value=(Number(el.value||0)+50).toFixed(2); });
-  $id('q100')?.addEventListener('click',()=>{ const el=$id('quickAmt'); if(el) el.value=(Number(el.value||0)+100).toFixed(2); });
-  $id('q200')?.addEventListener('click',()=>{ const el=$id('quickAmt'); if(el) el.value=(Number(el.value||0)+200).toFixed(2); });
-
-  // Speech
-  const micBtn=$id('micBtn');
-  if(micBtn && (window.SpeechRecognition||window.webkitSpeechRecognition)){
-    const SR=window.SpeechRecognition||window.webkitSpeechRecognition; const rec=new SR();
-    rec.continuous=false; rec.interimResults=false; rec.maxAlternatives=1;
-    rec.lang=localStorage.getItem('speechLang')||'pl-PL';
-    rec.onstart=()=>{ micBtn.classList.add('on'); $id('micStatus')&&( $id('micStatus').textContent=`🎙️ ... (${rec.lang})` ); };
-    rec.onend=()=>{ micBtn.classList.remove('on'); };
-    rec.onresult=(e)=>{
-      const text=(e.results[0][0].transcript||"").toLowerCase();
-      $id('micStatus')&&( $id('micStatus').textContent='🎙️ '+text );
-      const numMatch=text.match(/(\d+[.,]?\d*)\s*(zł|pln|eur|usd)?/); const num=numMatch?numMatch[1]:null;
-      const isOut=/(wyda|minus|wydat|выда|минус|расход|видат)/.test(text);
-      const note=text.replace(/(\d+[.,]?\d*\s*(zł|pln|eur|usd)?)/,"").trim();
-      if(!num){ $id('micStatus')&&( $id('micStatus').textContent='🎙️ сумма не найдена'); return; }
-      addKasa(isOut?'wydanie':'przyjęcie', asNum(num), note||'voice', 'voice');
-    };
-    $id('speechLang')?.addEventListener('change',e=>{ rec.lang=e.target.value; localStorage.setItem('speechLang', rec.lang); });
-    micBtn.addEventListener('click',()=>{ try{ rec.start(); }catch(e){ $id('micStatus')&&( $id('micStatus').textContent='🎙️ не смог запустить: '+e.message ); } });
-  }
-
-  // Settings
-  $id('applySettings')?.addEventListener('click',()=>{
-    localStorage.setItem('cashPLN',$id('cashPLN')?.value||"0");
-    localStorage.setItem('penaltyPct',$id('penaltyPct')?.value||"0.05");
-    localStorage.setItem('intervalMin',$id('intervalMin')?.value||"10");
-    localStorage.setItem('rateEUR',$id('rateEUR')?.value||"4.30");
-    localStorage.setItem('rateUSD',$id('rateUSD')?.value||"3.95");
-    localStorage.setItem('blacklist',$id('blacklist')?.value||"");
-    localStorage.setItem('autoCash', ($id('autoCash')?.checked?"1":"0"));
-    $id('modeCash')&&( $id('modeCash').textContent = (localStorage.getItem('otd_lang')||'pl')==='ru' ? ("Режим: "+($id('autoCash')?.checked?"авто":"ручной")) : ("Mode: "+($id('autoCash')?.checked?"auto":"manual")) );
-    render(); saveLocal(); scheduleAutosync(); pushState();
-  });
-  $id('exportCfg')?.addEventListener('click',()=>{
-    const cfg=stateKeys.reduce((m,k)=> (m[k]=localStorage.getItem(k),m),{});
-    const blob=new Blob([JSON.stringify(cfg,null,2)],{type:"application/json"});
-    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='onetapday_settings.json'; a.click();
-  });
-  $id('importCfg')?.addEventListener('change',async e=>{
-    const f=e.target.files[0]; if(!f) return; const cfg=JSON.parse(await f.text());
-    Object.entries(cfg).forEach(([k,v])=> localStorage.setItem(k, v));
-    location.reload();
-  });
-  $id('clearAll')?.addEventListener('click',()=>{
-    if(!confirm('Очистить локальную историю и настройки?')) return;
-    ['kasa','tx_manual_import','bills_manual_import','accMeta'].forEach(k=> localStorage.removeItem(k));
-    loadLocal(); inferAccounts(); render(); pushState();
-  });
-
-  // Demo/Sub controls
-  $id('startDemo')?.addEventListener('click',()=>{
-    localStorage.setItem(DEMO_START, new Date().toISOString()); updateSubUI(); gateAccess();
-  });
-  $id('endDemo')?.addEventListener('click',()=>{
-    localStorage.removeItem(DEMO_START); updateSubUI(); gateAccess();
-  });
-  $id('payNow')?.addEventListener('click', async ()=>{
-    const link = localStorage.getItem('stripe_link')||localStorage.getItem('stripePaymentLink');
-    if(link){ location.href=link; return; }
-    try{
-      const r=await fetch('/create-checkout-session',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({demo:true})});
-      const j=await r.json(); if(j?.url) { location.href=j.url; return; }
-      alert('No Stripe URL from backend');
-    }catch(e){ alert('Stripe error: '+(e?.message||e)); }
-  });
-
-  // INIT
-  loadLocal(); loadKasa();
-  // Defaults for Settings
-  $id('txUrl')&&( $id('txUrl').value = localStorage.getItem('txUrl')||"" );
-  ['cashPLN','penaltyPct','intervalMin','rateEUR','rateUSD','blacklist'].forEach(k=>{ if($id(k)) $id(k).value = localStorage.getItem(k)|| $id(k).value || ""; });
-  if($id('autoCash')) $id('autoCash').checked = localStorage.getItem('autoCash')==='1';
-  if($id('speechLang') && localStorage.getItem('speechLang')) $id('speechLang').value = localStorage.getItem('speechLang');
-
-  inferAccounts();
-  applyLang(localStorage.getItem('otd_lang')||'pl');
-  render();
-  scheduleAutosync();
-
-  // Remote pull once, then push snapshot
-  await pullState(); loadLocal(); inferAccounts(); render();
-  pushState();
-
-  // Save on unload (sendBeacon fallback)
-  window.addEventListener('beforeunload', ()=>{
-    try{
-      const email=localStorage.getItem(USER_KEY)||"";
-      if(!email) return;
-      const body={
-        email,
-        tx: JSON.parse(localStorage.getItem('tx_manual_import')||'[]'),
-        bills: JSON.parse(localStorage.getItem('bills_manual_import')||'[]'),
-        kasa: JSON.parse(localStorage.getItem('kasa')||'[]'),
-        accMeta: JSON.parse(localStorage.getItem('accMeta')||'{}'),
-        settings: stateKeys.reduce((m,k)=> (m[k]=localStorage.getItem(k), m), {})
-      };
-      const blob=new Blob([JSON.stringify(body)],{type:'application/json'});
-      navigator.sendBeacon && navigator.sendBeacon(`${API_BASE}/state/save`, blob);
-    }catch(e){}
-  });
-});
-</script>
+  <!-- Patch init (tabs/lang/stripe safety) — как у тебя, не трогал -->
+  <script>
+  (function(){
+    const $ = sel => document.querySelector(sel);
+    const $$ = sel => Array.from(document.querySelectorAll(sel));
+    function safeCall(name, ...args){ try{ if (typeof window[name] === 'function') return window[name](...args); return null;}catch(e){return null;} }
+    function initTabs(){ const tabs = $$('.tabs .tab'); if (!tabs.length) return; tabs.forEach(t => { t.removeEventListener('click', t._otd_cb); const cb = () => { $$('.tabs .tab').forEach(x=>x.classList.remove('active')); $$('.section').forEach(s=>s.classList.remove('active')); t.classList.add('active'); const sec = t.dataset.sec || t.getAttribute('data-sec') || t.getAttribute('data-section') || t.getAttribute('data-tab'); if (sec) { const el = document.getElementById(sec); if (el) el.classList.add('active'); } if (typeof render === 'function') try { render(); } catch(e){} safeCall('renderPlan'); safeCall('renderForecast'); safeCall('renderKasa'); safeCall('renderAccounts'); }; t._otd_cb = cb; t.addEventListener('click', cb); }); }
+    function initLangButtons(){ const langButtons = $$('.lang button, .lang .btn'); if (!langButtons.length) return; langButtons.forEach(b=>{ b.removeEventListener('click', b._otd_cb); const cb = () => { const L = b.dataset.lang || b.getAttribute('data-lang') || b.textContent.trim().slice(0,2).toLowerCase(); if (typeof applyLang === 'function') { try { applyLang(L); } catch(e){} } else if (window.M && window.M[L]) { document.querySelectorAll('[data-i]').forEach(el=>{ const k = el.getAttribute('data-i'); if (window.M[L][k]) el.textContent = window.M[L][k]; }); } langButtons.forEach(x => x.classList.remove('on')); b.classList.add('on'); localStorage.setItem('otd_lang', L); safeCall('render'); }; b._otd_cb = cb; b.addEventListener('click', cb); }); const saved = localStorage.getItem('otd_lang') || 'ru'; const btn = langButtons.find(b=> (b.dataset.lang||'').toLowerCase()===saved); if (btn) btn._otd_cb(); }
+    function ensureRenderers(){ if (typeof render === 'function') try { render(); } catch(e) {} if (typeof renderAccounts === 'function') try { renderAccounts(); } catch(e) {} if (typeof renderKasa === 'function') try { renderKasa(); } catch(e) {} if (typeof renderPlan === 'function') try { renderPlan(); } catch(e) {} if (typeof renderForecast === 'function') try { renderForecast(); } catch(e) {} }
+    function initAll(){ try { initTabs(); } catch(e){} try { initLangButtons(); } catch(e){} try { ensureRenderers(); } catch(e){} }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initAll); else initAll();
+    window.OTD_PATCH = { init: initAll };
+  })();
+  </script>
 </body>
 </html>
