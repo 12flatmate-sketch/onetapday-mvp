@@ -17,7 +17,6 @@
     .tabs{display:flex;gap:6px;flex-wrap:wrap;position:relative;z-index:2}
     .tab{padding:8px 12px;border-radius:10px;background:#0f1214;border:1px solid #20262b;color:#cfe6d7;cursor:pointer;font-weight:600}
     .tab.active{background:var(--accent);color:#08110b;border-color:#49e084}
-    .tab.disabled{opacity:.45;cursor:not-allowed}
     .section{display:none;margin-top:14px;position:relative;z-index:1}
     .section.active{display:block}
     .cards{display:grid;grid-template-columns:repeat(4,minmax(220px,1fr));gap:12px}
@@ -86,7 +85,7 @@
     </div>
   </div>
 
-  <!-- ACCESS GATE -->
+  <!-- ACCESS GATE (hidden if demo/sub active) -->
   <div id="gate" class="gate hidden">
     <div data-i="gate_locked_title" style="font-weight:700;margin-bottom:6px">Dostęp zablokowany</div>
     <div class="muted" data-i="gate_locked_desc">
@@ -185,18 +184,18 @@
   <div id="wyciag" class="section">
     <div class="row">
       <label class="btn ghost">
-        <input id="txFile" name="txFile" type="file" accept=".csv" style="display:none"/>
+        <input id="txFile" type="file" accept=".csv" style="display:none"/>
         <span data-i="upload_statement">Załaduj wyciąg (CSV)</span>
       </label>
 
       <label class="btn ghost">
-        <input id="txImage" name="txImage" type="file" accept="image/*" multiple style="display:none"/>
+        <input id="txImage" type="file" accept="image/*" multiple style="display:none"/>
         <span data-i="upload_statement_image">Załaduj zrzut wyciągu (galeria)</span>
       </label>
 
-      <img id="txLastThumb" class="thumb" alt="thumb" style="display:none"/>
+      <img id="txLastThumb" class="thumb" style="display:none"/>
 
-      <input id="txUrl" type="text" placeholder="" data-i-ph="placeholder_csv_url" aria-label="CSV URL"/>
+      <input id="txUrl" type="text" placeholder="" data-i-ph="placeholder_csv_url"/>
       <button id="saveTxUrl" class="btn secondary" data-i="save_url">Zapisz URL</button>
       <span class="muted" data-i="statement_columns_note">
         Kolumny: Data księgowania, ID transakcji, ID konta (lub IBAN), Kontrahent, Tytuł/Opis, Kwota(±), Waluta, Status, Saldo?
@@ -247,11 +246,11 @@
   <div id="faktury" class="section">
     <div class="row" style="align-items:center;margin-bottom:8px">
       <label class="btn ghost">
-        <input id="billFile" name="billFile" type="file" accept=".csv" style="display:none"/>
+        <input id="billFile" type="file" accept=".csv" style="display:none"/>
         <span data-i="upload_invoices">Załaduj faktury (CSV)</span>
       </label>
       <label class="btn ghost">
-        <input id="billImage" name="billImage" type="file" accept="image/*" multiple style="display:none"/>
+        <input id="billImage" type="file" accept="image/*" multiple style="display:none"/>
         <span data-i="upload_invoice_images">Załaduj zdjęcia faktur</span>
       </label>
       <span class="muted" style="margin-left:12px" data-i="invoices_note">Tu wykrywamy numer faktury, kwotę i datę.</span>
@@ -315,8 +314,20 @@
         </div>
       </div>
 
+      <div style="margin-top:8px">
+        <label data-i="speech_lang_label">Język rozpoznawania:</label>
+        <select id="speechLang">
+          <option value="pl-PL">PL</option>
+          <option value="ru-RU">RU</option>
+          <option value="en-US">EN</option>
+          <option value="uk-UA">UK</option>
+        </select>
+        <button id="micBtn" class="mic" title="Voice">🎤</button>
+        <span id="micStatus" class="muted" style="margin-left:8px">—</span>
+      </div>
+
       <div style="margin-top:12px">
-        <input id="cashPhoto" name="cashPhoto" type="file" accept="image/*" style="display:inline-block"/>
+        <input id="cashPhoto" type="file" accept="image/*" style="display:inline-block"/>
         <span class="muted" data-i="cash_photo_note">Zdjęcie paragonu/wyciągu — wykryj kwotę i opis.</span>
       </div>
 
@@ -388,10 +399,10 @@ const SUB_KEY = 'otd_sub_active';
 const SUB_FROM = 'otd_sub_from';
 const SUB_TO   = 'otd_sub_to';
 const DEMO_START = 'otd_demo_started_at';
-const USER_KEY = 'otd_user';
+const USER_KEY = 'otd_user'; // email
 let REMOTE_OK = localStorage.getItem('remote_disabled')==='1' ? false : true;
 
-/* ==== I18N (полный словарь) ==== */
+/* ==== I18N ==== */
 const M = {
   ru:{ /* ——— RU ——— */
     tab_dashboard:"Пульт", tab_statement:"Выписка", tab_invoices:"Фактуры", tab_accounts:"Счета", tab_cash:"Касса", tab_settings:"Настройки",
@@ -628,6 +639,7 @@ async function pullState(){
     const r=await fetch(`${API_BASE}/state/get?email=${encodeURIComponent(email)}`,{credentials:'include'});
     if(!r.ok){ if(r.status===404){ REMOTE_OK=false; localStorage.setItem('remote_disabled','1'); } return null; }
     const json=await r.json();
+    if(!json) return null;
     if(json.tx) localStorage.setItem('tx_manual_import', JSON.stringify(json.tx));
     if(json.bills) localStorage.setItem('bills_manual_import', JSON.stringify(json.bills));
     if(json.kasa) localStorage.setItem('kasa', JSON.stringify(json.kasa));
@@ -704,7 +716,7 @@ function availableTotal(){
   return auto ? (bankAvailablePLN()+kas) : (manual+kas);
 }
 
-/* ==== AI MATCH ==== */
+/* ==== AI MATCH (unchanged core scoring) ==== */
 function normName(s){s=(s||"").toString().toLowerCase().replace(/[.,]/g," ").replace(/\s+/g," ").trim();["sp z oo","sp. z o.o.","spolka","spółka","sa","s.a","ooo"].forEach(t=>s=s.replace(t,""));return s}
 function nameSimilar(a,b){a=normName(a);b=normName(b);if(!a||!b) return 0;if(a===b) return 1;if(a.includes(b)||b.includes(a)) return 0.8;return 0}
 function scoreMatch(bill,tr){
@@ -765,28 +777,26 @@ function parseBankOCR(text){
   let curDate = today();
   for(let i=0;i<lines.length;i++){
     const L = lines[i];
+    // Dates like "19 октября 2025", "19 października 2025", "2025-10-19"
     const d1=L.match(/(\d{1,2}\s+[A-Za-zĄąĆćĘęŁłŃńÓóŚśŹźŻżА-Яа-яё]+\s+\d{4})/);
     const d2=L.match(/(\d{4}-\d{2}-\d{2})/);
     if(d1||d2){ curDate = toISO((d1?d1[1]:d2[1])); continue; }
 
-    const amtM = L.match(/([−-]?\s?\d{1,3}(?:[ \.]\d{3})*(?:[,.]\d{2})|\b[−-]?\d+[,.]\d{2})\s*(PLN|EUR|USD|zł|zl)?/i);
+    // Amount and currency
+    const amtM = L.match(/([−-]?\s?\d+[\s,\.]*\d{0,2})\s*(PLN|EUR|USD|zł|zl)?/i);
     if(amtM){
       const amountRaw = amtM[1];
+      const sign = /−|-/.test(amountRaw) ? -1 : (/(^|\s)[+]\s?\d/.test(L)?1:null);
       const cur = detectCurrency(L);
-      let sign = /[−-]/.test(amountRaw) ? -1 : 1;
-      if(/obciążen|charge|fee|prowizj/i.test(L)) sign = -1;
-
-      const prev = (lines[i-1]||'').trim();
-      const maybeName = prev && !/(PLN|EUR|USD|zł|zl)/i.test(prev) ? prev : L.split(amountRaw)[0];
-      const counterparty = maybeName.replace(/[•·]/g,'').slice(0,120);
-
-      const amt = asNum(amountRaw) * sign;
+      // Counterparty line often previous line
+      const counterparty = (lines[i-1] && !/(PLN|EUR|USD|zł|zl)/i.test(lines[i-1]) ? lines[i-1] : L.split(amountRaw)[0]).toString().trim();
+      const amt = asNum(amountRaw) * (sign===-1 ? -1 : (/\bPhone transfer\b|przelew|transfer/i.test(L) && /-/.test(amountRaw)? -1 : (/-/.test(amountRaw)?-1:1)));
       if(Math.abs(amt)>0){
         out.push({
           "Data księgowania": curDate || today(),
           "ID transakcji": 'ocr-'+Date.now()+'-'+out.length,
           "ID konta": 'UNKNOWN',
-          "Kontrahent": counterparty,
+          "Kontrahent": counterparty.replace(/[•·]/g,'').slice(0,120),
           "Tytuł/Opis": L.slice(0,200),
           "Kwota": amt.toFixed(2),
           "Waluta": cur,
@@ -798,60 +808,29 @@ function parseBankOCR(text){
   return out;
 }
 function parseInvoiceOCR(text){
-  const raw = text.replace(/\r/g,'').replace(/[ \t]+/g,' ').replace(/\n+/g,'\n');
-  const get = (re)=>{ const m=raw.match(re); return m?m[1].trim():''; };
-
-  // суммы
-  let totalTxt = get(/Do\s*zapłaty[:\s]*([0-9\s.,]+(?:PLN|EUR|USD)?)/i)
-               || get(/Razem\s*(?:brutto)?[:\s]*([0-9\s.,]+(?:PLN|EUR|USD)?)/i)
-               || get(/Wartość\s*brutto[:\s]*([0-9\s.,]+(?:PLN|EUR|USD)?)/i)
-               || get(/Kwota\s*brutto[:\s]*([0-9\s.,]+(?:PLN|EUR|USD)?)/i);
-
-  const currency = detectCurrency(totalTxt||raw);
-  let total = Math.abs(asNum(totalTxt));
-  if(!total){
-    const nums=[...raw.matchAll(/(\d{1,3}(?:[ \.]\d{3})*(?:[,.]\d{2}))/g)].map(m=>asNum(m[1]));
-    total = nums.length ? Math.max(...nums) : 0;
+  const norm = text.replace(/\n+/g,'\n');
+  const get = (re)=>{ const m=norm.match(re); return m?m[1].trim():''; };
+  const inv = get(/Faktura\s*(?:numer|nr)?\s*([A-Za-z0-9\-\/\.]+)/i) || get(/Invoice\s*(?:No|Number)\s*([A-Za-z0-9\-\/\.]+)/i);
+  let supplier = get(/Sprzedawca[:\s\n]+([^\n]+)(?:\n|$)/i) || get(/Seller[:\s\n]+([^\n]+)(?:\n|$)/i);
+  if(!supplier){ // fallback: first uppercase line near top
+    supplier = norm.split('\n').find(x=>/[A-ZĄĆĘŁŃÓŚŹŻ]{3,}/.test(x))||'';
   }
-
-  // номер
-  const inv = get(/Faktura\s*(?:numer|nr)?[:\s]*([A-Za-z0-9\-\/\.]+)/i)
-           || get(/Invoice\s*(?:No|Number)[:\s]*([A-Za-z0-9\-\/\.]+)/i)
-           || ('INV-'+Date.now());
-
-  // стороны
-  const block = (head)=> {
-    const i=raw.search(head); if(i<0) return '';
-    const tail=raw.slice(i).split(/\n{2,}/)[0];
-    return tail.replace(head,'').trim();
-  };
-  const sprzedawca = block(/(Sprzedawca|Seller)[:\s]*/i);
-  const nabywca    = block(/(Nabywca|Buyer)[:\s]*/i);
-
-  const meNames = (localStorage.getItem('my_names')||'').toLowerCase().split(',').map(s=>s.trim()).filter(Boolean);
-  const meTax   = (localStorage.getItem('my_taxids')||'').toLowerCase().replace(/\s|-/g,'').split(',').map(s=>s.trim()).filter(Boolean);
-  const hasMe = s=>{
-    const c=(s||'').toLowerCase().replace(/\s|-/g,'');
-    if(!c) return false;
-    if(meTax.some(t=> t && c.includes(t))) return true;
-    return meNames.some(n => n && c.includes(n.replace(/\s|-/g,'')));
-  };
-
-  let type='my_out', supplier='UNKNOWN';
-  if(hasMe(sprzedawca)){ type='my_in'; supplier=(nabywca.split('\n')[0]||'UNKNOWN').trim(); }
-  else if(hasMe(nabywca)){ type='my_out'; supplier=(sprzedawca.split('\n')[0]||'UNKNOWN').trim(); }
-  else { supplier=(sprzedawca.split('\n')[0]||'UNKNOWN').trim(); }
-
-  const due = toISO(get(/Termin\s*płatności[:\s]+([^\n]+)/i)) || toISO(get(/Due\s*date[:\s]+([^\n]+)/i)) || today();
-
+  const due = toISO(get(/Termin\s*płatności[:\s]+([^\n]+)/i));
+  const issue = toISO(get(/Data\s*wystawienia[:\s]+([^\n]+)/i));
+  let totalTxt = get(/Do\s*zapłaty[:\s]+([^\n]+)/i);
+  if(!totalTxt){
+    const bruttoLine = norm.match(/Wartość\s*brutto[^\n]*?(\d+[\s,.]\d{2})\s*(PLN|EUR|USD)?/i);
+    if(bruttoLine) totalTxt = bruttoLine[1] + ' ' + (bruttoLine[2]||'');
+  }
+  const currency = detectCurrency(totalTxt||norm);
+  const total = Math.abs(asNum(totalTxt));
   return [{
-    "Termin płatności": due,
-    "Numer faktury": inv,
-    "Dostawca": supplier,
-    "Kwota do zapłaty": type==='my_out' ? total.toFixed(2) : '0.00',
+    "Termin płatności": due || issue || today(),
+    "Numer faktury": inv || ('INV-'+Date.now()),
+    "Dostawca": supplier.slice(0,120),
+    "Kwota do zapłaty": total ? total.toFixed(2) : '0.00',
     "Waluta": currency,
-    "Typ": type,
-    "Status faktury": type==='my_out' ? "do zapłaty" : "przychodząca"
+    "Status faktury": "do zapłaty"
   }];
 }
 
@@ -1074,10 +1053,10 @@ function render(){
   const kas=kasaBalance(); $id('kpiCash')&&( $id('kpiCash').textContent = kas.toFixed(2) );
   const avail=availableTotal(); $id('kpiAvail')&&( $id('kpiAvail').textContent = avail.toFixed(2) );
   const sumDue=(bills||[]).filter(r=>
-    String((getVal(r,["Waluta"])||"").toUpperCase())==="PLN" &&
+    String((getVal(r,["Waluta","Waluta "])||"").toUpperCase())==="PLN" &&
     toISO(getVal(r,["Termin płatności","Termin","Termin платності"]))<=today() &&
     ["do zapłaty","przeterminowane","к оплате","просрочено"].includes(String(getVal(r,["Status faktury","Status"])||"").toLowerCase())
-  ).reduce((s,r)=> s+asNum(getVal(r,["Kwota do zapłaty","Kwota"])||0),0);
+  ).reduce((s,r)=> s+asNum(getVal(r,["Kwota do zapłaty","Kwota","Kwота"])||0),0);
   $id('kpiGap')&&( $id('kpiGap').textContent = Math.max(0,sumDue-avail).toFixed(2) );
 
   // TX table
@@ -1134,7 +1113,7 @@ function render(){
   renderMinPay(); renderForecast(); renderAccounts(); renderKasa(); renderBook(); updateSubUI(); gateAccess();
 }
 
-/* ==== PLAN / FORECAST / MINPAY ==== */
+/* ==== PLAN / FORECAST / MINPAY (kept) ==== */
 function toDueList(mode){
   const t=today(); const excl=$id('excludeBlacklist')?.checked||false;
   return bills.filter(r=>{
@@ -1192,7 +1171,7 @@ function computeMinPay(){
 function renderMinPay(){
   const m=computeMinPay(); const el=$id('minPayBox'); if(!el) return;
   if(!m){ el.textContent='—'; return; }
-  el.textContent = `Оплатить ${getVal(m.r,["Numer faktуры","Numer faktury","Numer фактуры"])||getVal(m.r,["Numer faktury"])} (${getVal(m.r,["Dostawca","Supplier"])} ) на ${m.amt.toFixed(2)} PLN. Штраф/день ~ ${m.risk.toFixed(2)} PLN.`;
+  el.textContent = `Оплатить ${getVal(m.r,["Numer faktury","Numer фактуры"])} (${getVal(m.r,["Dostawca","Supplier"])} ) на ${m.amt.toFixed(2)} PLN. Штраф/день ~ ${m.risk.toFixed(2)} PLN.`;
 }
 function renderForecast(){
   const t=new Date(today());
@@ -1419,7 +1398,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   await pullState(); loadLocal(); inferAccounts(); render();
   pushState();
 
-  // Save on unload
+  // Save on unload (sendBeacon fallback)
   window.addEventListener('beforeunload', ()=>{
     if(!REMOTE_OK) return;
     try{
@@ -1441,3 +1420,4 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 </script>
 </body>
 </html>
+
