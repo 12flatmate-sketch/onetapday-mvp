@@ -475,7 +475,7 @@ const M = {
     cash_th_date:"Data", cash_th_type:"Typ", cash_th_amount:"Kwota", cash_th_source:"Źródło", cash_th_comment:"Komentarz",
     parameters:"Parametry", param_cash_label:"Ręczna dostępna kasa dziś (PLN):", param_penalty_label:"Kara, %/dzień:", param_interval_label:"Interwał synchronizacji, min:",
     rateEUR_label:"rateEUR:", rateUSD_label:"rateUSD:", blacklist_label:"Czarna lista (przecinki):", auto_mode_label:"Auto: z kont wyciągu (włączone) + kasa",
-    btn_save_settings:"Zapisz", btn_export_settings:"Eksport ustawień", btn_import_settings:"Import ustawień",
+    btn_save_settings:"Zapisz", btn_export_settings:"Eksпорт ustawień", btn_import_settings:"Import ustawień",
     btn_clear_all:"Wyczyść historię (lokalnie)",
     sub_title:"Subskrypcja / Demo", btn_start_demo:"Uruchom demo (24h)", btn_pay_sub:"Opłać subskrypcję", btn_end_demo:"Zakończ demo",
     sub_hint:"Płatność tylko w Ustawieniach. Jeśli masz link Stripe — ustaw w localStorage.stripe_link.",
@@ -725,8 +725,103 @@ function acceptSafe(){
   render(); saveLocal(); pushState();
 }
 
-/* ==== OCR IMPORT (kept from your base; unchanged except safety) ==== */
-/* ... (оставляю как было у тебя — не вырезаю для краткости ответа) ... */
+/* ==== OCR IMPORT (mini-patch) ==== */
+/** Единственная новая логика: OCR фото + парсинг суммы/продавца/дат/номера фактуры. */
+async function ocrImageToText(file){
+  const { data } = await Tesseract.recognize(file, 'eng', { /* удерживаем eng — цифры/латиница стабильнее */ });
+  return (data && data.text) ? data.text : '';
+}
+function extractCurrency(s){
+  return /EUR/i.test(s)?'EUR' : /USD/i.test(s)?'USD' : 'PLN';
+}
+function extractAmount(s){
+  // Ищем самую большую «реальную» сумму: 1 234,56 | 1234.56 | 1.234,56
+  const candidates = [...s.matchAll(/-?\d{1,3}(?:[ .\u00A0]\d{3})*(?:[.,]\d{2})|-?\d+[.,]\d{2}/g)].map(m=>m[0]);
+  if(!candidates.length) return null;
+  // Берём максимальную по абсолюту
+  const mapped = candidates.map(x=> asNum(x));
+  let best = mapped[0]; mapped.forEach(n=>{ if(Math.abs(n)>Math.abs(best)) best=n; });
+  return best;
+}
+function extractDate(s){
+  const m = s.match(/(\d{2}[.\-\/]\d{2}[.\-\/]\d{2,4}|\d{4}[.\-\/]\d{2}[.\-\/]\d{2})/);
+  return m ? toISO(m[1]) : today();
+}
+function extractInvoiceNumber(s){
+  // № фактуры: часто «FV», «Faktura», «Invoice», допускаем буквы/цифры/слэши/дефисы
+  const m = s.match(/(?:FV|Faktura|Invoice)[^\w]?([A-Z0-9][A-Z0-9\/\-\._]{2,})/i);
+  return m ? m[1].toUpperCase() : '';
+}
+function extractSupplier(s){
+  // Берём самую частую «словесную» строку без цифр в верхней части текста
+  const lines = s.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+  const head = lines.slice(0,10).filter(x=>x.replace(/\d/g,'').trim().length>=3);
+  return head[0] || '';
+}
+async function handleCashPhoto(file){
+  const text = await ocrImageToText(file);
+  const amt = extractAmount(text);
+  if(amt==null){ alert('Nie znaleziono kwoty na paragonie'); return; }
+  // По умолчанию расход (wydanie). Валюта не храним в кассе — PLN.
+  const note = (extractSupplier(text) || 'receipt').slice(0,80);
+  addKasa('wydanie', Math.abs(amt), note, 'photo');
+  // thumb
+  const img = $id('txLastThumb'); if(img){ img.src = URL.createObjectURL(file); img.style.display='inline-block'; }
+}
+async function handleBillImages(files){
+  let added=0;
+  for(const f of files){
+    const t = await ocrImageToText(f);
+    const amt = extractAmount(t); if(amt==null) continue;
+    const cur = extractCurrency(t);
+    const inv = extractInvoiceNumber(t) || ('INV-'+Math.random().toString(36).slice(2,7).toUpperCase());
+    const due = extractDate(t);
+    const sup = extractSupplier(t);
+    const row = {
+      "Termin płatności": due,
+      "Numer faktury": inv,
+      "Dostawca": sup,
+      "Kwota do zapłaty": Math.abs(amt).toFixed(2),
+      "Waluta": cur,
+      "Status faktury": "Do zapłaty"
+    };
+    bills.push(row); added++;
+  }
+  if(added===0) alert('Nie udało się odczytać faktury ze zdjęć');
+  saveLocal(); render(); pushState();
+}
+async function handleStatementImages(files){
+  // Простая эвристика: каждая строка с суммой → транзакция (без гарантий), счёт UNKNOWN
+  let added=0;
+  for(const f of files){
+    const t = await ocrImageToText(f);
+    const cur = extractCurrency(t);
+    const d = extractDate(t);
+    const supplier = extractSupplier(t);
+    const amounts = [...t.matchAll(/-?\d{1,3}(?:[ .\u00A0]\d{3})*(?:[.,]\d{2})|-?\d+[.,]\d{2}/g)].map(m=>asNum(m[0]));
+    for(const a of amounts){
+      const row = {
+        "Data księgowania": d,
+        "ID transakcji": 'TX'+Math.random().toString(36).slice(2,9).toUpperCase(),
+        "ID konta": "UNKNOWN",
+        "Kontrahent": supplier,
+        "Tytuł/Opis": "z OCR",
+        "Kwota": a.toFixed(2),
+        "Waluta": cur,
+        "Status transakcji": ""
+      };
+      tx.push(row); added++;
+    }
+  }
+  if(added===0) alert('Nie udało się odczytać wyciągu ze zdjęć');
+  inferAccounts(); saveLocal(); render(); pushState();
+}
+function initOCRWiring(){
+  $id('cashPhoto')?.addEventListener('change', async (e)=>{ const f=e.target.files?.[0]; if(f) await handleCashPhoto(f); });
+  $id('billImage')?.addEventListener('change', async (e)=>{ const files=[...(e.target.files||[])]; if(files.length) await handleBillImages(files); });
+  $id('txImage')?.addEventListener('change', async (e)=>{ const files=[...(e.target.files||[])]; if(files.length) await handleStatementImages(files); });
+}
+/* ==== END OCR MINI-PATCH ==== */
 
 /* ==== PERSIST LOCAL ==== */
 function loadLocal(){
@@ -1010,7 +1105,7 @@ function renderMinPay(){
 }
 function renderForecast(){
   const t=new Date(today());
-  const list=toDueList("7d").map(r=>({date:new Date(toISO(getVal(r,["Termin płatności","Termin"]))), amt:asNum(getVal(r,["Kwota do zapłaty","Kwота"])||0)}));
+  const list=toDueList("7d").map(r=>({date:new Date(toISO(getVal(r,["Termin płatności","Termin"]))), amt:asNum(getVal(r,["Kwota do zapłaty","Kwota"])||0)}));
   const days=[...Array(7)].map((_,i)=> new Date(t.getTime()+i*86400000));
   let left=availableTotal(); const out=days.map(d=>({d,due:0,after:0}));
   list.forEach(x=>{ const idx=Math.min(6, Math.max(0, Math.floor((x.date - t)/86400000))); out[idx].due += x.amt; });
@@ -1205,6 +1300,9 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   // Remote pull once, then push snapshot
   await pullState(); loadLocal(); inferAccounts(); render();
   pushState();
+
+  // OCR wiring — часть мини-патча (только подключение слушателей)
+  initOCRWiring();
 
   // Save on unload (sendBeacon fallback)
   window.addEventListener('beforeunload', ()=>{
