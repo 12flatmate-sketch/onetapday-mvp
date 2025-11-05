@@ -85,7 +85,7 @@
     </div>
   </div>
 
-  <!-- ACCESS GATE -->
+  <!-- ACCESS GATE (hidden if demo/sub active) -->
   <div id="gate" class="gate hidden">
     <div data-i="gate_locked_title" style="font-weight:700;margin-bottom:6px">Dostęp zablokowany</div>
     <div class="muted" data-i="gate_locked_desc">
@@ -404,139 +404,145 @@ let REMOTE_OK = localStorage.getItem('remote_disabled')==='1' ? false : true;
 
 /* ==== I18N ==== */
 const M = {
-  ru:{tab_dashboard:"Пульт",tab_statement:"Выписка",tab_invoices:"Фактуры",tab_accounts:"Счета",tab_cash:"Касса",tab_settings:"Настройки",
+  ru:{ /* ——— RU ——— */
+    tab_dashboard:"Пульт", tab_statement:"Выписка", tab_invoices:"Фактуры", tab_accounts:"Счета", tab_cash:"Касса", tab_settings:"Настройки",
     gate_locked_title:"Доступ заблокирован",
     gate_locked_desc:"Демо истекло или нет активной подписки. Перейдите в Настройки, чтобы запустить демо (24 ч) или оплатить доступ.",
     gate_open_settings:"Открыть Настройки",
-    kpi_due_today:"К оплате сегодня",kpi_unmatched:"Несвязанные транзакции",kpi_banks:"Банки в расчёте",kpi_cash:"Касса (нал)",kpi_total:"Доступно всего",kpi_gap_today:"Разрыв кассы сегодня",
-    btn_sync:"Синхронизация",btn_ai_match:"ИИ-сверка",btn_accept_safe:"Принять безопасные пары",btn_pdf:"PDF отчёт",sync_ts:"Синхронизация: —",
-    minpay_title:"Минимальный платёж (штраф-стоп)",btn_apply_minpay:"Отметить как оплачено",
-    forecast_7d:"Прогноз 7 дней",forecast7d_note:"Считает PLN-счета (включённые) + кассу.",
-    forecast_30d:"Прогноз 30 дней",forecast30_note:"Автопрогноз по выпискам + кассе на 30 дней.",
+    kpi_due_today:"К оплате сегодня", kpi_unmatched:"Несвязанные транзакции", kpi_banks:"Банки в расчёте", kpi_cash:"Касса (нал)", kpi_total:"Доступно всего", kpi_gap_today:"Разрыв кассы сегодня",
+    btn_sync:"Синхронизация", btn_ai_match:"ИИ-сверка", btn_accept_safe:"Принять безопасные пары", btn_pdf:"PDF отчёт", sync_ts:"Синхронизация: —",
+    minpay_title:"Минимальный платёж (штраф-стоп)", btn_apply_minpay:"Отметить как оплачено",
+    forecast_7d:"Прогноз 7 дней", forecast7d_note:"Считает PLN-счета (включённые) + кассу.",
+    forecast_30d:"Прогноз 30 дней", forecast30_note:"Автопрогноз по выпискам + кассе на 30 дней.",
     month_summary_title:"Итоги месяца",
-    plan_title:"План платежей под кассу",filter_label:"Фильтр:",filter_today:"Сегодня",filter_7d:"7 дней",filter_all:"Все",exclude_blacklist:"Исключать blacklist",
-    btn_make_plan:"Сформировать",btn_apply_plan:"Применить",
-    plan_th_invoice:"Фактура",plan_th_supplier:"Поставщик",plan_th_due:"Срок",plan_th_amount:"Сумма",plan_th_reason:"Причина",
-    upload_statement:"Загрузить выписку (CSV)",upload_statement_image:"Загрузить скрин выписки (галерея)",
-    placeholder_csv_url:"URL CSV выписки",save_url:"Сохранить URL",
+    plan_title:"План платежей под кассу", filter_label:"Фильтр:", filter_today:"Сегодня", filter_7d:"7 дней", filter_all:"Все", exclude_blacklist:"Исключать blacklist",
+    btn_make_plan:"Сформировать", btn_apply_plan:"Применить",
+    plan_th_invoice:"Фактура", plan_th_supplier:"Поставщик", plan_th_due:"Срок", plan_th_amount:"Сумма", plan_th_reason:"Причина",
+    upload_statement:"Загрузить выписку (CSV)", upload_statement_image:"Загрузить скрин выписки (галерея)",
+    placeholder_csv_url:"URL CSV выписки", save_url:"Сохранить URL",
     statement_columns_note:"Колонки: дата, id транзакции, id счёта/IBAN, контрагент, описание, сумма(±), валюта, статус, saldo?",
-    th_date:"Дата",th_account:"Счёт",th_counterparty:"Контрагент",th_desc:"Описание",th_amount:"Сумма",th_currency:"Валюта",th_status:"Статус",th_actions:"Действия",
-    upload_invoices:"Загрузить счета (CSV)",upload_invoice_images:"Загрузить фото фактуры",invoices_note:"Распознаются № фактуры, суммы и даты.",
-    inv_th_due:"Срок",inv_th_number:"№",inv_th_supplier:"Поставщик",inv_th_amount:"Сумма",inv_th_currency:"Валюта",inv_th_status:"Статус",inv_th_candidate:"Кандидат",inv_th_score:"Score",inv_th_action:"Действие",
-    auto_accounts_title:"Счета из выписки (авто)",auto_accounts_desc:"Редактируй валюту, стартовый баланс и включение в план.",
-    acc_th_account:"Счёт",acc_th_type:"Тип",acc_th_currency:"Валюта",acc_th_balance_calc:"Баланс (расчёт)",acc_th_start_balance:"Стартовый баланс",acc_th_include:"В расчёт",
-    cash_title:"Касса — быстрые операции",cash_note:"Голосовая касса + быстрые кнопки",
-    btn_add_in:"+ Приём",btn_add_out:"− Выдача",btn_close_shift:"Закрыть смену",
-    speech_lang_label:"Язык распознавания:",cash_photo_note:"Фото чека/выписки — распознать сумму и описание.",
-    cash_th_date:"Дата",cash_th_type:"Тип",cash_th_amount:"Сумма",cash_th_source:"Источник",cash_th_comment:"Комментарий",
-    parameters:"Параметры",param_cash_label:"Доступная касса сегодня (PLN):",param_penalty_label:"Пеня, %/день:",param_interval_label:"Интервал синха, мин:",
-    rateEUR_label:"rateEUR:",rateUSD_label:"rateUSD:",blacklist_label:"Blacklist (через запятую):",auto_mode_label:"Авто: из счетов (включённые) + касса",
-    btn_save_settings:"Сохранить",btn_export_settings:"Экспорт настроек",btn_import_settings:"Импорт настроек",
+    th_date:"Дата", th_account:"Счёт", th_counterparty:"Контрагент", th_desc:"Описание", th_amount:"Сумма", th_currency:"Валюта", th_status:"Статус", th_actions:"Действия",
+    upload_invoices:"Загрузить счета (CSV)", upload_invoice_images:"Загрузить фото фактуры", invoices_note:"Распознаются № фактуры, суммы и даты.",
+    inv_th_due:"Срок", inv_th_number:"№", inv_th_supplier:"Поставщик", inv_th_amount:"Сумма", inv_th_currency:"Валюта", inv_th_status:"Статус", inv_th_candidate:"Кандидат", inv_th_score:"Score", inv_th_action:"Действие",
+    auto_accounts_title:"Счета из выписки (авто)", auto_accounts_desc:"Редактируй валюту, стартовый баланс и включение в план.",
+    acc_th_account:"Счёт", acc_th_type:"Тип", acc_th_currency:"Валюта", acc_th_balance_calc:"Баланс (расчёт)", acc_th_start_balance:"Стартовый баланс", acc_th_include:"В расчёт",
+    cash_title:"Касса — быстрые операции", cash_note:"Голосовая касса + быстрые кнопки",
+    btn_add_in:"+ Приём", btn_add_out:"− Выдача", btn_close_shift:"Закрыть смену",
+    speech_lang_label:"Язык распознавания:", cash_photo_note:"Фото чека/выписки — распознать сумму и описание.",
+    cash_th_date:"Дата", cash_th_type:"Тип", cash_th_amount:"Сумма", cash_th_source:"Источник", cash_th_comment:"Комментарий",
+    parameters:"Параметры", param_cash_label:"Доступная касса сегодня (PLN):", param_penalty_label:"Пеня, %/день:", param_interval_label:"Интервал синха, мин:",
+    rateEUR_label:"rateEUR:", rateUSD_label:"rateUSD:", blacklist_label:"Blacklist (через запятую):", auto_mode_label:"Авто: из счетов (включённые) + касса",
+    btn_save_settings:"Сохранить", btn_export_settings:"Экспорт настроек", btn_import_settings:"Импорт настроек",
     btn_clear_all:"Очистить историю (локально)",
-    sub_title:"Подписка / Демо",btn_start_demo:"Запустить демо (24 ч)",btn_pay_sub:"Оплатить подписку",btn_end_demo:"Закончить демо",
+    sub_title:"Подписка / Демо", btn_start_demo:"Запустить демо (24 ч)", btn_pay_sub:"Оплатить подписку", btn_end_demo:"Закончить демо",
     sub_hint:"Оплата только в Настройках. Если есть ссылka Stripe — положи в localStorage.stripe_link.",
     ph_amount:"Сумма", ph_comment:"Комментарий"
   },
-  en:{tab_dashboard:"Dashboard",tab_statement:"Statement",tab_invoices:"Invoices",tab_accounts:"Accounts",tab_cash:"Cash",tab_settings:"Settings",
-    gate_locked_title:"Access locked",gate_locked_desc:"Demo ended or subscription inactive. Go to Settings to start a 24h demo or pay.",gate_open_settings:"Open Settings",
-    kpi_due_today:"Due today",kpi_unmatched:"Unmatched transactions",kpi_banks:"Bank balances",kpi_cash:"Cash (PLN)",kpi_total:"Available total",kpi_gap_today:"Cash gap today",
-    btn_sync:"Sync",btn_ai_match:"AI match",btn_accept_safe:"Accept safe matches",btn_pdf:"PDF report",sync_ts:"Sync: —",
-    minpay_title:"Minimum payment (penalty-stop)",btn_apply_minpay:"Mark as paid",
-    forecast_7d:"7-day forecast",forecast7d_note:"Calculates included PLN accounts + cash.",
-    forecast_30d:"30-day forecast",forecast30_note:"Auto-forecast from statements + cash.",
+  en:{ /* ——— EN ——— */
+    tab_dashboard:"Dashboard", tab_statement:"Statement", tab_invoices:"Invoices", tab_accounts:"Accounts", tab_cash:"Cash", tab_settings:"Settings",
+    gate_locked_title:"Access locked",
+    gate_locked_desc:"Demo ended or subscription inactive. Go to Settings to start a 24h demo or pay.",
+    gate_open_settings:"Open Settings",
+    kpi_due_today:"Due today", kpi_unmatched:"Unmatched transactions", kpi_banks:"Bank balances", kpi_cash:"Cash (PLN)", kpi_total:"Available total", kpi_gap_today:"Cash gap today",
+    btn_sync:"Sync", btn_ai_match:"AI match", btn_accept_safe:"Accept safe matches", btn_pdf:"PDF report", sync_ts:"Sync: —",
+    minpay_title:"Minimum payment (penalty-stop)", btn_apply_minpay:"Mark as paid",
+    forecast_7d:"7-day forecast", forecast7d_note:"Calculates included PLN accounts + cash.",
+    forecast_30d:"30-day forecast", forecast30_note:"Auto-forecast from statements + cash.",
     month_summary_title:"Month summary",
-    plan_title:"Payment plan for cash",filter_label:"Filter:",filter_today:"Today",filter_7d:"7 days",filter_all:"All",exclude_blacklist:"Exclude blacklist",
-    btn_make_plan:"Build plan",btn_apply_plan:"Apply plan",
-    plan_th_invoice:"Invoice",plan_th_supplier:"Supplier",plan_th_due:"Due",plan_th_amount:"Amount",plan_th_reason:"Reason",
-    upload_statement:"Upload statement (CSV)",upload_statement_image:"Upload statement screenshot (gallery)",
-    placeholder_csv_url:"CSV statement URL",save_url:"Save URL",
+    plan_title:"Payment plan for cash", filter_label:"Filter:", filter_today:"Today", filter_7d:"7 days", filter_all:"All", exclude_blacklist:"Exclude blacklist",
+    btn_make_plan:"Build plan", btn_apply_plan:"Apply plan",
+    plan_th_invoice:"Invoice", plan_th_supplier:"Supplier", plan_th_due:"Due", plan_th_amount:"Amount", plan_th_reason:"Reason",
+    upload_statement:"Upload statement (CSV)", upload_statement_image:"Upload statement screenshot (gallery)",
+    placeholder_csv_url:"CSV statement URL", save_url:"Save URL",
     statement_columns_note:"Columns: booking date, tx id, account id/IBAN, counterparty, title/description, amount(±), currency, status, balance?",
-    th_date:"Date",th_account:"Account",th_counterparty:"Counterparty",th_desc:"Description",th_amount:"Amount",th_currency:"Currency",th_status:"Status",th_actions:"Actions",
-    upload_invoices:"Upload invoices (CSV)",upload_invoice_images:"Upload invoice photos",invoices_note:"We detect invoice numbers, amounts and dates.",
-    inv_th_due:"Due",inv_th_number:"No",inv_th_supplier:"Supplier",inv_th_amount:"Amount",inv_th_currency:"Currency",inv_th_status:"Status",inv_th_candidate:"Candidate",inv_th_score:"Score",inv_th_action:"Action",
-    auto_accounts_title:"Accounts from statement (auto)",auto_accounts_desc:"Edit currency, start balance and include-in-plan.",
-    acc_th_account:"Account",acc_th_type:"Type",acc_th_currency:"Currency",acc_th_balance_calc:"Balance (calc)",acc_th_start_balance:"Start",acc_th_include:"Include",
-    cash_title:"Cash — quick ops",cash_note:"Voice cash + quick buttons",
-    btn_add_in:"+ In",btn_add_out:"− Out",btn_close_shift:"Close shift",
-    speech_lang_label:"Recognition language:",cash_photo_note:"Receipt/statement photo — detect amount and description.",
-    cash_th_date:"Date",cash_th_type:"Type",cash_th_amount:"Amount",cash_th_source:"Source",cash_th_comment:"Comment",
-    parameters:"Parameters",param_cash_label:"Manual available cash today (PLN):",param_penalty_label:"Penalty, %/day:",param_interval_label:"Sync interval, min:",
-    rateEUR_label:"rateEUR:",rateUSD_label:"rateUSD:",blacklist_label:"Blacklist (comma):",auto_mode_label:"Auto: from included statement accounts + cash",
-    btn_save_settings:"Save",btn_export_settings:"Export settings",btn_import_settings:"Import settings",
+    th_date:"Date", th_account:"Account", th_counterparty:"Counterparty", th_desc:"Description", th_amount:"Amount", th_currency:"Currency", th_status:"Status", th_actions:"Actions",
+    upload_invoices:"Upload invoices (CSV)", upload_invoice_images:"Upload invoice photos", invoices_note:"We detect invoice numbers, amounts and dates.",
+    inv_th_due:"Due", inv_th_number:"No", inv_th_supplier:"Supplier", inv_th_amount:"Amount", inv_th_currency:"Currency", inv_th_status:"Status", inv_th_candidate:"Candidate", inv_th_score:"Score", inv_th_action:"Action",
+    auto_accounts_title:"Accounts from statement (auto)", auto_accounts_desc:"Edit currency, start balance and include-in-plan.",
+    acc_th_account:"Account", acc_th_type:"Type", acc_th_currency:"Currency", acc_th_balance_calc:"Balance (calc)", acc_th_start_balance:"Start", acc_th_include:"Include",
+    cash_title:"Cash — quick ops", cash_note:"Voice cash + quick buttons",
+    btn_add_in:"+ In", btn_add_out:"− Out", btn_close_shift:"Close shift",
+    speech_lang_label:"Recognition language:", cash_photo_note:"Receipt/statement photo — detect amount and description.",
+    cash_th_date:"Date", cash_th_type:"Type", cash_th_amount:"Amount", cash_th_source:"Source", cash_th_comment:"Comment",
+    parameters:"Parameters", param_cash_label:"Manual available cash today (PLN):", param_penalty_label:"Penalty, %/day:", param_interval_label:"Sync interval, min:",
+    rateEUR_label:"rateEUR:", rateUSD_label:"rateUSD:", blacklist_label:"Blacklist (comma):", auto_mode_label:"Auto: from included statement accounts + cash",
+    btn_save_settings:"Save", btn_export_settings:"Export settings", btn_import_settings:"Import settings",
     btn_clear_all:"Clear history (local)",
-    sub_title:"Subscription / Demo",btn_start_demo:"Start demo (24h)",btn_pay_sub:"Pay subscription",btn_end_demo:"End demo",
+    sub_title:"Subscription / Demo", btn_start_demo:"Start demo (24h)", btn_pay_sub:"Pay subscription", btn_end_demo:"End demo",
     sub_hint:"Payment only in Settings. If you have a Stripe link, put it in localStorage.stripe_link.",
     ph_amount:"Amount", ph_comment:"Comment"
   },
-  pl:{tab_dashboard:"Panel",tab_statement:"Wyciąg",tab_invoices:"Faktury",tab_accounts:"Konta",tab_cash:"Kasa",tab_settings:"Ustawienia",
+  pl:{ /* ——— PL ——— */
+    tab_dashboard:"Panel", tab_statement:"Wyciąg", tab_invoices:"Faktury", tab_accounts:"Konta", tab_cash:"Kasa", tab_settings:"Ustawienia",
     gate_locked_title:"Dostęp zablokowany",
     gate_locked_desc:"Demo zakończone lub brak subskrypcji. Przejdź do Ustawień, aby uruchomić demo (24h) lub opłacić.",
     gate_open_settings:"Otwórz Ustawienia",
-    kpi_due_today:"Do zapłaty dziś",kpi_unmatched:"Niesparowane transakcje",kpi_banks:"Bilans banków",kpi_cash:"Kasa (PLN)",kpi_total:"Dostępnie razem",kpi_gap_today:"Brak środków dziś",
-    btn_sync:"Synchronizuj",btn_ai_match:"Dopasowanie AI",btn_accept_safe:"Akceptuj bezpieczne pary",btn_pdf:"Raport PDF",sync_ts:"Synchronizacja: —",
-    minpay_title:"Minimalna płatność (kara-stop)",btn_apply_minpay:"Oznacz jako opłacone",
-    forecast_7d:"Prognoza 7 dni",forecast7d_note:"Liczy włączone konta PLN + kasa.",
-    forecast_30d:"Prognoza 30 dni",forecast30_note:"Autoprognoza z wyciągów + kasa na 30 dni.",
+    kpi_due_today:"Do zapłaty dziś", kpi_unmatched:"Niesparowane transakcje", kpi_banks:"Bilans banków", kpi_cash:"Kasa (PLN)", kpi_total:"Dostępnie razem", kpi_gap_today:"Brak środków dziś",
+    btn_sync:"Synchronizuj", btn_ai_match:"Dopasowanie AI", btn_accept_safe:"Akceptuj bezpieczne pary", btn_pdf:"Raport PDF", sync_ts:"Synchronizacja: —",
+    minpay_title:"Minimalna płatność (kara-stop)", btn_apply_minpay:"Oznacz jako opłacone",
+    forecast_7d:"Prognoza 7 dni", forecast7d_note:"Liczy włączone konta PLN + kasa.",
+    forecast_30d:"Prognoza 30 dni", forecast30_note:"Autoprognoza z wyciągów + kasa na 30 dni.",
     month_summary_title:"Podsumowanie miesiąca",
-    plan_title:"Plan płatności pod kasę",filter_label:"Filtr:",filter_today:"Dziś",filter_7d:"7 dni",filter_all:"Wszystko",exclude_blacklist:"Wyklucz blacklistę",
-    btn_make_plan:"Utwórz plan",btn_apply_plan:"Zastosuj plan",
-    plan_th_invoice:"Faktura",plan_th_supplier:"Dostawca",plan_th_due:"Termin",plan_th_amount:"Kwota",plan_th_reason:"Powód",
-    upload_statement:"Załaduj wyciąg (CSV)",upload_statement_image:"Załaduj zrzut wyciągu (galeria)",
-    placeholder_csv_url:"URL CSV wyciągu",save_url:"Zapisz URL",
+    plan_title:"Plan płatności pod kasę", filter_label:"Filtr:", filter_today:"Dziś", filter_7d:"7 dni", filter_all:"Wszystko", exclude_blacklist:"Wyklucz blacklistę",
+    btn_make_plan:"Utwórz plan", btn_apply_plan:"Zastosuj plan",
+    plan_th_invoice:"Faktura", plan_th_supplier:"Dostawca", plan_th_due:"Termin", plan_th_amount:"Kwota", plan_th_reason:"Powód",
+    upload_statement:"Załaduj wyciąg (CSV)", upload_statement_image:"Załaduj zrzut wyciągu (galeria)",
+    placeholder_csv_url:"URL CSV wyciągu", save_url:"Zapisz URL",
     statement_columns_note:"Kolumny: Data księgowania, ID transakcji, ID konta/IBAN, Kontrahent, Tytuł/Opis, Kwota(±), Waluta, Status, Saldo?",
-    th_date:"Data",th_account:"Konto",th_counterparty:"Kontrahent",th_desc:"Opis",th_amount:"Kwota",th_currency:"Waluta",th_status:"Status",th_actions:"Działania",
-    upload_invoices:"Załaduj faktury (CSV)",upload_invoice_images:"Załaduj zdjęcia faktur",invoices_note:"Wykrywamy nr faktury, kwotę i datę.",
-    inv_th_due:"Termin",inv_th_number:"Nr",inv_th_supplier:"Dostawca",inv_th_amount:"Kwota",inv_th_currency:"Waluta",inv_th_status:"Status",inv_th_candidate:"Kandydat",inv_th_score:"Score",inv_th_action:"Akcja",
-    auto_accounts_title:"Konta z wyciągu (auto)",auto_accounts_desc:"Edycja waluty, salda początkowego i uwzględnienia w planie.",
-    acc_th_account:"Konto",acc_th_type:"Typ",acc_th_currency:"Waluta",acc_th_balance_calc:"Saldo (oblicz)",acc_th_start_balance:"Start",acc_th_include:"Uwzględnij",
-    cash_title:"Kasa — szybkie operacje",cash_note:"Głosowa kasa + szybkie przyciski",
-    btn_add_in:"+ Przyjęcie",btn_add_out:"− Wydanie",btn_close_shift:"Zamknij zmianę",
-    speech_lang_label:"Język rozpoznawania:",cash_photo_note:"Zdjęcie paragonu/wyciągu — wykryj kwotę i opis.",
-    cash_th_date:"Data",cash_th_type:"Typ",cash_th_amount:"Kwota",cash_th_source:"Źródło",cash_th_comment:"Komentarz",
-    parameters:"Parametry",param_cash_label:"Ręczna dostępna kasa dziś (PLN):",param_penalty_label:"Kara, %/dzień:",param_interval_label:"Interwał synchronizacji, min:",
-    rateEUR_label:"rateEUR:",rateUSD_label:"rateUSD:",blacklist_label:"Czarna lista (przecinki):",auto_mode_label:"Auto: z kont wyciągu (włączone) + kasa",
-    btn_save_settings:"Zapisz",btn_export_settings:"Eksport ustawień",btn_import_settings:"Import ustawień",
+    th_date:"Data", th_account:"Konto", th_counterparty:"Kontrahent", th_desc:"Opis", th_amount:"Kwota", th_currency:"Waluta", th_status:"Status", th_actions:"Działania",
+    upload_invoices:"Załaduj faktury (CSV)", upload_invoice_images:"Załaduj zdjęcia faktur", invoices_note:"Wykrywamy nr faktury, kwotę i datę.",
+    inv_th_due:"Termin", inv_th_number:"Nr", inv_th_supplier:"Dostawca", inv_th_amount:"Kwota", inv_th_currency:"Waluta", inv_th_status:"Status", inv_th_candidate:"Kandydat", inv_th_score:"Score", inv_th_action:"Akcja",
+    auto_accounts_title:"Konta z wyciągu (auto)", auto_accounts_desc:"Edycja waluty, salda początkowego i uwzględnienia w planie.",
+    acc_th_account:"Konto", acc_th_type:"Typ", acc_th_currency:"Waluta", acc_th_balance_calc:"Saldo (oblicz)", acc_th_start_balance:"Start", acc_th_include:"Uwzględnij",
+    cash_title:"Kasa — szybkie operacje", cash_note:"Głosowa kasa + szybkie przyciski",
+    btn_add_in:"+ Przyjęcie", btn_add_out:"− Wydanie", btn_close_shift:"Zamknij zmianę",
+    speech_lang_label:"Język rozpoznawania:", cash_photo_note:"Zdjęcie paragonu/wyciągu — wykryj kwotę i opis.",
+    cash_th_date:"Data", cash_th_type:"Typ", cash_th_amount:"Kwota", cash_th_source:"Źródło", cash_th_comment:"Komentarz",
+    parameters:"Parametry", param_cash_label:"Ręczna dostępna kasa dziś (PLN):", param_penalty_label:"Kara, %/dzień:", param_interval_label:"Interwał synchronizacji, min:",
+    rateEUR_label:"rateEUR:", rateUSD_label:"rateUSD:", blacklist_label:"Czarna lista (przecinki):", auto_mode_label:"Auto: z kont wyciągu (włączone) + kasa",
+    btn_save_settings:"Zapisz", btn_export_settings:"Eksport ustawień", btn_import_settings:"Import ustawień",
     btn_clear_all:"Wyczyść historię (lokalnie)",
-    sub_title:"Subskrypcja / Demo",btn_start_demo:"Uruchom demo (24h)",btn_pay_sub:"Opłać subskrypcję",btn_end_demo:"Zakończ demo",
+    sub_title:"Subskrypcja / Demo", btn_start_demo:"Uruchom demo (24h)", btn_pay_sub:"Opłać subskrypcję", btn_end_demo:"Zakończ demo",
     sub_hint:"Płatność tylko w Ustawieniach. Jeśli masz link Stripe — ustaw w localStorage.stripe_link.",
     ph_amount:"Kwota", ph_comment:"Komentarz"
   },
-  uk:{tab_dashboard:"Пульт",tab_statement:"Виписка",tab_invoices:"Рахунки",tab_accounts:"Рахунки",tab_cash:"Каса",tab_settings:"Налаштування",
+  uk:{ /* ——— UK ——— */
+    tab_dashboard:"Пульт", tab_statement:"Виписка", tab_invoices:"Рахунки", tab_accounts:"Рахунки", tab_cash:"Каса", tab_settings:"Налаштування",
     gate_locked_title:"Доступ заблоковано",
     gate_locked_desc:"Демо завершено або немає підписки. Перейдіть у Налаштування, щоб запустити демо (24 год) або оплатити доступ.",
     gate_open_settings:"Відкрити Налаштування",
-    kpi_due_today:"До сплати сьогодні",kpi_unmatched:"Неповʼязані транзакції",kpi_banks:"Баланс банків",kpi_cash:"Каса (PLN)",kpi_total:"Доступно всього",kpi_gap_today:"Розрив каси сьогодні",
-    btn_sync:"Синхронізація",btn_ai_match:"AI-звірка",btn_accept_safe:"Прийняти безпечні пари",btn_pdf:"Звіт PDF",sync_ts:"Синхр.: —",
-    minpay_title:"Мінімальний платіж (штраф-стоп)",btn_apply_minpay:"Позначити як сплачено",
-    forecast_7d:"Прогноз 7 днів",forecast7d_note:"Рахує увімкнені PLN-рахунки + касу.",
-    forecast_30d:"Прогноз 30 днів",forecast30_note:"Автопрогноз з виписок + каси.",
+    kpi_due_today:"До сплати сьогодні", kpi_unmatched:"Неповʼязані транзакції", kpi_banks:"Баланс банків", kpi_cash:"Каса (PLN)", kpi_total:"Доступно всього", kpi_gap_today:"Розрив каси сьогодні",
+    btn_sync:"Синхронізація", btn_ai_match:"AI-звірка", btn_accept_safe:"Прийняти безпечні пари", btn_pdf:"Звіт PDF", sync_ts:"Синхр.: —",
+    minpay_title:"Мінімальний платіж (штраф-стоп)", btn_apply_minpay:"Позначити як сплачено",
+    forecast_7d:"Прогноз 7 днів", forecast7d_note:"Рахує увімкнені PLN-рахунки + касу.",
+    forecast_30d:"Прогноз 30 днів", forecast30_note:"Автопрогноз з виписок + каси.",
     month_summary_title:"Підсумки місяця",
-    plan_title:"План платежів під касу",filter_label:"Фільтр:",filter_today:"Сьогодні",filter_7d:"7 днів",filter_all:"Всі",exclude_blacklist:"Виключати blacklist",
-    btn_make_plan:"Сформувати",btn_apply_plan:"Застосувати",
-    plan_th_invoice:"Рахунок",plan_th_supplier:"Постачальник",plan_th_due:"Термін",plan_th_amount:"Сума",plan_th_reason:"Причина",
-    upload_statement:"Завантажити виписку (CSV)",upload_statement_image:"Завантажити скрин виписки (галерея)",
-    placeholder_csv_url:"URL CSV виписки",save_url:"Зберегти URL",
+    plan_title:"План платежів під касу", filter_label:"Фільтр:", filter_today:"Сьогодні", filter_7d:"7 днів", filter_all:"Всі", exclude_blacklist:"Виключати blacklist",
+    btn_make_plan:"Сформувати", btn_apply_plan:"Застосувати",
+    plan_th_invoice:"Рахунок", plan_th_supplier:"Постачальник", plan_th_due:"Термін", plan_th_amount:"Сума", plan_th_reason:"Причина",
+    upload_statement:"Завантажити виписку (CSV)", upload_statement_image:"Завантажити скрин виписки (галерея)",
+    placeholder_csv_url:"URL CSV виписки", save_url:"Зберегти URL",
     statement_columns_note:"Колонки: дата, id транзакції, id рахунку/IBAN, контрагент, опис, сума(±), валюта, статус, баланс?",
-    th_date:"Дата",th_account:"Рахунок",th_counterparty:"Контрагент",th_desc:"Опис",th_amount:"Сума",th_currency:"Валюта",th_status:"Статус",th_actions:"Дії",
-    upload_invoices:"Завантажити рахунки (CSV)",upload_invoice_images:"Завантажити фото рахунків",invoices_note:"Виявляємо № рахунку, суму і дату.",
-    inv_th_due:"Термін",inv_th_number:"№",inv_th_supplier:"Постачальник",inv_th_amount:"Сума",inv_th_currency:"Валюта",inv_th_status:"Статус",inv_th_candidate:"Кандидат",inv_th_score:"Score",inv_th_action:"Дія",
-    auto_accounts_title:"Рахунки з виписки (авто)",auto_accounts_desc:"Редагуйте валюту, початковий баланс і включення до плану.",
-    acc_th_account:"Рахунок",acc_th_type:"Тип",acc_th_currency:"Валюта",acc_th_balance_calc:"Баланс (обр.)",acc_th_start_balance:"Старт",acc_th_include:"Включити",
-    cash_title:"Каса — швидкі операції",cash_note:"Голосова каса + швидкі кнопки",
-    btn_add_in:"+ Прихід",btn_add_out:"− Видаток",btn_close_shift:"Закрити зміну",
-    speech_lang_label:"Мова розпізнавання:",cash_photo_note:"Фото чеку/виписки — розпізнати суму та опис.",
-    cash_th_date:"Дата",cash_th_type:"Тип",cash_th_amount:"Сума",cash_th_source:"Джерело",cash_th_comment:"Коментар",
-    parameters:"Параметри",param_cash_label:"Ручна доступна каса сьогодні (PLN):",param_penalty_label:"Пеня, %/день:",param_interval_label:"Інтервал синхр., хв:",
-    rateEUR_label:"rateEUR:",rateUSD_label:"rateUSD:",blacklist_label:"Чорний список (через кому):",auto_mode_label:"Авто: з рахунків (включені) + каса",
-    btn_save_settings:"Зберегти",btn_export_settings:"Експорт налаштувань",btn_import_settings:"Імпорт налаштувань",
+    th_date:"Дата", th_account:"Рахунок", th_counterparty:"Контрагент", th_desc:"Опис", th_amount:"Сума", th_currency:"Валюта", th_status:"Статус", th_actions:"Дії",
+    upload_invoices:"Завантажити рахунки (CSV)", upload_invoice_images:"Завантажити фото рахунків", invoices_note:"Виявляємо № рахунку, суму і дату.",
+    inv_th_due:"Термін", inv_th_number:"№", inv_th_supplier:"Постачальник", inv_th_amount:"Сума", inv_th_currency:"Валюта", inv_th_status:"Статус", inv_th_candidate:"Кандидат", inv_th_score:"Score", inv_th_action:"Дія",
+    auto_accounts_title:"Рахунки з виписки (авто)", auto_accounts_desc:"Редагуйте валюту, початковий баланс і включення до плану.",
+    acc_th_account:"Рахунок", acc_th_type:"Тип", acc_th_currency:"Валюта", acc_th_balance_calc:"Баланс (обр.)", acc_th_start_balance:"Старт", acc_th_include:"Включити",
+    cash_title:"Каса — швидкі операції", cash_note:"Голосова каса + швидкі кнопки",
+    btn_add_in:"+ Прихід", btn_add_out:"− Видаток", btn_close_shift:"Закрити зміну",
+    speech_lang_label:"Мова розпізнавання:", cash_photo_note:"Фото чеку/виписки — розпізнати суму та опис.",
+    cash_th_date:"Дата", cash_th_type:"Тип", cash_th_amount:"Сума", cash_th_source:"Джерело", cash_th_comment:"Коментар",
+    parameters:"Параметри", param_cash_label:"Ручна доступна каса сьогодні (PLN):", param_penalty_label:"Пеня, %/день:", param_interval_label:"Інтервал синхр., хв:",
+    rateEUR_label:"rateEUR:", rateUSD_label:"rateUSD:", blacklist_label:"Чорний список (через кому):", auto_mode_label:"Авто: з рахунків (включені) + каса",
+    btn_save_settings:"Зберегти", btn_export_settings:"Експорт налаштувань", btn_import_settings:"Імпорт налаштувань",
     btn_clear_all:"Очистити історію (локально)",
-    sub_title:"Підписка / Демо",btn_start_demo:"Запустити демо (24 год)",btn_pay_sub:"Оплатити підписку",btn_end_demo:"Завершити демо",
+    sub_title:"Підписка / Демо", btn_start_demo:"Запустити демо (24 год)", btn_pay_sub:"Оплатити підписку", btn_end_demo:"Завершити демо",
     sub_hint:"Оплата лише в Налаштуваннях. Якщо є посилання Stripe — покладіть у localStorage.stripe_link.",
     ph_amount:"Сума", ph_comment:"Коментар"
   }
 };
 
-/* placeholders + language */
+/* PLACEHOLDER APPLIER */
 function applyPlaceholders(lang){
   const dict = M[lang]||M.pl;
   document.querySelectorAll('[data-i-ph]').forEach(el=>{
@@ -544,6 +550,8 @@ function applyPlaceholders(lang){
     if (dict[k]) el.setAttribute('placeholder', dict[k]);
   });
 }
+
+/* LANGUAGE APPLY */
 function applyLang(lang){
   const dict = M[lang]||M.pl;
   document.querySelectorAll('[data-i]').forEach(el=>{
@@ -678,7 +686,7 @@ function rate(cur){
   return 1;
 }
 function computeAccountBalance(accId){
-  const rows=tx.filter(r=> (getVal(r,["ID konta","IBAN","account","ID"])||accId)===accId);
+  const rows=tx.filter(r=> (getVal(r,["ID konta","IBAN","account","ID"])||"UNKNOWN")===accId);
   const withSaldo = rows.filter(r=> getVal(r,["Saldo po operacji","Saldo","saldo"]));
   if(withSaldo.length){ const last=withSaldo[withSaldo.length-1]; return asNum(getVal(last,["Saldo po operacji","Saldo","saldo"])); }
   const start=Number((accMeta[accId]||{}).start||0);
@@ -708,7 +716,7 @@ function availableTotal(){
   return auto ? (bankAvailablePLN()+kas) : (manual+kas);
 }
 
-/* ==== AI MATCH ==== */
+/* ==== AI MATCH (unchanged core scoring) ==== */
 function normName(s){s=(s||"").toString().toLowerCase().replace(/[.,]/g," ").replace(/\s+/g," ").trim();["sp z oo","sp. z o.o.","spolka","spółka","sa","s.a","ooo"].forEach(t=>s=s.replace(t,""));return s}
 function nameSimilar(a,b){a=normName(a);b=normName(b);if(!a||!b) return 0;if(a===b) return 1;if(a.includes(b)||b.includes(a)) return 0.8;return 0}
 function scoreMatch(bill,tr){
@@ -758,7 +766,7 @@ function acceptSafe(){
   render(); saveLocal(); pushState();
 }
 
-/* ==== OCR: BANK (IMG) ==== */
+/* ==== OCR IMPORT (images) ==== */
 async function recognizeImage(file){
   const { data:{ text } } = await Tesseract.recognize(file, 'pol+eng+rus', { logger:()=>{} });
   return text.replace(/\u00A0/g,' ').replace(/\r/g,'').replace(/\t/g,' ').replace(/ +/g,' ').trim();
@@ -769,81 +777,53 @@ function parseBankOCR(text){
   let curDate = today();
   for(let i=0;i<lines.length;i++){
     const L = lines[i];
-
-    // даты
+    // Dates like "19 октября 2025", "19 października 2025", "2025-10-19"
     const d1=L.match(/(\d{1,2}\s+[A-Za-zĄąĆćĘęŁłŃńÓóŚśŹźŻżА-Яа-яё]+\s+\d{4})/);
     const d2=L.match(/(\d{4}-\d{2}-\d{2})/);
     if(d1||d2){ curDate = toISO((d1?d1[1]:d2[1])); continue; }
 
-    // суммы "120,00 PLN" / "- 25,00" / "6.80"
-    const amtM = L.match(/([−-]?\s?\d{1,3}(?:[ \u00A0]?\d{3})*(?:[.,]\d{2})|\d+(?:[.,]\d{2})?)\s*(PLN|EUR|USD)?/i);
-    if(!amtM) continue;
-
-    const amountRaw = amtM[1];
-    const cur = detectCurrency(L);
-    const isOut = /(^|\s)[-−]/.test(amountRaw) || /card|karta|prowizj|fee|obcia|zaleg|charge/i.test(L);
-    const prev = (lines[i-1]||'');
-    const counterparty = (prev && !/\b(PLN|EUR|USD)\b/i.test(prev) ? prev : L.split(amountRaw)[0]).toString().trim();
-    const amt = asNum(amountRaw) * (isOut ? -1 : 1);
-
-    out.push({
-      "Data księgowania": curDate || today(),
-      "ID transakcji": 'ocr-'+Date.now()+'-'+out.length,
-      "ID konta": 'UNKNOWN',
-      "Kontrahent": counterparty.replace(/[•·]/g,'').slice(0,120),
-      "Tytuł/Opis": L.slice(0,200),
-      "Kwota": amt.toFixed(2),
-      "Waluta": cur,
-      "Status transakcji":""
-    });
+    // Amount and currency
+    const amtM = L.match(/([−-]?\s?\d+[\s,\.]*\d{0,2})\s*(PLN|EUR|USD|zł|zl)?/i);
+    if(amtM){
+      const amountRaw = amtM[1];
+      const sign = /−|-/.test(amountRaw) ? -1 : (/(^|\s)[+]\s?\d/.test(L)?1:null);
+      const cur = detectCurrency(L);
+      // Counterparty line often previous line
+      const counterparty = (lines[i-1] && !/(PLN|EUR|USD|zł|zl)/i.test(lines[i-1]) ? lines[i-1] : L.split(amountRaw)[0]).toString().trim();
+      const amt = asNum(amountRaw) * (sign===-1 ? -1 : (/\bPhone transfer\b|przelew|transfer/i.test(L) && /-/.test(amountRaw)? -1 : (/-/.test(amountRaw)?-1:1)));
+      if(Math.abs(amt)>0){
+        out.push({
+          "Data księgowania": curDate || today(),
+          "ID transakcji": 'ocr-'+Date.now()+'-'+out.length,
+          "ID konta": 'UNKNOWN',
+          "Kontrahent": counterparty.replace(/[•·]/g,'').slice(0,120),
+          "Tytuł/Opis": L.slice(0,200),
+          "Kwota": amt.toFixed(2),
+          "Waluta": cur,
+          "Status transakcji":""
+        });
+      }
+    }
   }
   return out;
 }
-
-/* ==== OCR: INVOICE (IMG) ==== */
 function parseInvoiceOCR(text){
-  const norm = text
-    .replace(/\u00A0/g,' ')
-    .replace(/[–—−]/g,'-')
-    .replace(/[ ]{2,}/g,' ')
-    .replace(/\t/g,' ')
-    .replace(/\r/g,'')
-    .trim();
-
+  const norm = text.replace(/\n+/g,'\n');
   const get = (re)=>{ const m=norm.match(re); return m?m[1].trim():''; };
-
-  // supplier
-  let supplier = get(/Sprzedawca[:\s\n]+([^\n]+?)(?:\n|$)/i)
-              || get(/Seller[:\s\n]+([^\n]+?)(?:\n|$)/i)
-              || (norm.split('\n').find(x=>/[A-ZĄĆĘŁŃÓŚŹŻ]{3,}/.test(x))||'').trim();
-
-  // invoice no (сохраняем слэши)
-  let inv = get(/Faktura\s*(?:numer|nr)?\s*([A-Za-z0-9\-\/\.]+)/i)
-         || get(/Invoice\s*(?:No|Number)\s*([A-Za-z0-9\-\/\.]+)/i);
-  const invSlash = norm.match(/\b(\d{1,4}\/CS-FR\/\d{4})\b/i);
-  if (invSlash) inv = invSlash[1];
-
-  const due   = toISO(get(/Termin\s*p[łl]atno[śs]ci[:\s]+([^\n]+)/i))
-             || toISO(get(/Due\s*date[:\s]+([^\n]+)/i));
-  const issue = toISO(get(/Data\s*wystawienia[:\s]+([^\n]+)/i))
-             || toISO(get(/Issue\s*date[:\s]+([^\n]+)/i));
-
-  let totalTxt = get(/Do\s*zap[łl]aty[:\s]+([^\n]+)/i)
-              || get(/Razem[^\n]*?(\d{1,3}(?:[ \u00A0]?\d{3})*(?:[.,]\d{2}))/i)
-              || '';
+  const inv = get(/Faktura\s*(?:numer|nr)?\s*([A-Za-z0-9\-\/\.]+)/i) || get(/Invoice\s*(?:No|Number)\s*([A-Za-z0-9\-\/\.]+)/i);
+  let supplier = get(/Sprzedawca[:\s\n]+([^\n]+)(?:\n|$)/i) || get(/Seller[:\s\n]+([^\n]+)(?:\n|$)/i);
+  if(!supplier){ // fallback: first uppercase line near top
+    supplier = norm.split('\n').find(x=>/[A-ZĄĆĘŁŃÓŚŹŻ]{3,}/.test(x))||'';
+  }
+  const due = toISO(get(/Termin\s*płatności[:\s]+([^\n]+)/i));
+  const issue = toISO(get(/Data\s*wystawienia[:\s]+([^\n]+)/i));
+  let totalTxt = get(/Do\s*zapłaty[:\s]+([^\n]+)/i);
   if(!totalTxt){
-    const brutto = norm.match(/Warto[śs]ć\s*brutto[^\n]*?(\d{1,3}(?:[ \u00A0]?\d{3})*(?:[.,]\d{2}))/i);
-    if(brutto) totalTxt = brutto[1];
+    const bruttoLine = norm.match(/Wartość\s*brutto[^\n]*?(\d+[\s,.]\d{2})\s*(PLN|EUR|USD)?/i);
+    if(bruttoLine) totalTxt = bruttoLine[1] + ' ' + (bruttoLine[2]||'');
   }
   const currency = detectCurrency(totalTxt||norm);
   const total = Math.abs(asNum(totalTxt));
-
-  // спец-правило для «Czysta Sprawa 147/CS-FR/2025»
-  if (/Czysta\s*Sprawa/i.test(norm)) {
-    const num = inv || '';
-    supplier = `Czysta Sprawa${num ? ' ' + num : ''}`.trim();
-  }
-
   return [{
     "Termin płatności": due || issue || today(),
     "Numer faktury": inv || ('INV-'+Date.now()),
@@ -852,64 +832,6 @@ function parseInvoiceOCR(text){
     "Waluta": currency,
     "Status faktury": "do zapłaty"
   }];
-}
-
-/* ==== CSV ADAPTERS (explicit) ==== */
-function parseCSVStatementAdapter(text){ return parseCSVStatement(text); }
-function parseCSVStatement(text){
-  if(!text) return [];
-  text=text.replace(/^\uFEFF/, '').replace(/\r/g,'');
-  const lines=text.split('\n').filter(Boolean);
-  const sep=(lines[0].split(';').length>lines[0].split(',').length)?';':',';
-  const head=lines.shift().split(sep).map(h=>h.trim());
-  const smart=(line)=>{
-    let out=[],cur='',q=false;
-    for(const ch of line){
-      if(ch==='"'){ q=!q; continue; }
-      if(ch===sep && !q){ out.push(cur); cur=''; } else cur+=ch;
-    }
-    out.push(cur); return out;
-  };
-  return lines.map(line=>{
-    const cells=smart(line).map(x=>x.trim());
-    const map={}; head.forEach((h,i)=> map[h]=cells[i]||'');
-    return {
-      "Data księgowania": toISO(map['Data']||map['date']),
-      "ID transakcji": map['id transakcji']||map['TxId']||('csv-'+Math.random().toString(36).slice(2,8)),
-      "ID konta": map['id konta']||map['IBAN']||'UNKNOWN',
-      "Kontrahent": map['Kontrahent']||map['counterparty']||'',
-      "Tytuł/Opis": map['Opis']||map['description']||'',
-      "Kwota": asNum(map['Kwota']||map['amount']).toFixed(2),
-      "Waluta": detectCurrency(map['Waluta']||map['currency']),
-      "Status transakcji": map['Status']||''
-    };
-  });
-}
-function parseCSVInvoices(text){
-  if(!text) return [];
-  text=text.replace(/^\uFEFF/,'').replace(/\r/g,'');
-  const lines=text.split('\n').filter(Boolean);
-  const sep=(lines[0].split(';').length>lines[0].split(',').length)?';':',';
-  const head=lines.shift().split(sep).map(h=>h.trim());
-  const smart=(line)=>{
-    let out=[],cur='',q=false;
-    for(const ch of line){ if(ch==='"'){ q=!q; continue; } if(ch===sep && !q){ out.push(cur); cur=''; } else cur+=ch; }
-    out.push(cur); return out;
-  };
-  return lines.map(l=>{
-    const c=smart(l).map(x=>x.trim()); const m={}; head.forEach((h,i)=>m[h]=c[i]||'');
-    const inv = m['Numer faktury']||m['Invoice no']||m['No']||('INV-'+Math.random().toString(36).slice(2,8));
-    let supplier = (m['Dostawca']||m['Supplier']||'').trim();
-    if(/Czysta\s*Sprawa/i.test(supplier) && inv) supplier = `Czysta Sprawa ${inv}`;
-    return {
-      "Termin płatności": toISO(m['Termin']||m['Due date'])||today(),
-      "Numer faktury": inv,
-      "Dostawca": supplier,
-      "Kwota do zapłaty": asNum(m['Kwota']||m['Amount']).toFixed(2),
-      "Waluta": detectCurrency(m['Waluta']||m['Currency']),
-      "Status faktury": (m['Status']||'do zapłaty')
-    };
-  });
 }
 
 /* ==== PERSIST LOCAL ==== */
@@ -938,7 +860,7 @@ function inferAccounts(){
   accMeta=map; renderAccounts();
 }
 
-/* ==== GATE / SUB ==== */
+/* ==== GATE: DEMO / SUB ==== */
 function isSubActive(){
   const a=localStorage.getItem(SUB_KEY)==='1';
   if(!a) return false;
@@ -985,8 +907,8 @@ async function fetchSources(){
   try{
     const u1=localStorage.getItem('txUrl')||$id('txUrl')?.value||"";
     const u2=localStorage.getItem('billUrl')||$id('billUrl')?.value||"";
-    if(u1){ const r=await fetch(u1,{cache:'no-store'}); tx = parseCSVStatementAdapter(await r.text()); }
-    if(u2){ const r2=await fetch(u2,{cache:'no-store'}); bills = parseCSVInvoices(await r2.text()); }
+    if(u1){ const r=await fetch(u1,{cache:'no-store'}); tx = parseCSV(await r.text()); }
+    if(u2){ const r2=await fetch(u2,{cache:'no-store'}); bills = parseCSV(await r2.text()); }
     inferAccounts(); render();
     const last=$id('lastSync'); if(last) last.textContent = (M[localStorage.getItem('otd_lang')||'pl'].sync_ts||"Synchronizacja: —").replace('—', new Date().toLocaleString());
     saveLocal(); pushState();
@@ -1001,7 +923,7 @@ function scheduleAutosync(){
   }
 }
 
-/* ==== CASH QUICK ==== */
+/* ==== CASH QUICK EXAMPLES ==== */
 const cashQuickExamples={pl:["Przyjąć 250 na produkty","Wypłacić 50 na dostawę","Przyjąć 1000 depozyt","Przyjąć 50 na napoje"],
 ru:["Принять 250 на продукты","Выдать 50 на доставку","Принять 1000 депозит","Принять 50 на напитки"],
 en:["Accept 250 for groceries","Pay out 50 for delivery","Accept 1000 deposit","Accept 50 for drinks"],
@@ -1134,7 +1056,7 @@ function render(){
     String((getVal(r,["Waluta","Waluta "])||"").toUpperCase())==="PLN" &&
     toISO(getVal(r,["Termin płatności","Termin","Termin платності"]))<=today() &&
     ["do zapłaty","przeterminowane","к оплате","просрочено"].includes(String(getVal(r,["Status faktury","Status"])||"").toLowerCase())
-  ).reduce((s,r)=> s+asNum(getVal(r,["Kwota do zapłaty","Kwota"])||0),0);
+  ).reduce((s,r)=> s+asNum(getVal(r,["Kwota do zapłaty","Kwota","Kwота"])||0),0);
   $id('kpiGap')&&( $id('kpiGap').textContent = Math.max(0,sumDue-avail).toFixed(2) );
 
   // TX table
@@ -1191,13 +1113,13 @@ function render(){
   renderMinPay(); renderForecast(); renderAccounts(); renderKasa(); renderBook(); updateSubUI(); gateAccess();
 }
 
-/* ==== PLAN / FORECAST / MINPAY ==== */
+/* ==== PLAN / FORECAST / MINPAY (kept) ==== */
 function toDueList(mode){
   const t=today(); const excl=$id('excludeBlacklist')?.checked||false;
   return bills.filter(r=>{
     const s=String(getVal(r,["Status faktury","Status фактуры","Status"])||"").toLowerCase();
     if(!["do zapłaty","przeterminowane","к оплате","просрочено","to pay"].includes(s)) return false;
-    const d=toISO(getVal(r,["Termin płatności","Termin","Termin платności"])); if(!d) return false;
+    const d=toISO(getVal(r,["Termin płatności","Termin","Termin платності"])); if(!d) return false;
     if(mode==='today') return d===t;
     if(mode==='7d'){ const dd=new Date(d), tt=new Date(t); return (dd-tt)/86400000 <= 7; }
     return true;
@@ -1214,8 +1136,8 @@ function toDueList(mode){
 function buildPlan(){
   const mode=$id('planFilter')?.value||'7d';
   const cand=toDueList(mode).sort((a,b)=>{
-    const da=new Date(toISO(getVal(a,["Termin płatności","Termin"])||today()));
-    const db=new Date(toISO(getVal(b,["Termin płatności","Termin"])||today()));
+    const da=new Date(toISO(getVal(a,["Termin płatności","Termin","Termin платності"])||today()));
+    const db=new Date(toISO(getVal(b,["Termin płatności","Termin","Termin платності"])||today()));
     const lateA=da<new Date(today()), lateB=db<new Date(today());
     if(lateA!==lateB) return lateB-lateA;
     return asNum(getVal(b,["Kwota do zapłaty","Kwota"])) - asNum(getVal(a,["Kwota do zapłaty","Kwota"]));
@@ -1380,9 +1302,9 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   $id('exportBook')?.addEventListener('click', exportBookCSV);
 
   // File/url
-  $id('txFile')?.addEventListener('change', async e=>{ const f=e.target.files[0]; if(!f) return; tx=parseCSVStatementAdapter(await f.text()); inferAccounts(); render(); saveLocal(); pushState(); });
+  $id('txFile')?.addEventListener('change', async e=>{ const f=e.target.files[0]; if(!f) return; tx=parseCSV(await f.text()); inferAccounts(); render(); saveLocal(); pushState(); });
   $id('txImage')?.addEventListener('change', async e=>{ const files=[...e.target.files]; if(!files.length) return; await ocrBankFiles(files); });
-  $id('billFile')?.addEventListener('change', async e=>{ const f=e.target.files[0]; if(!f) return; bills=parseCSVInvoices(await f.text()); render(); saveLocal(); pushState(); });
+  $id('billFile')?.addEventListener('change', async e=>{ const f=e.target.files[0]; if(!f) return; bills=parseCSV(await f.text()); render(); saveLocal(); pushState(); });
   $id('billImage')?.addEventListener('change', async e=>{ const files=[...e.target.files]; if(!files.length) return; await ocrInvoiceFiles(files); });
   $id('saveTxUrl')?.addEventListener('click',()=>{ const v=$id('txUrl')?.value.trim()||""; localStorage.setItem('txUrl',v); alert('Zapisano URL wyciągu'); scheduleAutosync(); });
 
@@ -1476,7 +1398,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   await pullState(); loadLocal(); inferAccounts(); render();
   pushState();
 
-  // Save on unload
+  // Save on unload (sendBeacon fallback)
   window.addEventListener('beforeunload', ()=>{
     if(!REMOTE_OK) return;
     try{
@@ -1498,3 +1420,4 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 </script>
 </body>
 </html>
+
