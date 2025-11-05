@@ -112,7 +112,6 @@
       <button id="runAI" class="btn secondary" data-i="btn_ai_match">Dopasowanie AI</button>
       <button id="acceptSafe" class="btn secondary" data-i="btn_accept_safe">Akceptuj bezpieczne pary</button>
       <button id="exportPDF" class="btn secondary" data-i="btn_pdf">Raport PDF</button>
-      <button id="exportBook" class="btn secondary">Eksport księgi (CSV)</button>
       <span id="lastSync" class="pill" data-i="sync_ts">Synchronizacja: —</span>
       <span class="right pill" id="modeCash">Mode: auto</span>
     </div>
@@ -218,7 +217,29 @@
       <tbody></tbody>
     </table>
 
-    <!-- (таблица księgi убрана — экспорт доступен на Панели) -->
+    <div class="row" style="margin-top:12px">
+      <button id="exportBook" class="btn secondary">Eksport księgi (CSV)</button>
+      <span class="muted">Zunifikowana tabela: bank + faktury + kasa</span>
+    </div>
+    <table id="bookTable">
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Źródło</th>
+          <th>Konto</th>
+          <th>Kontrahent</th>
+          <th>Opis</th>
+          <th>Kwota</th>
+          <th>Waluta</th>
+          <th>Typ</th>
+          <th>Nr</th>
+          <th>Data dok.</th>
+          <th>Termin</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
   </div>
 
   <!-- INVOICES -->
@@ -460,7 +481,7 @@ const M = {
     btn_sync:"Synchronizuj", btn_ai_match:"Dopasowanie AI", btn_accept_safe:"Akceptuj bezpieczne pary", btn_pdf:"Raport PDF", sync_ts:"Synchronizacja: —",
     minpay_title:"Minimalna płatność (kara-stop)", btn_apply_minpay:"Oznacz jako opłacone",
     forecast_7d:"Prognoza 7 dni", forecast7d_note:"Liczy włączone konta PLN + kasa.",
-    forecast_30d:"Prognoza 30 dni", forecast30_note:"Autoprognoza z wyciągów + kasa на 30 dni.",
+    forecast_30d:"Prognoza 30 dni", forecast30_note:"Autoprognoza z wyciągów + kasa na 30 dni.",
     month_summary_title:"Podsumowanie miesiąca",
     plan_title:"Plan płatności pod kasę", filter_label:"Filtr:", filter_today:"Dziś", filter_7d:"7 dni", filter_all:"Wszystko", exclude_blacklist:"Wyklucz blacklistę",
     btn_make_plan:"Utwórz plan", btn_apply_plan:"Zastosuj plan",
@@ -479,10 +500,10 @@ const M = {
     cash_th_date:"Data", cash_th_type:"Typ", cash_th_amount:"Kwota", cash_th_source:"Źródło", cash_th_comment:"Komentarz",
     parameters:"Parametry", param_cash_label:"Ręczna dostępna kasa dziś (PLN):", param_penalty_label:"Kara, %/dzień:", param_interval_label:"Interwał synchronizacji, min:",
     rateEUR_label:"rateEUR:", rateUSD_label:"rateUSD:", blacklist_label:"Czarna lista (przecinki):", auto_mode_label:"Auto: z kont wyciągu (włączone) + kasa",
-    btn_save_settings:"Zapisz", btn_export_settings:"Eksport ustawień", btn_import_settings:"Import ustawień",
+    btn_save_settings:"Zapisz", btn_export_settings:"Eksпорт ustawień", btn_import_settings:"Import ustawień",
     btn_clear_all:"Wyczyść historię (lokalnie)",
     sub_title:"Subskrypcja / Demo", btn_start_demo:"Uruchom demo (24h)", btn_pay_sub:"Opłać subskrypcję", btn_end_demo:"Zakończ demo",
-    sub_hint:"Płatność tylko в Ustawieniach. Jeśli masz link Stripe — ustaw w localStorage.stripe_link.",
+    sub_hint:"Płatność tylko w Ustawieniach. Jeśli masz link Stripe — ustaw w localStorage.stripe_link.",
     ph_amount:"Kwota", ph_comment:"Komentarz"
   },
   uk:{ /* ——— UK ——— */
@@ -577,32 +598,27 @@ function toISO(d){
   const p=Date.parse(s); if(!isNaN(p)) return new Date(p).toISOString().slice(0,10);
   return "";
 }
-function fmtAmountRaw(raw){
-  const n=asNum(raw); if(!Number.isFinite(n)) return '<span>—</span>';
-  const sign=n<0?'-':'+', cls=n<0?'amt-neg':'amt-pos';
-  const abs=Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g," ");
-  return `<span class="${cls}">${sign} ${abs}</span>`;
+
+/* ==== OCR-v2 helpers (NEW) ==== */
+const OUT_KEYWORDS = [
+  /kart/i, /transakcj/i, /płat/i, /zakup/i, /opłat/i, /prowiz/i,
+  /bilet/i, /urbandcard/i, /koleo/i, /żabka|zabka/i, /biedronk/i, /sklep/i, /bolt/i
+];
+const IN_KEYWORDS = [
+  /wpłat/i, /zasil/i, /przych/i, /otrzym/i, /received/i,
+  /przelew.*(przychodz|na telefon|od)/i, /phone\s*transfer/i, /refund/i, /zwrot/i
+];
+function inferSignFromText(line, amountRaw){
+  if(/[−-]\s*\d/.test(amountRaw)) return -1;
+  if(/[+]\s*\d/.test(line)) return 1;
+  if(OUT_KEYWORDS.some(rx=>rx.test(line))) return -1;
+  if(IN_KEYWORDS.some(rx=>rx.test(line))) return 1;
+  return 1;
 }
-function smartSplit(line,del){
-  let out=[],cur="",q=false;
-  for(let i=0;i<line.length;i++){const ch=line[i]; if(ch==='"'){q=!q;continue} if(ch===del && !q){out.push(cur);cur="";} else cur+=ch;}
-  out.push(cur); return out;
-}
-function parseCSV(text){
-  if(!text) return []; text=text.replace(/^\uFEFF/,'').replace(/\r/g,"");
-  const lines=text.split("\n").filter(l=>l.trim()); if(!lines.length) return [];
-  const sep=(lines[0].split(";").length>lines[0].split(",").length)?";":",";
-  const head=smartSplit(lines.shift(),sep).map(h=>h.trim());
-  return lines.map(line=>{
-    const cells=smartSplit(line,sep); const obj={};
-    head.forEach((h,i)=>{let v=(cells[i]||"").trim(); v=v.replace(/\u00A0/g,' ').trim(); obj[h]=v;}); return obj;
-  });
-}
-function getVal(obj,keys){
-  if(!obj) return ""; for(const k of keys){ if(k in obj && String(obj[k]).trim()!=="") return obj[k]; }
-  const low=Object.keys(obj).reduce((m,x)=>(m[x.toLowerCase()]=obj[x],m),{});
-  for(const k of keys){const kk=k.toLowerCase(); if(kk in low && String(low[kk]).trim()!="") return low[kk];}
-  return "";
+function pickCounterparty(lines, i, fallback){
+  const prev = (lines[i-1] || "").trim();
+  if(prev && !/(PLN|EUR|USD)/i.test(prev) && !/\d+[,\.\s]\d{2}/.test(prev)) return prev.slice(0,120);
+  return (fallback || "").replace(/[•·]/g,'').slice(0,120);
 }
 
 /* ==== STATE ==== */
@@ -750,80 +766,101 @@ async function recognizeImage(file){
   const { data:{ text } } = await Tesseract.recognize(file, 'pol+eng+rus', { logger:()=>{} });
   return text.replace(/\u00A0/g,' ').replace(/\r/g,'').replace(/\t/g,' ').replace(/ +/g,' ').trim();
 }
+
+/* ==== REPLACED: parseBankOCR (v2) ==== */
 function parseBankOCR(text){
   const lines = text.split(/\n+/).map(s=>s.trim()).filter(Boolean);
   const out = [];
   let curDate = today();
+
   for(let i=0;i<lines.length;i++){
     const L = lines[i];
-    // Dates like "19 октября 2025", "19 października 2025", "2025-10-19"
+
     const d1=L.match(/(\d{1,2}\s+[A-Za-zĄąĆćĘęŁłŃńÓóŚśŹźŻżА-Яа-яё]+\s+\d{4})/);
     const d2=L.match(/(\d{4}-\d{2}-\d{2})/);
-    if(d1||d2){ curDate = toISO((d1?d1[1]:d2[1])); continue; }
+    const d3=L.match(/(\d{2}\.\d{2}\.\d{4})/);
+    if(d1||d2||d3){ curDate = toISO((d1?.[1]||d2?.[1]||d3?.[1])); continue; }
 
-    // Amount + sign rules
-    const amtM = L.match(/([()−\-+]*\s*\d{1,3}(?:[\s ]\d{3})*(?:[.,]\d{2})?)/);
-    if(amtM){
-      const raw = amtM[1];
-      const cur = detectCurrency(L);
-      const n = asNum(raw);
-      if(n!==0){
-        const negHints = /(−|-|\(|obciąż|debet|wypłat|withdraw|charge)/i.test(L);
-        const posHints = /(\+|uznanie|wpływ|przych|credit)/i.test(L);
-        let sign = 0;
-        if(negHints && !posHints) sign = -1;
-        else if(posHints && !negHints) sign = +1;
-        else if(/[()]/.test(raw) || /−|-/.test(raw)) sign = -1;
-        else if(/\+/.test(raw)) sign = +1;
-        else sign = +1; // если нет минуса — считаем как приход
-        const amt = sign * Math.abs(n);
-        const counterparty = (lines[i-1] && !/(PLN|EUR|USD|zł|zl)/i.test(lines[i-1]) ? lines[i-1] : L.replace(raw,'')).toString().trim();
-        out.push({
-          "Data księgowania": curDate || today(),
-          "ID transakcji": 'ocr-'+Date.now()+'-'+out.length,
-          "ID konta": 'UNKNOWN',
-          "Kontrahent": counterparty.replace(/[•·]/g,'').slice(0,120),
-          "Tytuł/Opis": L.slice(0,220),
-          "Kwota": amt.toFixed(2),
-          "Waluta": cur,
-          "Status transakcji":""
-        });
-      }
-    }
+    const amtM = L.match(/([−-+]?\s?\d{1,3}(?:[ \u00A0]\d{3})*[,\.\s]\d{2})\s*(PLN|EUR|USD|zł|zl)?/i);
+    if(!amtM) continue;
+
+    const amountRaw = amtM[1];
+    const cur = detectCurrency(L);
+    const sign = inferSignFromText(L, amountRaw);
+    const amt = asNum(amountRaw) * (sign===-1 ? -1 : 1);
+    if(!Number.isFinite(amt) || Math.abs(amt)===0) continue;
+
+    const counterparty = pickCounterparty(lines, i, L.split(amountRaw)[0]);
+    out.push({
+      "Data księgowania": curDate || today(),
+      "ID transakcji": 'ocr-'+Date.now()+'-'+out.length,
+      "ID konta": 'UNKNOWN',
+      "Kontrahent": counterparty,
+      "Tytuł/Opis": L.slice(0,200),
+      "Kwota": amt.toFixed(2),
+      "Waluta": cur,
+      "Status transakcji":""
+    });
   }
   return out;
 }
+
+/* ==== REPLACED: parseInvoiceOCR (v2) ==== */
 function parseInvoiceOCR(text){
-  const norm = text.replace(/\n+/g,'\n');
+  const norm = text.replace(/\r/g,'').replace(/[ \t]+\n/g,'\n').replace(/\n{2,}/g,'\n').trim();
   const get = (re)=>{ const m=norm.match(re); return m?m[1].trim():''; };
-  // invoice number: классика + общий шаблон вида 147/CS-FR/2025
-  const invClassic = get(/\bFaktura(?:\s*VAT)?\s*(?:numer|nr)?[:\s]*([A-Za-z0-9\-\/\.]+)/i) || get(/\bInvoice\s*(?:No|Number)[:\s]*([A-Za-z0-9\-\/\.]+)/i);
-  const invPattern = (norm.match(/(\d{1,6}\/[A-Z0-9][A-Z0-9\-]*\/\d{4})/)||[])[1] || '';
-  const inv = (invClassic || invPattern || '').replace(/[^\w\/\-\.]/g,'');
-  // supplier (продавец/виставивший)
-  let supplier = get(/Sprzedawca[:\s\n]+([^\n]+)(?:\n|$)/i) || get(/Dostawca[:\s\n]+([^\n]+)(?:\n|$)/i) || get(/Issuer|Seller[:\s\n]+([^\n]+)(?:\n|$)/i);
+
+  const inv = get(/Faktura\s*(?:numer|nr)?\s*([A-Za-z0-9\-\/\.]+)/i) ||
+              get(/Invoice\s*(?:No|Number)\s*([A-Za-z0-9\-\/\.]+)/i);
+
+  let supplier = get(/Sprzedawca[:\s\n]+([^\n]+)(?:\n|$)/i) ||
+                 get(/Seller[:\s\n]+([^\n]+)(?:\n|$)/i);
   if(!supplier){
-    supplier = norm.split('\n').find(x=>/[A-ZĄĆĘŁŃÓŚŹŻ]{3,}/.test(x))||'';
+    supplier = (norm.split('\n').find(x=>/[A-ZĄĆĘŁŃÓŚŹŻ]{3,}/.test(x))||'').slice(0,120);
   }
-  // due / issue dates
-  const due = toISO(get(/Termin\s*(?:płatności|zapłaty)[:\s]+([^\n]+)/i)) || toISO(get(/Payment\s*(?:due|date)[:\s]+([^\n]+)/i));
-  const issue = toISO(get(/Data\s*wystawienia[:\s]+([^\n]+)/i)) || toISO(get(/Issue\s*date[:\s]+([^\n]+)/i));
-  // total
-  let totalTxt = get(/Do\s*zapłaty[:\s]+([^\n]+)/i) || get(/Razem\s*do\s*zapłaty[:\s]+([^\n]+)/i);
+
+  const due = toISO(get(/Termin\s*płatności[:\s]+([^\n]+)/i));
+  const issue = toISO(get(/Data\s*wystawienia[:\s]+([^\n]+)/i));
+
+  let totalTxt = get(/Do\s*zapłaty[:\s]+([^\n]+)/i);
   if(!totalTxt){
-    const bruttoLine = norm.match(/(?:Wartość|Razem)\s*brutto[^\n]*?(\d{1,3}(?:[\s ]\d{3})*(?:[.,]\d{2}))/i);
-    if(bruttoLine) totalTxt = bruttoLine[1];
+    const brutto = norm.match(/Wartość\s*brutto[^\n]*?(\d{1,3}(?:[ \u00A0]\d{3})*[,\.\s]\d{2})\s*(PLN|EUR|USD)?/i);
+    if(brutto) totalTxt = `${brutto[1]} ${brutto[2]||''}`;
   }
+
   const currency = detectCurrency(totalTxt||norm);
   const total = Math.abs(asNum(totalTxt));
+
   return [{
-    "Termin płatności": (due || issue || today()),
-    "Numer faktury": (inv || ('INV-'+Date.now())),
-    "Dostawca": supplier.slice(0,120),
+    "Termin płatności": due || issue || today(),
+    "Numer faktury": inv || ('INV-'+Date.now()),
+    "Dostawca": supplier,
     "Kwota do zapłaty": total ? total.toFixed(2) : '0.00',
     "Waluta": currency,
     "Status faktury": "do zapłaty"
   }];
+}
+
+function parseCSV(text){
+  if(!text) return []; text=text.replace(/^\uFEFF/,'').replace(/\r/g,"");
+  const lines=text.split("\n").filter(l=>l.trim()); if(!lines.length) return [];
+  const sep=(lines[0].split(";").length>lines[0].split(",").length)?";":",";
+  const head=smartSplit(lines.shift(),sep).map(h=>h.trim());
+  return lines.map(line=>{
+    const cells=smartSplit(line,sep); const obj={};
+    head.forEach((h,i)=>{let v=(cells[i]||"").trim(); v=v.replace(/\u00A0/g,' ').trim(); obj[h]=v;}); return obj;
+  });
+}
+function smartSplit(line,del){
+  let out=[],cur="",q=false;
+  for(let i=0;i<line.length;i++){const ch=line[i]; if(ch==='"'){q=!q;continue} if(ch===del && !q){out.push(cur);cur="";} else cur+=ch;}
+  out.push(cur); return out;
+}
+function getVal(obj,keys){
+  if(!obj) return ""; for(const k of keys){ if(k in obj && String(obj[k]).trim()!=="") return obj[k]; }
+  const low=Object.keys(obj).reduce((m,x)=>(m[x.toLowerCase()]=obj[x],m),{});
+  for(const k of keys){const kk=k.toLowerCase(); if(kk in low && String(low[kk]).trim()!="") return low[kk];}
+  return "";
 }
 
 /* ==== PERSIST LOCAL ==== */
@@ -975,7 +1012,7 @@ function bookRows(){
   return rows.sort((a,b)=> (a.date<b.date?-1: a.date>b.date?1:0));
 }
 function renderBook(){
-  const tb=document.querySelector('#bookTable tbody'); if(!tb) return; // таблицы нет — тихий выход
+  const tb=document.querySelector('#bookTable tbody'); if(!tb) return; tb.innerHTML='';
   const rows=bookRows();
   rows.forEach(r=>{
     const tr=document.createElement('tr');
@@ -994,6 +1031,12 @@ function exportBookCSV(){
 }
 
 /* ==== RENDER ==== */
+function fmtAmountRaw(raw){
+  const n=asNum(raw); if(!Number.isFinite(n)) return '<span>—</span>';
+  const sign=n<0?'-':'+', cls=n<0?'amt-neg':'amt-pos';
+  const abs=Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g," ");
+  return `<span class="${cls}">${sign} ${abs}</span>`;
+}
 function renderKasa(){
   const tb=document.querySelector('#kasaTable tbody'); if(!tb) return; tb.innerHTML='';
   kasa.forEach((k,i)=>{
@@ -1032,7 +1075,6 @@ function renderAccounts(){
   tb.querySelectorAll(".acc-include").forEach(el=>el.addEventListener("change",e=>{accMeta[e.target.dataset.id].include=e.target.checked;saveLocal();render();pushState();}));
 }
 function render(){
-  // KPIs
   const dueToday=(bills||[]).filter(r=>{
     const s=String(getVal(r,["Status faktury","Status фактуры","Status"])||"").toLowerCase();
     return ["do zapłaty","przeterminowane","к оплате","просрочено","to pay"].includes(s) &&
@@ -1048,10 +1090,9 @@ function render(){
     String((getVal(r,["Waluta","Waluta "])||"").toUpperCase())==="PLN" &&
     toISO(getVal(r,["Termin płatności","Termin","Termin платності"]))<=today() &&
     ["do zapłaty","przeterminowane","к оплате","просрочено"].includes(String(getVal(r,["Status faktury","Status"])||"").toLowerCase())
-  ).reduce((s,r)=> s+asNum(getVal(r,["Kwota do zapłaty","Kwota","Kwота"])||0),0);
+  ).reduce((s,r)=> s+asNum(getVal(r,["Kwota do zapłaty","Kwota"])||0),0);
   $id('kpiGap')&&( $id('kpiGap').textContent = Math.max(0,sumDue-avail).toFixed(2) );
 
-  // TX table
   const txBody=document.querySelector('#txTable tbody'); if(txBody){
     txBody.innerHTML='';
     (tx||[]).forEach(r=>{
@@ -1073,7 +1114,6 @@ function render(){
     });
   }
 
-  // Bills
   const billBody=document.querySelector('#billTable tbody'); if(billBody){
     billBody.innerHTML='';
     (bills||[]).forEach(r=>{
@@ -1087,7 +1127,7 @@ function render(){
       tr.innerHTML = `<td>${toISO(getVal(r,["Termin płatności","Termin","Termin платності"])||"")}</td>
         <td>${getVal(r,["Numer faktury","Numer фактуры","Invoice number"])||""}</td>
         <td>${getVal(r,["Dostawca","Supplier"])||""}</td>
-        <td>${getVal(r,["Kwota do zapłaty","Kwota","Kwota"])||""}</td>
+        <td>${getVal(r,["Kwota do zapłaty","Kwота","Kwota"])||""}</td>
         <td>${cur}</td>
         <td><span class="badge ${cls}">${getVal(r,["Status faktury","Status фактуры","Status"])||""}</span></td>
         <td>${cand?('<span class="badge cand">'+cand+'</span>'):'—'}</td>
@@ -1412,4 +1452,3 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 </script>
 </body>
 </html>
-
