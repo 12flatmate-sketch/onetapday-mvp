@@ -112,6 +112,7 @@
       <button id="runAI" class="btn secondary" data-i="btn_ai_match">Dopasowanie AI</button>
       <button id="acceptSafe" class="btn secondary" data-i="btn_accept_safe">Akceptuj bezpieczne pary</button>
       <button id="exportPDF" class="btn secondary" data-i="btn_pdf">Raport PDF</button>
+      <button id="exportBook" class="btn secondary">Eksport księgi (CSV)</button>
       <span id="lastSync" class="pill" data-i="sync_ts">Synchronizacja: —</span>
       <span class="right pill" id="modeCash">Mode: auto</span>
     </div>
@@ -217,29 +218,7 @@
       <tbody></tbody>
     </table>
 
-    <div class="row" style="margin-top:12px">
-      <button id="exportBook" class="btn secondary">Eksport księgi (CSV)</button>
-      <span class="muted">Zunifikowana tabela: bank + faktury + kasa</span>
-    </div>
-    <table id="bookTable">
-      <thead>
-        <tr>
-          <th>Data</th>
-          <th>Źródło</th>
-          <th>Konto</th>
-          <th>Kontrahent</th>
-          <th>Opis</th>
-          <th>Kwota</th>
-          <th>Waluta</th>
-          <th>Typ</th>
-          <th>Nr</th>
-          <th>Data dok.</th>
-          <th>Termin</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <!-- (таблица księgi убрана — экспорт доступен на Панели) -->
   </div>
 
   <!-- INVOICES -->
@@ -481,7 +460,7 @@ const M = {
     btn_sync:"Synchronizuj", btn_ai_match:"Dopasowanie AI", btn_accept_safe:"Akceptuj bezpieczne pary", btn_pdf:"Raport PDF", sync_ts:"Synchronizacja: —",
     minpay_title:"Minimalna płatność (kara-stop)", btn_apply_minpay:"Oznacz jako opłacone",
     forecast_7d:"Prognoza 7 dni", forecast7d_note:"Liczy włączone konta PLN + kasa.",
-    forecast_30d:"Prognoza 30 dni", forecast30_note:"Autoprognoza z wyciągów + kasa na 30 dni.",
+    forecast_30d:"Prognoza 30 dni", forecast30_note:"Autoprognoza z wyciągów + kasa на 30 dni.",
     month_summary_title:"Podsumowanie miesiąca",
     plan_title:"Plan płatności pod kasę", filter_label:"Filtr:", filter_today:"Dziś", filter_7d:"7 dni", filter_all:"Wszystko", exclude_blacklist:"Wyklucz blacklistę",
     btn_make_plan:"Utwórz plan", btn_apply_plan:"Zastosuj plan",
@@ -503,7 +482,7 @@ const M = {
     btn_save_settings:"Zapisz", btn_export_settings:"Eksport ustawień", btn_import_settings:"Import ustawień",
     btn_clear_all:"Wyczyść historię (lokalnie)",
     sub_title:"Subskrypcja / Demo", btn_start_demo:"Uruchom demo (24h)", btn_pay_sub:"Opłać subskrypcję", btn_end_demo:"Zakończ demo",
-    sub_hint:"Płatność tylko w Ustawieniach. Jeśli masz link Stripe — ustaw w localStorage.stripe_link.",
+    sub_hint:"Płatność tylko в Ustawieniach. Jeśli masz link Stripe — ustaw w localStorage.stripe_link.",
     ph_amount:"Kwota", ph_comment:"Komentarz"
   },
   uk:{ /* ——— UK ——— */
@@ -782,22 +761,29 @@ function parseBankOCR(text){
     const d2=L.match(/(\d{4}-\d{2}-\d{2})/);
     if(d1||d2){ curDate = toISO((d1?d1[1]:d2[1])); continue; }
 
-    // Amount and currency
-    const amtM = L.match(/([−-]?\s?\d+[\s,\.]*\d{0,2})\s*(PLN|EUR|USD|zł|zl)?/i);
+    // Amount + sign rules
+    const amtM = L.match(/([()−\-+]*\s*\d{1,3}(?:[\s ]\d{3})*(?:[.,]\d{2})?)/);
     if(amtM){
-      const amountRaw = amtM[1];
-      const sign = /−|-/.test(amountRaw) ? -1 : (/(^|\s)[+]\s?\d/.test(L)?1:null);
+      const raw = amtM[1];
       const cur = detectCurrency(L);
-      // Counterparty line often previous line
-      const counterparty = (lines[i-1] && !/(PLN|EUR|USD|zł|zl)/i.test(lines[i-1]) ? lines[i-1] : L.split(amountRaw)[0]).toString().trim();
-      const amt = asNum(amountRaw) * (sign===-1 ? -1 : (/\bPhone transfer\b|przelew|transfer/i.test(L) && /-/.test(amountRaw)? -1 : (/-/.test(amountRaw)?-1:1)));
-      if(Math.abs(amt)>0){
+      const n = asNum(raw);
+      if(n!==0){
+        const negHints = /(−|-|\(|obciąż|debet|wypłat|withdraw|charge)/i.test(L);
+        const posHints = /(\+|uznanie|wpływ|przych|credit)/i.test(L);
+        let sign = 0;
+        if(negHints && !posHints) sign = -1;
+        else if(posHints && !negHints) sign = +1;
+        else if(/[()]/.test(raw) || /−|-/.test(raw)) sign = -1;
+        else if(/\+/.test(raw)) sign = +1;
+        else sign = +1; // если нет минуса — считаем как приход
+        const amt = sign * Math.abs(n);
+        const counterparty = (lines[i-1] && !/(PLN|EUR|USD|zł|zl)/i.test(lines[i-1]) ? lines[i-1] : L.replace(raw,'')).toString().trim();
         out.push({
           "Data księgowania": curDate || today(),
           "ID transakcji": 'ocr-'+Date.now()+'-'+out.length,
           "ID konta": 'UNKNOWN',
           "Kontrahent": counterparty.replace(/[•·]/g,'').slice(0,120),
-          "Tytuł/Opis": L.slice(0,200),
+          "Tytuł/Opis": L.slice(0,220),
           "Kwota": amt.toFixed(2),
           "Waluta": cur,
           "Status transakcji":""
@@ -810,23 +796,29 @@ function parseBankOCR(text){
 function parseInvoiceOCR(text){
   const norm = text.replace(/\n+/g,'\n');
   const get = (re)=>{ const m=norm.match(re); return m?m[1].trim():''; };
-  const inv = get(/Faktura\s*(?:numer|nr)?\s*([A-Za-z0-9\-\/\.]+)/i) || get(/Invoice\s*(?:No|Number)\s*([A-Za-z0-9\-\/\.]+)/i);
-  let supplier = get(/Sprzedawca[:\s\n]+([^\n]+)(?:\n|$)/i) || get(/Seller[:\s\n]+([^\n]+)(?:\n|$)/i);
-  if(!supplier){ // fallback: first uppercase line near top
+  // invoice number: классика + общий шаблон вида 147/CS-FR/2025
+  const invClassic = get(/\bFaktura(?:\s*VAT)?\s*(?:numer|nr)?[:\s]*([A-Za-z0-9\-\/\.]+)/i) || get(/\bInvoice\s*(?:No|Number)[:\s]*([A-Za-z0-9\-\/\.]+)/i);
+  const invPattern = (norm.match(/(\d{1,6}\/[A-Z0-9][A-Z0-9\-]*\/\d{4})/)||[])[1] || '';
+  const inv = (invClassic || invPattern || '').replace(/[^\w\/\-\.]/g,'');
+  // supplier (продавец/виставивший)
+  let supplier = get(/Sprzedawca[:\s\n]+([^\n]+)(?:\n|$)/i) || get(/Dostawca[:\s\n]+([^\n]+)(?:\n|$)/i) || get(/Issuer|Seller[:\s\n]+([^\n]+)(?:\n|$)/i);
+  if(!supplier){
     supplier = norm.split('\n').find(x=>/[A-ZĄĆĘŁŃÓŚŹŻ]{3,}/.test(x))||'';
   }
-  const due = toISO(get(/Termin\s*płatności[:\s]+([^\n]+)/i));
-  const issue = toISO(get(/Data\s*wystawienia[:\s]+([^\n]+)/i));
-  let totalTxt = get(/Do\s*zapłaty[:\s]+([^\n]+)/i);
+  // due / issue dates
+  const due = toISO(get(/Termin\s*(?:płatności|zapłaty)[:\s]+([^\n]+)/i)) || toISO(get(/Payment\s*(?:due|date)[:\s]+([^\n]+)/i));
+  const issue = toISO(get(/Data\s*wystawienia[:\s]+([^\n]+)/i)) || toISO(get(/Issue\s*date[:\s]+([^\n]+)/i));
+  // total
+  let totalTxt = get(/Do\s*zapłaty[:\s]+([^\n]+)/i) || get(/Razem\s*do\s*zapłaty[:\s]+([^\n]+)/i);
   if(!totalTxt){
-    const bruttoLine = norm.match(/Wartość\s*brutto[^\n]*?(\d+[\s,.]\d{2})\s*(PLN|EUR|USD)?/i);
-    if(bruttoLine) totalTxt = bruttoLine[1] + ' ' + (bruttoLine[2]||'');
+    const bruttoLine = norm.match(/(?:Wartość|Razem)\s*brutto[^\n]*?(\d{1,3}(?:[\s ]\d{3})*(?:[.,]\d{2}))/i);
+    if(bruttoLine) totalTxt = bruttoLine[1];
   }
   const currency = detectCurrency(totalTxt||norm);
   const total = Math.abs(asNum(totalTxt));
   return [{
-    "Termin płatności": due || issue || today(),
-    "Numer faktury": inv || ('INV-'+Date.now()),
+    "Termin płatności": (due || issue || today()),
+    "Numer faktury": (inv || ('INV-'+Date.now())),
     "Dostawca": supplier.slice(0,120),
     "Kwota do zapłaty": total ? total.toFixed(2) : '0.00',
     "Waluta": currency,
@@ -983,7 +975,7 @@ function bookRows(){
   return rows.sort((a,b)=> (a.date<b.date?-1: a.date>b.date?1:0));
 }
 function renderBook(){
-  const tb=document.querySelector('#bookTable tbody'); if(!tb) return; tb.innerHTML='';
+  const tb=document.querySelector('#bookTable tbody'); if(!tb) return; // таблицы нет — тихий выход
   const rows=bookRows();
   rows.forEach(r=>{
     const tr=document.createElement('tr');
@@ -1095,7 +1087,7 @@ function render(){
       tr.innerHTML = `<td>${toISO(getVal(r,["Termin płatności","Termin","Termin платності"])||"")}</td>
         <td>${getVal(r,["Numer faktury","Numer фактуры","Invoice number"])||""}</td>
         <td>${getVal(r,["Dostawca","Supplier"])||""}</td>
-        <td>${getVal(r,["Kwota do zapłaty","Kwота","Kwota"])||""}</td>
+        <td>${getVal(r,["Kwota do zapłaty","Kwota","Kwota"])||""}</td>
         <td>${cur}</td>
         <td><span class="badge ${cls}">${getVal(r,["Status faktury","Status фактуры","Status"])||""}</span></td>
         <td>${cand?('<span class="badge cand">'+cand+'</span>'):'—'}</td>
