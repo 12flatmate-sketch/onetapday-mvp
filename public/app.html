@@ -218,7 +218,7 @@
     </table>
 
     <div class="row" style="margin-top:12px">
-      <button id="exportBook" class="btn secondary">Eksport księgi (CSV)</button>
+      <button id="exportBook" class="btn secondary" data-i="btn_export_book">Eksport księgi (CSV)</button>
       <span class="muted">Zunifikowana tabela: bank + faktury + kasa</span>
     </div>
     <table id="bookTable">
@@ -436,7 +436,9 @@ const M = {
     btn_clear_all:"Очистить историю (локально)",
     sub_title:"Подписка / Демо", btn_start_demo:"Запустить демо (24 ч)", btn_pay_sub:"Оплатить подписку", btn_end_demo:"Закончить демо",
     sub_hint:"Оплата только в Настройках. Если есть ссылka Stripe — положи в localStorage.stripe_link.",
-    ph_amount:"Сумма", ph_comment:"Комментарий"
+    ph_amount:"Сумма", ph_comment:"Комментарий",
+    /* NEW: export book */
+    btn_export_book:"Экспорт книги (CSV)"
   },
   en:{ /* ——— EN ——— */
     tab_dashboard:"Dashboard", tab_statement:"Statement", tab_invoices:"Invoices", tab_accounts:"Accounts", tab_cash:"Cash", tab_settings:"Settings",
@@ -470,7 +472,9 @@ const M = {
     btn_clear_all:"Clear history (local)",
     sub_title:"Subscription / Demo", btn_start_demo:"Start demo (24h)", btn_pay_sub:"Pay subscription", btn_end_demo:"End demo",
     sub_hint:"Payment only in Settings. If you have a Stripe link, put it in localStorage.stripe_link.",
-    ph_amount:"Amount", ph_comment:"Comment"
+    ph_amount:"Amount", ph_comment:"Comment",
+    /* NEW: export book */
+    btn_export_book:"Export ledger (CSV)"
   },
   pl:{ /* ——— PL ——— */
     tab_dashboard:"Panel", tab_statement:"Wyciąg", tab_invoices:"Faktury", tab_accounts:"Konta", tab_cash:"Kasa", tab_settings:"Ustawienia",
@@ -500,11 +504,13 @@ const M = {
     cash_th_date:"Data", cash_th_type:"Typ", cash_th_amount:"Kwota", cash_th_source:"Źródło", cash_th_comment:"Komentarz",
     parameters:"Parametry", param_cash_label:"Ręczna dostępna kasa dziś (PLN):", param_penalty_label:"Kara, %/dzień:", param_interval_label:"Interwał synchronizacji, min:",
     rateEUR_label:"rateEUR:", rateUSD_label:"rateUSD:", blacklist_label:"Czarna lista (przecinki):", auto_mode_label:"Auto: z kont wyciągu (włączone) + kasa",
-    btn_save_settings:"Zapisz", btn_export_settings:"Eksпорт ustawień", btn_import_settings:"Import ustawień",
+    btn_save_settings:"Zapisz", btn_export_settings:"Eksport ustawień", btn_import_settings:"Import ustawień",
     btn_clear_all:"Wyczyść historię (lokalnie)",
     sub_title:"Subskrypcja / Demo", btn_start_demo:"Uruchom demo (24h)", btn_pay_sub:"Opłać subskrypcję", btn_end_demo:"Zakończ demo",
     sub_hint:"Płatność tylko w Ustawieniach. Jeśli masz link Stripe — ustaw w localStorage.stripe_link.",
-    ph_amount:"Kwota", ph_comment:"Komentarz"
+    ph_amount:"Kwota", ph_comment:"Komentarz",
+    /* NEW: export book */
+    btn_export_book:"Eksport księgi (CSV)"
   },
   uk:{ /* ——— UK ——— */
     tab_dashboard:"Пульт", tab_statement:"Виписка", tab_invoices:"Рахунки", tab_accounts:"Рахунки", tab_cash:"Каса", tab_settings:"Налаштування",
@@ -538,7 +544,9 @@ const M = {
     btn_clear_all:"Очистити історію (локально)",
     sub_title:"Підписка / Демо", btn_start_demo:"Запустити демо (24 год)", btn_pay_sub:"Оплатити підписку", btn_end_demo:"Завершити демо",
     sub_hint:"Оплата лише в Налаштуваннях. Якщо є посилання Stripe — покладіть у localStorage.stripe_link.",
-    ph_amount:"Сума", ph_comment:"Коментар"
+    ph_amount:"Сума", ph_comment:"Коментар",
+    /* NEW: export book */
+    btn_export_book:"Експорт книги (CSV)"
   }
 };
 
@@ -598,27 +606,32 @@ function toISO(d){
   const p=Date.parse(s); if(!isNaN(p)) return new Date(p).toISOString().slice(0,10);
   return "";
 }
-
-/* ==== OCR-v2 helpers (NEW) ==== */
-const OUT_KEYWORDS = [
-  /kart/i, /transakcj/i, /płat/i, /zakup/i, /opłat/i, /prowiz/i,
-  /bilet/i, /urbandcard/i, /koleo/i, /żabka|zabka/i, /biedronk/i, /sklep/i, /bolt/i
-];
-const IN_KEYWORDS = [
-  /wpłat/i, /zasil/i, /przych/i, /otrzym/i, /received/i,
-  /przelew.*(przychodz|na telefon|od)/i, /phone\s*transfer/i, /refund/i, /zwrot/i
-];
-function inferSignFromText(line, amountRaw){
-  if(/[−-]\s*\d/.test(amountRaw)) return -1;
-  if(/[+]\s*\d/.test(line)) return 1;
-  if(OUT_KEYWORDS.some(rx=>rx.test(line))) return -1;
-  if(IN_KEYWORDS.some(rx=>rx.test(line))) return 1;
-  return 1;
+function fmtAmountRaw(raw){
+  const n=asNum(raw); if(!Number.isFinite(n)) return '<span>—</span>';
+  const sign=n<0?'-':'+', cls=n<0?'amt-neg':'amt-pos';
+  const abs=Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g," ");
+  return `<span class="${cls}">${sign} ${abs}</span>`;
 }
-function pickCounterparty(lines, i, fallback){
-  const prev = (lines[i-1] || "").trim();
-  if(prev && !/(PLN|EUR|USD)/i.test(prev) && !/\d+[,\.\s]\d{2}/.test(prev)) return prev.slice(0,120);
-  return (fallback || "").replace(/[•·]/g,'').slice(0,120);
+function smartSplit(line,del){
+  let out=[],cur="",q=false;
+  for(let i=0;i<line.length;i++){const ch=line[i]; if(ch==='"'){q=!q;continue} if(ch===del && !q){out.push(cur);cur="";} else cur+=ch;}
+  out.push(cur); return out;
+}
+function parseCSV(text){
+  if(!text) return []; text=text.replace(/^\uFEFF/,'').replace(/\r/g,"");
+  const lines=text.split("\n").filter(l=>l.trim()); if(!lines.length) return [];
+  const sep=(lines[0].split(";").length>lines[0].split(",").length)?";":",";
+  const head=smartSplit(lines.shift(),sep).map(h=>h.trim());
+  return lines.map(line=>{
+    const cells=smartSplit(line,sep); const obj={};
+    head.forEach((h,i)=>{let v=(cells[i]||"").trim(); v=v.replace(/\u00A0/g,' ').trim(); obj[h]=v;}); return obj;
+  });
+}
+function getVal(obj,keys){
+  if(!obj) return ""; for(const k of keys){ if(k in obj && String(obj[k]).trim()!=="") return obj[k]; }
+  const low=Object.keys(obj).reduce((m,x)=>(m[x.toLowerCase()]=obj[x],m),{});
+  for(const k of keys){const kk=k.toLowerCase(); if(kk in low && String(low[kk]).trim()!="") return low[kk];}
+  return "";
 }
 
 /* ==== STATE ==== */
@@ -766,101 +779,64 @@ async function recognizeImage(file){
   const { data:{ text } } = await Tesseract.recognize(file, 'pol+eng+rus', { logger:()=>{} });
   return text.replace(/\u00A0/g,' ').replace(/\r/g,'').replace(/\t/g,' ').replace(/ +/g,' ').trim();
 }
-
-/* ==== REPLACED: parseBankOCR (v2) ==== */
 function parseBankOCR(text){
   const lines = text.split(/\n+/).map(s=>s.trim()).filter(Boolean);
   const out = [];
   let curDate = today();
-
   for(let i=0;i<lines.length;i++){
     const L = lines[i];
-
     const d1=L.match(/(\d{1,2}\s+[A-Za-zĄąĆćĘęŁłŃńÓóŚśŹźŻżА-Яа-яё]+\s+\d{4})/);
     const d2=L.match(/(\d{4}-\d{2}-\d{2})/);
-    const d3=L.match(/(\d{2}\.\d{2}\.\d{4})/);
-    if(d1||d2||d3){ curDate = toISO((d1?.[1]||d2?.[1]||d3?.[1])); continue; }
+    if(d1||d2){ curDate = toISO((d1?d1[1]:d2[1])); continue; }
 
-    const amtM = L.match(/([−-+]?\s?\d{1,3}(?:[ \u00A0]\d{3})*[,\.\s]\d{2})\s*(PLN|EUR|USD|zł|zl)?/i);
-    if(!amtM) continue;
-
-    const amountRaw = amtM[1];
-    const cur = detectCurrency(L);
-    const sign = inferSignFromText(L, amountRaw);
-    const amt = asNum(amountRaw) * (sign===-1 ? -1 : 1);
-    if(!Number.isFinite(amt) || Math.abs(amt)===0) continue;
-
-    const counterparty = pickCounterparty(lines, i, L.split(amountRaw)[0]);
-    out.push({
-      "Data księgowania": curDate || today(),
-      "ID transakcji": 'ocr-'+Date.now()+'-'+out.length,
-      "ID konta": 'UNKNOWN',
-      "Kontrahent": counterparty,
-      "Tytuł/Opis": L.slice(0,200),
-      "Kwota": amt.toFixed(2),
-      "Waluta": cur,
-      "Status transakcji":""
-    });
+    const amtM = L.match(/([−-]?\s?\d+[\s,\.]*\d{0,2})\s*(PLN|EUR|USD|zł|zl)?/i);
+    if(amtM){
+      const amountRaw = amtM[1];
+      const sign = /−|-/.test(amountRaw) ? -1 : (/(^|\s)[+]\s?\d/.test(L)?1:null);
+      const cur = detectCurrency(L);
+      const counterparty = (lines[i-1] && !/(PLN|EUR|USD|zł|zl)/i.test(lines[i-1]) ? lines[i-1] : L.split(amountRaw)[0]).toString().trim();
+      const amt = asNum(amountRaw) * (sign===-1 ? -1 : (/\bPhone transfer\b|przelew|transfer/i.test(L) && /-/.test(amountRaw)? -1 : (/-/.test(amountRaw)?-1:1)));
+      if(Math.abs(amt)>0){
+        out.push({
+          "Data księgowania": curDate || today(),
+          "ID transakcji": 'ocr-'+Date.now()+'-'+out.length,
+          "ID konta": 'UNKNOWN',
+          "Kontrahent": counterparty.replace(/[•·]/g,'').slice(0,120),
+          "Tytuł/Opis": L.slice(0,200),
+          "Kwota": amt.toFixed(2),
+          "Waluta": cur,
+          "Status transakcji":""
+        });
+      }
+    }
   }
   return out;
 }
-
-/* ==== REPLACED: parseInvoiceOCR (v2) ==== */
 function parseInvoiceOCR(text){
-  const norm = text.replace(/\r/g,'').replace(/[ \t]+\n/g,'\n').replace(/\n{2,}/g,'\n').trim();
+  const norm = text.replace(/\n+/g,'\n');
   const get = (re)=>{ const m=norm.match(re); return m?m[1].trim():''; };
-
-  const inv = get(/Faktura\s*(?:numer|nr)?\s*([A-Za-z0-9\-\/\.]+)/i) ||
-              get(/Invoice\s*(?:No|Number)\s*([A-Za-z0-9\-\/\.]+)/i);
-
-  let supplier = get(/Sprzedawca[:\s\n]+([^\n]+)(?:\n|$)/i) ||
-                 get(/Seller[:\s\n]+([^\n]+)(?:\n|$)/i);
+  const inv = get(/Faktura\s*(?:numer|nr)?\s*([A-Za-z0-9\-\/\.]+)/i) || get(/Invoice\s*(?:No|Number)\s*([A-Za-z0-9\-\/\.]+)/i);
+  let supplier = get(/Sprzedawca[:\s\n]+([^\n]+)(?:\n|$)/i) || get(/Seller[:\s\n]+([^\n]+)(?:\n|$)/i);
   if(!supplier){
-    supplier = (norm.split('\n').find(x=>/[A-ZĄĆĘŁŃÓŚŹŻ]{3,}/.test(x))||'').slice(0,120);
+    supplier = norm.split('\n').find(x=>/[A-ZĄĆĘŁŃÓŚŹŻ]{3,}/.test(x))||'';
   }
-
   const due = toISO(get(/Termin\s*płatności[:\s]+([^\n]+)/i));
   const issue = toISO(get(/Data\s*wystawienia[:\s]+([^\n]+)/i));
-
   let totalTxt = get(/Do\s*zapłaty[:\s]+([^\n]+)/i);
   if(!totalTxt){
-    const brutto = norm.match(/Wartość\s*brutto[^\n]*?(\d{1,3}(?:[ \u00A0]\d{3})*[,\.\s]\d{2})\s*(PLN|EUR|USD)?/i);
-    if(brutto) totalTxt = `${brutto[1]} ${brutto[2]||''}`;
+    const bruttoLine = norm.match(/Wartość\s*brutto[^\n]*?(\d+[\s,.]\d{2})\s*(PLN|EUR|USD)?/i);
+    if(bruttoLine) totalTxt = bruttoLine[1] + ' ' + (bruttoLine[2]||'');
   }
-
   const currency = detectCurrency(totalTxt||norm);
   const total = Math.abs(asNum(totalTxt));
-
   return [{
     "Termin płatności": due || issue || today(),
     "Numer faktury": inv || ('INV-'+Date.now()),
-    "Dostawca": supplier,
+    "Dostawca": supplier.slice(0,120),
     "Kwota do zapłaty": total ? total.toFixed(2) : '0.00',
     "Waluta": currency,
     "Status faktury": "do zapłaty"
   }];
-}
-
-function parseCSV(text){
-  if(!text) return []; text=text.replace(/^\uFEFF/,'').replace(/\r/g,"");
-  const lines=text.split("\n").filter(l=>l.trim()); if(!lines.length) return [];
-  const sep=(lines[0].split(";").length>lines[0].split(",").length)?";":",";
-  const head=smartSplit(lines.shift(),sep).map(h=>h.trim());
-  return lines.map(line=>{
-    const cells=smartSplit(line,sep); const obj={};
-    head.forEach((h,i)=>{let v=(cells[i]||"").trim(); v=v.replace(/\u00A0/g,' ').trim(); obj[h]=v;}); return obj;
-  });
-}
-function smartSplit(line,del){
-  let out=[],cur="",q=false;
-  for(let i=0;i<line.length;i++){const ch=line[i]; if(ch==='"'){q=!q;continue} if(ch===del && !q){out.push(cur);cur="";} else cur+=ch;}
-  out.push(cur); return out;
-}
-function getVal(obj,keys){
-  if(!obj) return ""; for(const k of keys){ if(k in obj && String(obj[k]).trim()!=="") return obj[k]; }
-  const low=Object.keys(obj).reduce((m,x)=>(m[x.toLowerCase()]=obj[x],m),{});
-  for(const k of keys){const kk=k.toLowerCase(); if(kk in low && String(low[kk]).trim()!="") return low[kk];}
-  return "";
 }
 
 /* ==== PERSIST LOCAL ==== */
@@ -1031,12 +1007,6 @@ function exportBookCSV(){
 }
 
 /* ==== RENDER ==== */
-function fmtAmountRaw(raw){
-  const n=asNum(raw); if(!Number.isFinite(n)) return '<span>—</span>';
-  const sign=n<0?'-':'+', cls=n<0?'amt-neg':'amt-pos';
-  const abs=Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g," ");
-  return `<span class="${cls}">${sign} ${abs}</span>`;
-}
 function renderKasa(){
   const tb=document.querySelector('#kasaTable tbody'); if(!tb) return; tb.innerHTML='';
   kasa.forEach((k,i)=>{
