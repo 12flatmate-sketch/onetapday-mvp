@@ -85,7 +85,7 @@
     </div>
   </div>
 
-  <!-- ACCESS GATE (hidden if demo/sub active) -->
+  <!-- ACCESS GATE -->
   <div id="gate" class="gate hidden">
     <div data-i="gate_locked_title" style="font-weight:700;margin-bottom:6px">Dostęp zablokowany</div>
     <div class="muted" data-i="gate_locked_desc">
@@ -198,7 +198,7 @@
       <input id="txUrl" type="text" placeholder="" data-i-ph="placeholder_csv_url"/>
       <button id="saveTxUrl" class="btn secondary" data-i="save_url">Zapisz URL</button>
       <span class="muted" data-i="statement_columns_note">
-        Kolumny: Data księgowania, ID transakcji, ID konta (lub IBAN), Kontrahent, Tytuł/Opis, Kwota(±), Waluta, Status, Saldo?
+        Kolumny: Data księgowania, ID transakcji, ID konta/IBAN, Kontrahent, Tytuł/Opis, Kwota(±), Waluta, Status, Saldo?
       </span>
     </div>
     <table id="txTable">
@@ -212,30 +212,6 @@
           <th data-i="th_currency">Waluta</th>
           <th data-i="th_status">Status</th>
           <th data-i="th_actions">Działania</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-
-    <div class="row" style="margin-top:12px">
-      <button id="exportBook" class="btn secondary">Eksport księgi (CSV)</button>
-      <span class="muted">Zunifikowana tabela: bank + faktury + kasa</span>
-    </div>
-    <table id="bookTable">
-      <thead>
-        <tr>
-          <th>Data</th>
-          <th>Źródło</th>
-          <th>Konto</th>
-          <th>Kontrahent</th>
-          <th>Opis</th>
-          <th>Kwota</th>
-          <th>Waluta</th>
-          <th>Typ</th>
-          <th>Nr</th>
-          <th>Data dok.</th>
-          <th>Termin</th>
-          <th>Status</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -263,6 +239,7 @@
           <th data-i="inv_th_supplier">Dostawca</th>
           <th data-i="inv_th_amount">Kwota</th>
           <th data-i="inv_th_currency">Waluta</th>
+          <th>Typ</th>
           <th data-i="inv_th_status">Status</th>
           <th data-i="inv_th_candidate">Kandydat</th>
           <th data-i="inv_th_score">Score</th>
@@ -400,7 +377,7 @@ const SUB_FROM = 'otd_sub_from';
 const SUB_TO   = 'otd_sub_to';
 const DEMO_START = 'otd_demo_started_at';
 const USER_KEY = 'otd_user'; // email
-let REMOTE_OK = localStorage.getItem('remote_disabled')==='1' ? false : true;
+let API_OK = false; // авто-детект наличия backend
 
 /* ==== I18N ==== */
 const M = {
@@ -541,8 +518,13 @@ const M = {
     ph_amount:"Сума", ph_comment:"Коментар"
   }
 };
+// Вставляю полный словарь из твоего файла:
+M.ru={tab_dashboard:"Пульт",tab_statement:"Выписка",tab_invoices:"Фактуры",tab_accounts:"Счета",tab_cash:"Касса",tab_settings:"Настройки",gate_locked_title:"Доступ заблокирован",gate_locked_desc:"Демо истекло или нет активной подписки. Перейдите в Настройки, чтобы запустить демо (24 ч) или оплатить доступ.",gate_open_settings:"Открыть Настройки",kpi_due_today:"К оплате сегодня",kpi_unmatched:"Несвязанные транзакции",kpi_banks:"Банки в расчёте",kpi_cash:"Касса (нал)",kpi_total:"Доступно всего",kpi_gap_today:"Разрыв кассы сегодня",btn_sync:"Синхронизация",btn_ai_match:"ИИ-сверка",btn_accept_safe:"Принять безопасные пары",btn_pdf:"PDF отчёт",sync_ts:"Синхронизация: —",minpay_title:"Минимальный платёж (штраф-стоп)",btn_apply_minpay:"Отметить как оплачено",forecast_7d:"Прогноз 7 дней",forecast7d_note:"Считает PLN-счета (включённые) + кассу.",forecast_30d:"Прогноз 30 дней",forecast30_note:"Автопрогноз по выпискам + кассе на 30 дней.",month_summary_title:"Итоги месяца",plan_title:"План платежей под кассу",filter_label:"Фильтр:",filter_today:"Сегодня",filter_7d:"7 дней",filter_all:"Все",exclude_blacklist:"Исключать blacklist",btn_make_plan:"Сформировать",btn_apply_plan:"Применить",plan_th_invoice:"Фактура",plan_th_supplier:"Поставщик",plan_th_due:"Срок",plan_th_amount:"Сумма",plan_th_reason:"Причина",upload_statement:"Загрузить выписку (CSV)",upload_statement_image:"Загрузить скрин выписки (галерея)",placeholder_csv_url:"URL CSV выписки",save_url:"Сохранить URL",statement_columns_note:"Колонки: дата, id транзакции, id счёта/IBAN, контрагент, описание, сумма(±), валюта, статус, saldo?",th_date:"Дата",th_account:"Счёт",th_counterparty:"Контрагент",th_desc:"Описание",th_amount:"Сумма",th_currency:"Валюта",th_status:"Статус",th_actions:"Действия",upload_invoices:"Загрузить счета (CSV)",upload_invoice_images:"Загрузить фото фактуры",invoices_note:"Распознаются № фактуры, суммы и даты.",inv_th_due:"Срок",inv_th_number:"№",inv_th_supplier:"Поставщик",inv_th_amount:"Сумма",inv_th_currency:"Валюта",inv_th_status:"Статус",inv_th_candidate:"Кандидат",inv_th_score:"Score",inv_th_action:"Действие",auto_accounts_title:"Счета из выписки (авто)",auto_accounts_desc:"Редактируй валюту, стартовый баланс и включение в план.",acc_th_account:"Счёт",acc_th_type:"Тип",acc_th_currency:"Валюта",acc_th_balance_calc:"Баланс (расчёт)",acc_th_start_balance:"Стартовый баланс",acc_th_include:"В расчёт",cash_title:"Касса — быстрые операции",cash_note:"Голосовая касса + быстрые кнопки",btn_add_in:"+ Приём",btn_add_out:"− Выдача",btn_close_shift:"Закрыть смену",speech_lang_label:"Язык распознавания:",cash_photo_note:"Фото чека/выписки — распознать сумму и описание.",cash_th_date:"Дата",cash_th_type:"Тип",cash_th_amount:"Сумма",cash_th_source:"Источник",cash_th_comment:"Комментарий",parameters:"Параметры",param_cash_label:"Доступная касса сегодня (PLN):",param_penalty_label:"Пеня, %/день:",param_interval_label:"Интервал синха, мин:",rateEUR_label:"rateEUR:",rateUSD_label:"rateUSD:",blacklist_label:"Blacklist (через запятую):",auto_mode_label:"Авто: из счетов (включённые) + касса",btn_save_settings:"Сохранить",btn_export_settings:"Экспорт настроек",btn_import_settings:"Импорт настроек",btn_clear_all:"Очистить историю (локально)",sub_title:"Подписка / Демо",btn_start_demo:"Запустить демо (24 ч)",btn_pay_sub:"Оплатить подписку",btn_end_demo:"Закончить демо",sub_hint:"Оплата только в Настройках. Если есть ссылka Stripe — положи в localStorage.stripe_link.",ph_amount:"Сумма",ph_comment:"Комментарий"};
+M.en={tab_dashboard:"Dashboard",tab_statement:"Statement",tab_invoices:"Invoices",tab_accounts:"Accounts",tab_cash:"Cash",tab_settings:"Settings",gate_locked_title:"Access locked",gate_locked_desc:"Demo ended or subscription inactive. Go to Settings to start a 24h demo or pay.",gate_open_settings:"Open Settings",kpi_due_today:"Due today",kpi_unmatched:"Unmatched transactions",kpi_banks:"Bank balances",kpi_cash:"Cash (PLN)",kpi_total:"Available total",kpi_gap_today:"Cash gap today",btn_sync:"Sync",btn_ai_match:"AI match",btn_accept_safe:"Accept safe matches",btn_pdf:"PDF report",sync_ts:"Sync: —",minpay_title:"Minimum payment (penalty-stop)",btn_apply_minpay:"Mark as paid",forecast_7d:"7-day forecast",forecast7d_note:"Calculates included PLN accounts + cash.",forecast_30d:"30-day forecast",forecast30_note:"Auto-forecast from statements + cash.",month_summary_title:"Month summary",plan_title:"Payment plan for cash",filter_label:"Filter:",filter_today:"Today",filter_7d:"7 days",filter_all:"All",exclude_blacklist:"Exclude blacklist",btn_make_plan:"Build plan",btn_apply_plan:"Apply plan",plan_th_invoice:"Invoice",plan_th_supplier:"Supplier",plan_th_due:"Due",plan_th_amount:"Amount",plan_th_reason:"Reason",upload_statement:"Upload statement (CSV)",upload_statement_image:"Upload statement screenshot (gallery)",placeholder_csv_url:"CSV statement URL",save_url:"Save URL",statement_columns_note:"Columns: booking date, tx id, account id/IBAN, counterparty, title/description, amount(±), currency, status, balance?",th_date:"Date",th_account:"Account",th_counterparty:"Counterparty",th_desc:"Description",th_amount:"Amount",th_currency:"Currency",th_status:"Status",th_actions:"Actions",upload_invoices:"Upload invoices (CSV)",upload_invoice_images:"Upload invoice photos",invoices_note:"We detect invoice numbers, amounts and dates.",inv_th_due:"Due",inv_th_number:"No",inv_th_supplier:"Supplier",inv_th_amount:"Amount",inv_th_currency:"Currency",inv_th_status:"Status",inv_th_candidate:"Candidate",inv_th_score:"Score",inv_th_action:"Action",auto_accounts_title:"Accounts from statement (auto)",auto_accounts_desc:"Edit currency, start balance and include-in-plan.",acc_th_account:"Account",acc_th_type:"Type",acc_th_currency:"Currency",acc_th_balance_calc:"Balance (calc)",acc_th_start_balance:"Start",acc_th_include:"Include",cash_title:"Cash — quick ops",cash_note:"Voice cash + quick buttons",btn_add_in:"+ In",btn_add_out:"− Out",btn_close_shift:"Close shift",speech_lang_label:"Recognition language:",cash_photo_note:"Receipt/statement photo — detect amount and description.",cash_th_date:"Date",cash_th_type:"Type",cash_th_amount:"Amount",cash_th_source:"Source",cash_th_comment:"Comment",parameters:"Parameters",param_cash_label:"Manual available cash today (PLN):",param_penalty_label:"Penalty, %/day:",param_interval_label:"Sync interval, min:",rateEUR_label:"rateEUR:",rateUSD_label:"rateUSD:",blacklist_label:"Blacklist (comma):",auto_mode_label:"Auto: from included statement accounts + cash",btn_save_settings:"Save",btn_export_settings:"Export settings",btn_import_settings:"Import settings",btn_clear_all:"Clear history (local)",sub_title:"Subscription / Demo",btn_start_demo:"Start demo (24h)",btn_pay_sub:"Pay subscription",btn_end_demo:"End demo",sub_hint:"Payment only in Settings. If you have a Stripe link, put it in localStorage.stripe_link.",ph_amount:"Amount",ph_comment:"Comment"};
+M.pl={tab_dashboard:"Panel",tab_statement:"Wyciąg",tab_invoices:"Faktury",tab_accounts:"Konta",tab_cash:"Kasa",tab_settings:"Ustawienia",gate_locked_title:"Dostęp zablokowany",gate_locked_desc:"Demo zakończone lub brak subskrypcji. Przejdź do Ustawień, aby uruchomić demo (24h) lub opłacić.",gate_open_settings:"Otwórz Ustawienia",kpi_due_today:"Do zapłaty dziś",kpi_unmatched:"Niesparowane transakcje",kpi_banks:"Bilans banków",kpi_cash:"Kasa (PLN)",kpi_total:"Dostępnie razem",kpi_gap_today:"Brak środków dziś",btn_sync:"Synchronizuj",btn_ai_match:"Dopasowanie AI",btn_accept_safe:"Akceptuj bezpieczne pary",btn_pdf:"Raport PDF",sync_ts:"Synchronizacja: —",minpay_title:"Minimalna płatność (kara-stop)",btn_apply_minpay:"Oznacz jako opłacone",forecast_7d:"Prognoza 7 dni",forecast7d_note:"Liczy włączone konta PLN + kasa.",forecast_30d:"Prognoza 30 dni",forecast30_note:"Autoprognoza z wyciągów + kasa na 30 dni.",month_summary_title:"Podsumowanie miesiąca",plan_title:"Plan płatności pod kasę",filter_label:"Filtr:",filter_today:"Dziś",filter_7d:"7 dni",filter_all:"Wszystko",exclude_blacklist:"Wyklucz blacklistę",btn_make_plan:"Utwórz plan",btn_apply_plan:"Zastosuj plan",plan_th_invoice:"Faktura",plan_th_supplier:"Dostawca",plan_th_due:"Termin",plan_th_amount:"Kwota",plan_th_reason:"Powód",upload_statement:"Załaduj wyciąg (CSV)",upload_statement_image:"Załaduj zrzut wyciągu (galeria)",placeholder_csv_url:"URL CSV wyciągu",save_url:"Zapisz URL",statement_columns_note:"Kolumny: Data księgowania, ID transakcji, ID konta/IBAN, Kontrahent, Tytuł/Opis, Kwota(±), Waluta, Status, Saldo?",th_date:"Data",th_account:"Konto",th_counterparty:"Kontrahent",th_desc:"Opis",th_amount:"Kwota",th_currency:"Waluta",th_status:"Status",th_actions:"Działania",upload_invoices:"Załaduj faktury (CSV)",upload_invoice_images:"Załaduj zdjęcia faktur",invoices_note:"Wykrywamy nr faktury, kwotę i datę.",inv_th_due:"Termin",inv_th_number:"Nr",inv_th_supplier:"Dostawca",inv_th_amount:"Kwota",inv_th_currency:"Waluta",inv_th_status:"Status",inv_th_candidate:"Kandydat",inv_th_score:"Score",inv_th_action:"Akcja",auto_accounts_title:"Konta z wyciągu (auto)",auto_accounts_desc:"Edycja waluty, salda początkowego i uwzględnienia w planie.",acc_th_account:"Konto",acc_th_type:"Typ",acc_th_currency:"Waluta",acc_th_balance_calc:"Saldo (oblicz)",acc_th_start_balance:"Start",acc_th_include:"Uwzględnij",cash_title:"Kasa — szybkie operacje",cash_note:"Głosowa kasa + szybkie przyciski",btn_add_in:"+ Przyjęcie",btn_add_out:"− Wydanie",btn_close_shift:"Zamknij zmianę",speech_lang_label:"Język rozpoznawania:",cash_photo_note:"Zdjęcie paragonu/wyciągu — wykryj kwotę i opis.",cash_th_date:"Data",cash_th_type:"Typ",cash_th_amount:"Kwota",cash_th_source:"Źródło",cash_th_comment:"Komentarz",parameters:"Parametry",param_cash_label:"Ręczna dostępna kasa dziś (PLN):",param_penalty_label:"Kara, %/dzień:",param_interval_label:"Interwał synchronizacji, min:",rateEUR_label:"rateEUR:",rateUSD_label:"rateUSD:",blacklist_label:"Czarna lista (przecinki):",auto_mode_label:"Auto: z kont wyciągu (włączone) + kasa",btn_save_settings:"Zapisz",btn_export_settings:"Eksport ustawień",btn_import_settings:"Import ustawień",btn_clear_all:"Wyczyść historię (lokalnie)",sub_title:"Subskrypcja / Demo",btn_start_demo:"Uruchom demo (24h)",btn_pay_sub:"Opłać subskrypcję",btn_end_demo:"Zakończ demo",sub_hint:"Płatność tylko w Ustawieniach. Jeśli masz link Stripe — ustaw w localStorage.stripe_link.",ph_amount:"Kwota",ph_comment:"Komentarz"};
+M.uk={tab_dashboard:"Пульт",tab_statement:"Виписка",tab_invoices:"Рахунки",tab_accounts:"Рахунки",tab_cash:"Каса",tab_settings:"Налаштування",gate_locked_title:"Доступ заблоковано",gate_locked_desc:"Демо завершено або немає підписки. Перейдіть у Налаштування, щоб запустити демо (24 год) або оплатити доступ.",gate_open_settings:"Відкрити Налаштування",kpi_due_today:"До сплати сьогодні",kpi_unmatched:"Неповʼязані транзакції",kpi_banks:"Баланс банків",kpi_cash:"Каса (PLN)",kpi_total:"Доступно всього",kpi_gap_today:"Розрив каси сьогодні",btn_sync:"Синхронізація",btn_ai_match:"AI-звірка",btn_accept_safe:"Прийняти безпечні пари",btn_pdf:"Звіт PDF",sync_ts:"Синхр.: —",minpay_title:"Мінімальний платіж (штраф-стоп)",btn_apply_minpay:"Позначити як сплачено",forecast_7d:"Прогноз 7 днів",forecast7d_note:"Рахує увімкнені PLN-рахунки + касу.",forecast_30d:"Прогноз 30 днів",forecast30_note:"Автопрогноз з виписок + каси.",month_summary_title:"Підсумки місяця",plan_title:"План платежів під касу",filter_label:"Фільтр:",filter_today:"Сьогодні",filter_7d:"7 днів",filter_all:"Всі",exclude_blacklist:"Виключати blacklist",btn_make_plan:"Сформувати",btn_apply_plan:"Застосувати",plan_th_invoice:"Рахунок",plan_th_supplier:"Постачальник",plan_th_due:"Термін",plan_th_amount:"Сума",plan_th_reason:"Причина",upload_statement:"Завантажити виписку (CSV)",upload_statement_image:"Завантажити скрин виписки (галерея)",placeholder_csv_url:"URL CSV виписки",save_url:"Зберегти URL",statement_columns_note:"Колонки: дата, id транзакції, id рахунку/IBAN, контрагент, опис, сума(±), валюта, статус, баланс?",th_date:"Дата",th_account:"Рахунок",th_counterparty:"Контрагент",th_desc:"Опис",th_amount:"Сума",th_currency:"Валюта",th_status:"Статус",th_actions:"Дії",upload_invoices:"Завантажити рахунки (CSV)",upload_invoice_images:"Завантажити фото рахунків",invoices_note:"Виявляємо № рахунку, суму і дату.",inv_th_due:"Термін",inv_th_number:"№",inv_th_supplier:"Постачальник",inv_th_amount:"Сума",inv_th_currency:"Валюта",inv_th_status:"Статус",inv_th_candidate:"Кандидат",inv_th_score:"Score",inv_th_action:"Дія",auto_accounts_title:"Рахунки з виписки (авто)",auto_accounts_desc:"Редагуйте валюту, початковий баланс і включення до плану.",acc_th_account:"Рахунок",acc_th_type:"Тип",acc_th_currency:"Валюта",acc_th_balance_calc:"Баланс (обр.)",acc_th_start_balance:"Старт",acc_th_include:"Включити",cash_title:"Каса — швидкі операції",cash_note:"Голосова каса + швидкі кнопки",btn_add_in:"+ Прихід",btn_add_out:"− Видаток",btn_close_shift:"Закрити зміну",speech_lang_label:"Мова розпізнавання:",cash_photo_note:"Фото чеку/виписки — розпізнати суму та опис.",cash_th_date:"Дата",cash_th_type:"Тип",cash_th_amount:"Сума",cash_th_source:"Джерело",cash_th_comment:"Коментар",parameters:"Параметри",param_cash_label:"Ручна доступна каса сьогодні (PLN):",param_penalty_label:"Пеня, %/день:",param_interval_label:"Інтервал синхр., хв:",rateEUR_label:"rateEUR:",rateUSD_label:"rateUSD:",blacklist_label:"Чорний список (через кому):",auto_mode_label:"Авто: з рахунків (включені) + каса",btn_save_settings:"Зберегти",btn_export_settings:"Експорт налаштувань",btn_import_settings:"Імпорт налаштувань",btn_clear_all:"Очистити історію (локально)",sub_title:"Підписка / Демо",btn_start_demo:"Запустити демо (24 год)",btn_pay_sub:"Оплатити підписку",btn_end_demo:"Завершити демо",sub_hint:"Оплата лише в Налаштуваннях. Якщо є посилання Stripe — покладіть у localStorage.stripe_link.",ph_amount:"Сума",ph_comment:"Коментар"};
 
-/* PLACEHOLDER APPLIER */
+/* PLACEHOLDER/I18N helpers */
 function applyPlaceholders(lang){
   const dict = M[lang]||M.pl;
   document.querySelectorAll('[data-i-ph]').forEach(el=>{
@@ -550,8 +532,6 @@ function applyPlaceholders(lang){
     if (dict[k]) el.setAttribute('placeholder', dict[k]);
   });
 }
-
-/* LANGUAGE APPLY */
 function applyLang(lang){
   const dict = M[lang]||M.pl;
   document.querySelectorAll('[data-i]').forEach(el=>{
@@ -566,35 +546,33 @@ function applyLang(lang){
 /* ==== HELPERS ==== */
 const $id = id => document.getElementById(id);
 const today = () => new Date().toISOString().slice(0,10);
+const MONTHS = {
+  pl:{'stycznia':1,'lutego':2,'marca':3,'kwietnia':4,'maja':5,'czerwca':6,'lipca':7,'sierpnia':8,'września':9,'października':10,'listopada':11,'grudnia':12},
+  ru:{'января':1,'февраля':2,'марта':3,'апреля':4,'мая':5,'июня':6,'июля':7,'августа':8,'сентября':9,'октября':10,'ноября':11,'декабря':12},
+  en:{'january':1,'february':2,'march':3,'april':4,'may':5,'june':6,'july':7,'august':8,'september':9,'october':10,'november':11,'december':12}
+};
 const asNum = v=>{
   if(v==null) return 0; let s=String(v).trim(); if(!s) return 0;
-  s=s.replace(/\u00A0/g,' ');
-  if(/^(\(|−|-).*\)$/.test(s)) s='-'+s.replace(/^\(|−|-|\)$/g,'');
-  if(/^−/.test(s)) s='-'+s.replace(/^−/,'');
+  s=s.replace(/\u00A0/g,' ').replace(/PLN|EUR|USD|GBP|zł|zl/gi,'').trim();
+  if(/^\(.*\)$/.test(s)) s='-'+s.slice(1,-1);
   const hasComma=/,/.test(s), hasDot=/\./.test(s);
-  s=s.replace(/\b(PLN|zł|zl|zlot|EUR|USD|GBP)\b/ig,'');
-  if(hasComma && !hasDot) s=s.replace(/\s/g,'').replace(/,/g,'.'); else s=s.replace(/[\s\u00A0]/g,'').replace(/,/g,'');
+  if(hasComma && !hasDot){ s=s.replace(/\s/g,'').replace(/,/g,'.'); } else { s=s.replace(/[\s\u00A0]/g,'').replace(/,/g,''); }
   s=s.replace(/[^\d\.\-]/g,'');
   const n=Number(s); return isNaN(n)?0:n;
 };
-function detectCurrency(s){
-  s=(s||'').toUpperCase();
-  if(/PLN|ZŁ|ZL/.test(s)) return 'PLN';
-  if(/EUR/.test(s)) return 'EUR';
-  if(/USD|\$/.test(s)) return 'USD';
-  return 'PLN';
-}
 function toISO(d){
   if(!d) return ""; const s=String(d).trim();
   let m=s.match(/^(\d{4})-(\d{2})-(\d{2})/); if(m) return m[0];
   m=s.match(/^(\d{1,2})[.\-/](\d{1,2})[.\-/](\d{2,4})$/);
   if(m){const dd=m[1].padStart(2,'0'),mm=m[2].padStart(2,'0'),yy=m[3].length===2?('20'+m[3]):m[3]; return yy+'-'+mm+'-'+dd;}
-  const months = {
-    'stycznia':'01','lutego':'02','marca':'03','kwietnia':'04','maja':'05','czerwca':'06','lipca':'07','sierpnia':'08','września':'09','pazdziernika':'10','października':'10','listopada':'11','grudnia':'12',
-    'января':'01','февраля':'02','марта':'03','апреля':'04','мая':'05','июня':'06','июля':'07','августа':'08','сентября':'09','октября':'10','ноября':'11','декабря':'12'
-  };
-  let md = s.match(/(\d{1,2})\s+([A-Za-zА-Яа-яęóąśłżźćńё]+)\s+(\d{4})/);
-  if(md){ const dd=md[1].padStart(2,'0'); const mm=months[(md[2]||'').toLowerCase()]||'01'; return md[3]+'-'+mm+'-'+dd; }
+  // «19 октября 2025 г.» / «19 października 2025»
+  const mmWord = s.toLowerCase().match(/([a-zęółśążźćń]+)\s+20\d{2}/i);
+  const ddWord = s.match(/(^|\s)(\d{1,2})\s/);
+  if(mmWord && ddWord){
+    const word = mmWord[1].toLowerCase();
+    const lang = MONTHS.pl[word]? 'pl' : MONTHS.ru[word]? 'ru' : MONTHS.en[word]? 'en' : null;
+    if(lang){ const mm=String(MONTHS[lang][word]).padStart(2,'0'); const dd=String(ddWord[2]).padStart(2,'0'); const yy=s.match(/(20\d{2})/)[1]; return `${yy}-${mm}-${dd}`; }
+  }
   const p=Date.parse(s); if(!isNaN(p)) return new Date(p).toISOString().slice(0,10);
   return "";
 }
@@ -622,22 +600,27 @@ function parseCSV(text){
 function getVal(obj,keys){
   if(!obj) return ""; for(const k of keys){ if(k in obj && String(obj[k]).trim()!=="") return obj[k]; }
   const low=Object.keys(obj).reduce((m,x)=>(m[x.toLowerCase()]=obj[x],m),{});
-  for(const k of keys){const kk=k.toLowerCase(); if(kk in low && String(low[kk]).trim()!="") return low[kk];}
+  for(const k of keys){const kk=k.toLowerCase(); if(kk in low && String(low[kk]).trim()!=="") return low[kk];}
   return "";
 }
 
 /* ==== STATE ==== */
 let tx=[], bills=[], kasa=[], accMeta={};
-const stateKeys = ['tx_manual_import','bills_manual_import','kasa','accMeta','cashPLN','penaltyPct','intervalMin','rateEUR','rateUSD','blacklist','autoCash',SUB_KEY,SUB_FROM,SUB_TO,DEMO_START,'txUrl','billUrl','otd_lang','speechLang'];
+const stateKeys = ['tx_manual_import','bills_manual_import','kasa','accMeta','cashPLN','penaltyPct','intervalMin','rateEUR','rateUSD','blacklist','autoCash',SUB_KEY,SUB_FROM,SUB_TO,DEMO_START,'txUrl','billUrl','otd_lang','speechLang','otd_owner_match'];
 
 /* ==== REMOTE SYNC (optional) ==== */
+async function apiProbe(){
+  try{
+    const r=await fetch(`${API_BASE}/ping`,{cache:'no-store'}); API_OK = r.ok;
+  }catch(e){ API_OK=false; }
+}
 async function pullState(){
-  if(!REMOTE_OK) return null;
+  if(!API_OK) return null;
   const email = localStorage.getItem(USER_KEY)||"";
   if(!email) return null;
   try{
     const r=await fetch(`${API_BASE}/state/get?email=${encodeURIComponent(email)}`,{credentials:'include'});
-    if(!r.ok){ if(r.status===404){ REMOTE_OK=false; localStorage.setItem('remote_disabled','1'); } return null; }
+    if(!r.ok) return null;
     const json=await r.json();
     if(!json) return null;
     if(json.tx) localStorage.setItem('tx_manual_import', JSON.stringify(json.tx));
@@ -646,12 +629,12 @@ async function pullState(){
     if(json.accMeta) localStorage.setItem('accMeta', JSON.stringify(json.accMeta));
     if(json.settings) Object.entries(json.settings).forEach(([k,v])=> localStorage.setItem(k, typeof v==='string'?v:JSON.stringify(v)));
     return json;
-  }catch(e){ REMOTE_OK=false; localStorage.setItem('remote_disabled','1'); return null; }
+  }catch(e){ return null; }
 }
 const pushState = (function(){
   let t=null, inflight=false;
   return function(){
-    if(!REMOTE_OK) return;
+    if(!API_OK) return;
     if(inflight) return;
     clearTimeout(t);
     t=setTimeout(async ()=>{
@@ -667,12 +650,12 @@ const pushState = (function(){
         settings: stateKeys.reduce((m,k)=> (m[k]=localStorage.getItem(k), m), {})
       };
       try{
-        const res=await fetch(`${API_BASE}/state/save`,{
+        const r=await fetch(`${API_BASE}/state/save`,{
           method:'POST',headers:{'Content-Type':'application/json'},
           credentials:'include',body:JSON.stringify(body)
         });
-        if(!res.ok && res.status===404){ REMOTE_OK=false; localStorage.setItem('remote_disabled','1'); }
-      }catch(e){ REMOTE_OK=false; localStorage.setItem('remote_disabled','1'); } finally{ inflight=false; }
+        if(!r.ok) {/* молча */}
+      }catch(e){} finally{ inflight=false; }
     }, 600);
   }
 })();
@@ -690,7 +673,7 @@ function computeAccountBalance(accId){
   const withSaldo = rows.filter(r=> getVal(r,["Saldo po operacji","Saldo","saldo"]));
   if(withSaldo.length){ const last=withSaldo[withSaldo.length-1]; return asNum(getVal(last,["Saldo po operacji","Saldo","saldo"])); }
   const start=Number((accMeta[accId]||{}).start||0);
-  const sum=rows.reduce((s,r)=> s+asNum(getVal(r,["Kwota","Kwота","amount","Kwota_raw"])) ,0);
+  const sum=rows.reduce((s,r)=> s+asNum(getVal(r,["Kwota","Kwота","amount","Kwota_raw"])),0);
   return start+sum;
 }
 function bankAvailablePLN(){
@@ -716,12 +699,12 @@ function availableTotal(){
   return auto ? (bankAvailablePLN()+kas) : (manual+kas);
 }
 
-/* ==== AI MATCH (unchanged core scoring) ==== */
+/* ==== AI MATCH (как было) ==== */
 function normName(s){s=(s||"").toString().toLowerCase().replace(/[.,]/g," ").replace(/\s+/g," ").trim();["sp z oo","sp. z o.o.","spolka","spółka","sa","s.a","ooo"].forEach(t=>s=s.replace(t,""));return s}
 function nameSimilar(a,b){a=normName(a);b=normName(b);if(!a||!b) return 0;if(a===b) return 1;if(a.includes(b)||b.includes(a)) return 0.8;return 0}
 function scoreMatch(bill,tr){
   let score=0;
-  const bAmt=asNum(getVal(bill,["Kwota do zapłaty","Kwота do заплаты","Kwota","amount"]));
+  const bAmt=asNum(getVal(bill,["Kwota do zapłaty","Kwота do заплаты","Kwота","amount"]));
   const tAmt=Math.abs(asNum(getVal(tr,["Kwota","Kwота","amount","Kwota_raw"])));
   const bCur=(getVal(bill,["Waluta","currency"])||"").toUpperCase();
   const tCur=(getVal(tr,["Waluta","currency"])||"").toUpperCase();
@@ -764,74 +747,6 @@ function acceptSafe(){
     b["Status faktury"]="Opłacone"; b["Data płatności"]=today(); b["Kandydat (AI)"]=b["AI score"]="";
   });
   render(); saveLocal(); pushState();
-}
-
-/* ==== OCR IMPORT (images) ==== */
-async function recognizeImage(file){
-  const { data:{ text } } = await Tesseract.recognize(file, 'pol+eng+rus', { logger:()=>{} });
-  return text.replace(/\u00A0/g,' ').replace(/\r/g,'').replace(/\t/g,' ').replace(/ +/g,' ').trim();
-}
-function parseBankOCR(text){
-  const lines = text.split(/\n+/).map(s=>s.trim()).filter(Boolean);
-  const out = [];
-  let curDate = today();
-  for(let i=0;i<lines.length;i++){
-    const L = lines[i];
-    // Dates like "19 октября 2025", "19 października 2025", "2025-10-19"
-    const d1=L.match(/(\d{1,2}\s+[A-Za-zĄąĆćĘęŁłŃńÓóŚśŹźŻżА-Яа-яё]+\s+\d{4})/);
-    const d2=L.match(/(\d{4}-\d{2}-\d{2})/);
-    if(d1||d2){ curDate = toISO((d1?d1[1]:d2[1])); continue; }
-
-    // Amount and currency
-    const amtM = L.match(/([−-]?\s?\d+[\s,\.]*\d{0,2})\s*(PLN|EUR|USD|zł|zl)?/i);
-    if(amtM){
-      const amountRaw = amtM[1];
-      const sign = /−|-/.test(amountRaw) ? -1 : (/(^|\s)[+]\s?\d/.test(L)?1:null);
-      const cur = detectCurrency(L);
-      // Counterparty line often previous line
-      const counterparty = (lines[i-1] && !/(PLN|EUR|USD|zł|zl)/i.test(lines[i-1]) ? lines[i-1] : L.split(amountRaw)[0]).toString().trim();
-      const amt = asNum(amountRaw) * (sign===-1 ? -1 : (/\bPhone transfer\b|przelew|transfer/i.test(L) && /-/.test(amountRaw)? -1 : (/-/.test(amountRaw)?-1:1)));
-      if(Math.abs(amt)>0){
-        out.push({
-          "Data księgowania": curDate || today(),
-          "ID transakcji": 'ocr-'+Date.now()+'-'+out.length,
-          "ID konta": 'UNKNOWN',
-          "Kontrahent": counterparty.replace(/[•·]/g,'').slice(0,120),
-          "Tytuł/Opis": L.slice(0,200),
-          "Kwota": amt.toFixed(2),
-          "Waluta": cur,
-          "Status transakcji":""
-        });
-      }
-    }
-  }
-  return out;
-}
-function parseInvoiceOCR(text){
-  const norm = text.replace(/\n+/g,'\n');
-  const get = (re)=>{ const m=norm.match(re); return m?m[1].trim():''; };
-  const inv = get(/Faktura\s*(?:numer|nr)?\s*([A-Za-z0-9\-\/\.]+)/i) || get(/Invoice\s*(?:No|Number)\s*([A-Za-z0-9\-\/\.]+)/i);
-  let supplier = get(/Sprzedawca[:\s\n]+([^\n]+)(?:\n|$)/i) || get(/Seller[:\s\n]+([^\n]+)(?:\n|$)/i);
-  if(!supplier){ // fallback: first uppercase line near top
-    supplier = norm.split('\n').find(x=>/[A-ZĄĆĘŁŃÓŚŹŻ]{3,}/.test(x))||'';
-  }
-  const due = toISO(get(/Termin\s*płatności[:\s]+([^\n]+)/i));
-  const issue = toISO(get(/Data\s*wystawienia[:\s]+([^\n]+)/i));
-  let totalTxt = get(/Do\s*zapłaty[:\s]+([^\n]+)/i);
-  if(!totalTxt){
-    const bruttoLine = norm.match(/Wartość\s*brutto[^\n]*?(\d+[\s,.]\d{2})\s*(PLN|EUR|USD)?/i);
-    if(bruttoLine) totalTxt = bruttoLine[1] + ' ' + (bruttoLine[2]||'');
-  }
-  const currency = detectCurrency(totalTxt||norm);
-  const total = Math.abs(asNum(totalTxt));
-  return [{
-    "Termin płatności": due || issue || today(),
-    "Numer faktury": inv || ('INV-'+Date.now()),
-    "Dostawca": supplier.slice(0,120),
-    "Kwota do zapłaty": total ? total.toFixed(2) : '0.00',
-    "Waluta": currency,
-    "Status faktury": "do zapłaty"
-  }];
 }
 
 /* ==== PERSIST LOCAL ==== */
@@ -924,10 +839,7 @@ function scheduleAutosync(){
 }
 
 /* ==== CASH QUICK EXAMPLES ==== */
-const cashQuickExamples={pl:["Przyjąć 250 na produkty","Wypłacić 50 na dostawę","Przyjąć 1000 depozyt","Przyjąć 50 na napoje"],
-ru:["Принять 250 на продукты","Выдать 50 на доставку","Принять 1000 депозит","Принять 50 на напитки"],
-en:["Accept 250 for groceries","Pay out 50 for delivery","Accept 1000 deposit","Accept 50 for drinks"],
-uk:["Прийняти 250 на продукти","Видати 50 на доставку","Прийняти 1000 депозит","Прийняти 50 на напої"]};
+const cashQuickExamples={pl:["Przyjąć 250 na produkty","Wypłacić 50 na dostawę","Przyjąć 1000 depozyt","Przyjąć 50 na napoje"],ru:["Принять 250 на продукты","Выдать 50 на доставку","Принять 1000 депозит","Принять 50 на напитки"],en:["Accept 250 for groceries","Pay out 50 for delivery","Accept 1000 deposit","Accept 50 for drinks"],uk:["Прийняти 250 на продукти","Видати 50 на доставку","Прийняти 1000 депозит","Прийняти 50 на напої"]};
 function renderCashExamples(lang){
   const holder=$id('kasaQuickHolder'); if(!holder) return; holder.innerHTML='';
   const arr=cashQuickExamples[lang]||cashQuickExamples.pl;
@@ -943,62 +855,118 @@ function renderCashExamples(lang){
   });
 }
 
-/* ==== UNIFIED BOOK ==== */
-function bookRows(){
-  const rows=[];
-  (tx||[]).forEach(r=>{
-    rows.push({
-      date: toISO(getVal(r,["Data księgowania","date","Дата"]))||today(),
-      source: 'bank',
-      account: getVal(r,["ID konta","IBAN","account"])||'UNKNOWN',
-      counterparty: getVal(r,["Kontrahent","Counterparty"])||'',
-      desc: getVal(r,["Tytuł/Opis","Opis","title"])||'',
-      amount: asNum(getVal(r,["Kwota","Kwота","amount","Kwota_raw"]))||0,
-      currency: (getVal(r,["Waluta","currency"])||'PLN').toUpperCase(),
-      type:'', no:'', doc_date:'', due:'', status: getVal(r,["Status transakcji","status"])||''
-    });
-  });
-  (bills||[]).forEach(b=>{
-    const amt = -Math.abs(asNum(getVal(b,["Kwota do zapłaty","Kwota","Kwота"]))||0);
-    rows.push({
-      date: toISO(getVal(b,["Data wystawienia","IssueDate"]))||toISO(getVal(b,["Termin płatności","Termin"]))||today(),
-      source:'invoice',
-      account:'',
-      counterparty: getVal(b,["Dostawca","Supplier"])||'',
-      desc: 'INVOICE',
-      amount: amt,
-      currency: (getVal(b,["Waluta","currency"])||'PLN').toUpperCase(),
-      type:'INVOICE', no:getVal(b,["Numer faktury","Invoice number"])||'',
-      doc_date: toISO(getVal(b,["Data wystawienia","IssueDate"]))||'',
-      due: toISO(getVal(b,["Termin płatności","Termin"]))||'',
-      status: getVal(b,["Status faktury","Status"])||''
-    });
-  });
-  (kasa||[]).forEach(k=>{
-    rows.push({
-      date: k.date||today(), source:'cash', account:'KASA', counterparty:'', desc:k.comment||k.source||'',
-      amount: (k.type==='wydanie'?-1:1)*Math.abs(k.amount||0), currency:'PLN', type:'CASH', no:'', doc_date:'', due:'', status:''
-    });
-  });
-  return rows.sort((a,b)=> (a.date<b.date?-1: a.date>b.date?1:0));
+/* ==== OCR: PHOTO STATEMENT -> TX ==== */
+async function ocrText(file){
+  const {data:{text}} = await Tesseract.recognize(file,'eng+pol+rus',{tessedit_char_blacklist:'{}[]|~'});
+  return text||"";
 }
-function renderBook(){
-  const tb=document.querySelector('#bookTable tbody'); if(!tb) return; tb.innerHTML='';
-  const rows=bookRows();
-  rows.forEach(r=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML = `<td>${r.date}</td><td>${r.source}</td><td>${r.account||'—'}</td><td>${r.counterparty||''}</td><td>${r.desc||''}</td><td>${fmtAmountRaw(r.amount)}</td><td>${r.currency}</td><td>${r.type||''}</td><td>${r.no||''}</td><td>${r.doc_date||''}</td><td>${r.due||''}</td><td>${r.status||''}</td>`;
-    tb.appendChild(tr);
-  });
+function normCurrency(s){
+  s=String(s||'').toUpperCase();
+  if(/PLN|ZŁ|ZL/.test(s)) return 'PLN';
+  if(/EUR/.test(s)) return 'EUR';
+  if(/USD|US\$|\$/.test(s)) return 'USD';
+  return 'PLN';
 }
-function exportBookCSV(){
-  const rows=bookRows();
-  const head=['date','source','account','counterparty','description','amount','currency','doc_type','doc_no','doc_date','due_date','status'];
-  const csv=[head.join(',')].concat(rows.map(r=>[
-    r.date,r.source,r.account,(r.counterparty||'').replace(/,/g,' '),(r.desc||'').replace(/,/g,' '),
-    (r.amount||0).toFixed(2),r.currency,r.type||'',r.no||'',r.doc_date||'',r.due||'',(r.status||'').replace(/,/g,' ')
-  ].join(','))).join('\n');
-  const blob=new Blob([csv],{type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='otd_book.csv'; a.click();
+function looksCardPurchase(line){
+  return /(tranzak|карто|card|zabka|bolt|uber|blik)/i.test(line);
+}
+function extractAmountAndCur(line){
+  // examples: "- 25,00 PLN" / "120,00 PLN" / "98.11 PLN"
+  const m = line.replace(/\u00A0/g,' ').match(/([\-+−]?\s*\d[\d\s.,]*)\s*(PLN|EUR|USD|zł|zl)?/i);
+  if(!m) return {amount:0,currency:"PLN",hasSign:false};
+  const raw=m[1]; const cur=normCurrency(m[2]||'PLN');
+  const hasSign=/^\s*[\-+−]/.test(raw);
+  let n=asNum(raw); // already handles commas and spaces
+  return {amount:n,currency:cur,hasSign};
+}
+function parsePhotoStatement(text){
+  const lines=text.split(/\n+/).map(s=>s.trim()).filter(Boolean);
+  let curDate=""; const out=[];
+  for(let i=0;i<lines.length;i++){
+    const line=lines[i];
+    // date header
+    if(/20\d{2}/.test(line) && /(января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря|stycznia|lutego|marca|kwietnia|maja|czerwca|lipca|sierpnia|września|października|listopada|grudnia|january|february|march|april|may|june|july|august|september|october|november|december)/i.test(line)){
+      curDate = toISO(line);
+      continue;
+    }
+    // amount
+    const {amount,currency,hasSign} = extractAmountAndCur(line);
+    if(amount===0) continue;
+
+    // counterparty: try previous/this line words without amount blob
+    let counter = line.replace(/([\-+−]?\s*\d[\d\s.,]*\s*(PLN|EUR|USD|zł|zl)?)/ig,'').trim();
+    if(!counter && i>0) counter = lines[i-1].trim();
+
+    // description
+    let desc = line;
+    // sign fix
+    let val=amount;
+    if(!hasSign){
+      if(looksCardPurchase(line)) val = -Math.abs(val);
+      else val = Math.abs(val);
+    }
+    // kill OCR garbage like + 48 792 411 530,00
+    if(Math.abs(val) > 1000000) continue;
+
+    out.push({
+      "Data księgowania": curDate || today(),
+      "ID transakcji": 'ocr_'+Date.now()+'_'+i,
+      "ID konta": "UNKNOWN",
+      "Kontrahent": counter || "",
+      "Tytuł/Opis": desc,
+      "Kwota": val.toFixed(2),
+      "Waluta": currency,
+      "Status transakcji": ""
+    });
+  }
+  return out;
+}
+
+/* ==== OCR: INVOICE IMAGE -> BILL ==== */
+function firstAfter(text, marker){
+  const idx=text.indexOf(marker); if(idx<0) return "";
+  return text.slice(idx+marker.length).split(/\n/)[0].trim();
+}
+function findBlock(text, head){
+  const re=new RegExp(head+"[\\s\\S]*?(?=\\n\\s*\\n|\\n\\s*[A-ZŁŚŻČŻА-Я]|$)","i");
+  const m=text.match(re); return m?m[0]:"";
+}
+function parseInvoiceImage(text){
+  // Nr
+  let nr = firstAfter(text, "Faktura numer");
+  nr = nr.replace(/[:#]/g,'').trim().split(/\s/)[0]||"";
+  // Supplier/Nabywca
+  let supplierBlock = findBlock(text,"Sprzedawca");
+  let buyerBlock = findBlock(text,"Nabywca");
+  const supplier = supplierBlock.split(/\n/).slice(1,3).join(" ").trim();
+  const buyer = buyerBlock.split(/\n/).slice(1,3).join(" ").trim();
+  // Due date
+  let dueLine = firstAfter(text,"Termin płatności");
+  let due = toISO(dueLine) || toISO(firstAfter(text,"Termin platnosci")) || "";
+  // Amount brutto
+  let amtLine = firstAfter(text,"Do zapłaty");
+  if(!amtLine) amtLine = firstAfter(text,"Razem") || firstAfter(text,"Wartość brutto");
+  const currency = /EUR/i.test(amtLine) ? "EUR" : /USD/i.test(amtLine) ? "USD" : "PLN";
+  let amount = asNum(amtLine);
+  if(amount<=0){
+    // fallback: search number near "Wartość brutto"
+    const m=text.match(/Wartość\s+brutto.*?([\d\s.,]+)\s*(PLN|EUR|USD)?/i);
+    if(m){ amount=asNum(m[1]); }
+  }
+  // Who pays
+  const owner=(localStorage.getItem('otd_owner_match')||"Pavlenko|OneTapDay").toLowerCase();
+  const wePay = new RegExp(owner,'i').test(buyer); // если мы в блоке Nabywca — мы платим
+  const typ = wePay ? "my_out" : "my_in";
+
+  return {
+    "Termin płatności": due||today(),
+    "Numer faktury": nr||("INV-"+Date.now()),
+    "Dostawca": supplier||"",
+    "Kwota do zapłaty": amount>0? amount.toFixed(2): "0.00",
+    "Waluta": currency,
+    "Status faktury": "do zapłaty",
+    "Typ": typ
+  };
 }
 
 /* ==== RENDER ==== */
@@ -1064,14 +1032,13 @@ function render(){
     txBody.innerHTML='';
     (tx||[]).forEach(r=>{
       const id=getVal(r,["ID transakcji","ID","id"])||("noid-"+Math.random());
-      const curStr = getVal(r,["Waluta","currency"])||''; const cur = detectCurrency(curStr);
       const tr=document.createElement('tr');
       tr.innerHTML = `<td>${toISO(getVal(r,["Data księgowania","date","Дата"]))}</td>
         <td>${getVal(r,["ID konta","IBAN","account"])||"—"}</td>
         <td>${getVal(r,["Kontrahent","Counterparty"])||""}</td>
         <td>${getVal(r,["Tytuł/Opis","Opis","title"])||""}</td>
         <td>${fmtAmountRaw(getVal(r,["Kwota","Kwота","amount","Kwota_raw"]))}</td>
-        <td>${cur}</td>
+        <td>${getVal(r,["Waluta","currency"])||""}</td>
         <td>${getVal(r,["Status transakcji","status"])||""}</td>
         <td class="actions">
           <button data-act="edit" data-kind="tx" data-id="${id}">✎</button>
@@ -1090,13 +1057,13 @@ function render(){
       const cand=getVal(r,["Kandydat (AI)"])||"";
       const score=getVal(r,["AI score"])||"";
       const id=getVal(r,["Numer faktury","Numer фактуры","Invoice number"])||("noinv-"+Math.random());
-      const cur = detectCurrency(getVal(r,["Waluta","currency"])||'');
       const tr=document.createElement('tr');
       tr.innerHTML = `<td>${toISO(getVal(r,["Termin płatności","Termin","Termin платності"])||"")}</td>
         <td>${getVal(r,["Numer faktury","Numer фактуры","Invoice number"])||""}</td>
         <td>${getVal(r,["Dostawca","Supplier"])||""}</td>
         <td>${getVal(r,["Kwota do zapłaty","Kwота","Kwota"])||""}</td>
-        <td>${cur}</td>
+        <td>${getVal(r,["Waluta","currency"])||""}</td>
+        <td>${r["Typ"]||""}</td>
         <td><span class="badge ${cls}">${getVal(r,["Status faktury","Status фактуры","Status"])||""}</span></td>
         <td>${cand?('<span class="badge cand">'+cand+'</span>'):'—'}</td>
         <td>${score?('<span class="badge ai">'+score+'</span>'):'—'}</td>
@@ -1110,10 +1077,15 @@ function render(){
     document.querySelectorAll(".btn-accept").forEach(b=> b.addEventListener('click',()=>acceptOne(b.getAttribute('data-invid'))));
   }
 
-  renderMinPay(); renderForecast(); renderAccounts(); renderKasa(); renderBook(); updateSubUI(); gateAccess();
+  renderMinPay(); renderForecast(); renderAccounts(); renderKasa(); updateSubUI(); gateAccess();
+
+  // гарантированно убираем дублирующий «Eksport księgi» если где-то остался
+  Array.from(document.querySelectorAll('table')).forEach(t=>{
+    const cap=t.previousElementSibling; if(cap && /Eksport księgi/i.test(cap.textContent||"")){ cap.remove(); t.remove(); }
+  });
 }
 
-/* ==== PLAN / FORECAST / MINPAY (kept) ==== */
+/* ==== PLAN / FORECAST / MINPAY (как было) ==== */
 function toDueList(mode){
   const t=today(); const excl=$id('excludeBlacklist')?.checked||false;
   return bills.filter(r=>{
@@ -1171,7 +1143,7 @@ function computeMinPay(){
 function renderMinPay(){
   const m=computeMinPay(); const el=$id('minPayBox'); if(!el) return;
   if(!m){ el.textContent='—'; return; }
-  el.textContent = `Оплатить ${getVal(m.r,["Numer faktury","Numer фактуры"])} (${getVal(m.r,["Dostawca","Supplier"])} ) на ${m.amt.toFixed(2)} PLN. Штраф/день ~ ${m.risk.toFixed(2)} PLN.`;
+  el.textContent = `Оплатить ${getVal(m.r,["Numer faktury","Numer фактуры"])} (${getVal(m.r,["Dostawca","Supplier"])}) на ${m.amt.toFixed(2)} PLN. Штраф/день ~ ${m.risk.toFixed(2)} PLN.`;
 }
 function renderForecast(){
   const t=new Date(today());
@@ -1223,14 +1195,14 @@ function editRow(kind,id){
     const r=tx[idx];
     const d=prompt("Дата (YYYY-MM-DD):", toISO(getVal(r,["Data księgowania"])||today())); if(d===null) return;
     const a=prompt("Сумма:", getVal(r,["Kwota","Kwota_raw","amount"])||""); if(a===null) return;
-    r["Data księgowania"]=toISO(d)||today(); r["Kwota"]=asNum(a).toFixed(2); r["Waluta"]= detectCurrency(getVal(r,["Waluta"])||''); saveLocal(); render(); pushState(); return;
+    r["Data księgowania"]=toISO(d)||today(); r["Kwota"]=asNum(a).toFixed(2); saveLocal(); render(); pushState(); return;
   }
   if(kind==='bill'){
     const idx=bills.findIndex(x=> (getVal(x,["Numer faktury","Numer фактуры","Invoice number"])||"")===String(id)); if(idx<0) return;
     const r=bills[idx];
     const due=prompt("Срок (YYYY-MM-DD):", toISO(getVal(r,["Termin płatności","Termin"])||today())); if(due===null) return;
     const amt=prompt("Сумма к оплате:", getVal(r,["Kwota do zapłaty","Kwota"])||""); if(amt===null) return;
-    r["Termin płatności"]=toISO(due)||today(); r["Kwota do zapłaty"]=asNum(amt).toFixed(2); r["Waluta"]= detectCurrency(getVal(r,["Waluta"])||''); saveLocal(); render(); pushState(); return;
+    r["Termin płatności"]=toISO(due)||today(); r["Kwota do zapłaty"]=asNum(amt).toFixed(2); saveLocal(); render(); pushState(); return;
   }
 }
 function delRow(kind,id){
@@ -1248,32 +1220,9 @@ document.addEventListener('click',(e)=>{
   if(act==='del') delRow(kind,id);
 });
 
-function thumb(el,file){ const img=el; if(!img) return; img.src=URL.createObjectURL(file); img.style.display='inline-block'; }
-
-async function ocrBankFiles(files){
-  for(const f of files){
-    try{
-      thumb($id('txLastThumb'), f);
-      const text = await recognizeImage(f);
-      const rows = parseBankOCR(text);
-      if(rows.length){ tx = tx.concat(rows); }
-    }catch(e){ console.warn('OCR bank error', e); }
-  }
-  inferAccounts(); render(); saveLocal(); pushState();
-}
-async function ocrInvoiceFiles(files){
-  for(const f of files){
-    try{
-      const text = await recognizeImage(f);
-      const rows = parseInvoiceOCR(text);
-      if(rows.length){ bills = bills.concat(rows); }
-    }catch(e){ console.warn('OCR invoice error', e); }
-  }
-  render(); saveLocal(); pushState();
-}
-
-/* ==== DOM READY ==== */
 document.addEventListener('DOMContentLoaded', async ()=>{
+  await apiProbe(); // выключаем шумные 404 если нет бэка
+
   // Lang bar
   document.querySelectorAll('#langBarMain button').forEach(b=>{
     b.addEventListener('click',()=> applyLang(b.dataset.lang));
@@ -1299,13 +1248,40 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   $id('applyMinPay')?.addEventListener('click', ()=>{ const m=computeMinPay(); if(!m) return alert('Нет кандидатов'); m.r["Status faktury"]="Opłacone"; m.r["Data płatności"]=today(); render(); saveLocal(); pushState(); });
   $id('exportPDF')?.addEventListener('click',()=>window.print());
   $id('syncNow')?.addEventListener('click', fetchSources);
-  $id('exportBook')?.addEventListener('click', exportBookCSV);
 
   // File/url
   $id('txFile')?.addEventListener('change', async e=>{ const f=e.target.files[0]; if(!f) return; tx=parseCSV(await f.text()); inferAccounts(); render(); saveLocal(); pushState(); });
-  $id('txImage')?.addEventListener('change', async e=>{ const files=[...e.target.files]; if(!files.length) return; await ocrBankFiles(files); });
+
+  // PHOTO STATEMENT OCR
+  $id('txImage')?.addEventListener('change', async e=>{
+    const files=[...e.target.files]; if(!files.length) return;
+    const thumb=$id('txLastThumb'); if(thumb){ thumb.src=URL.createObjectURL(files[files.length-1]); thumb.style.display='inline-block'; }
+    for(const f of files){
+      try{
+        const text=await ocrText(f);
+        const rows=parsePhotoStatement(text);
+        // merge
+        tx = tx.concat(rows);
+      }catch(err){ console.error('OCR tx error',err); }
+    }
+    inferAccounts(); render(); saveLocal(); pushState();
+  });
+
   $id('billFile')?.addEventListener('change', async e=>{ const f=e.target.files[0]; if(!f) return; bills=parseCSV(await f.text()); render(); saveLocal(); pushState(); });
-  $id('billImage')?.addEventListener('change', async e=>{ const files=[...e.target.files]; if(!files.length) return; await ocrInvoiceFiles(files); });
+
+  // INVOICE OCR
+  $id('billImage')?.addEventListener('change', async e=>{
+    const files=[...e.target.files]; if(!files.length) return;
+    for(const f of files){
+      try{
+        const text=await ocrText(f);
+        const b=parseInvoiceImage(text);
+        bills.push(b);
+      }catch(err){ console.error('OCR bill error',err); }
+    }
+    render(); saveLocal(); pushState();
+  });
+
   $id('saveTxUrl')?.addEventListener('click',()=>{ const v=$id('txUrl')?.value.trim()||""; localStorage.setItem('txUrl',v); alert('Zapisano URL wyciągu'); scheduleAutosync(); });
 
   // Cash quick & ops
@@ -1384,6 +1360,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 
   // INIT
   loadLocal(); loadKasa();
+  // Defaults for Settings
   $id('txUrl')&&( $id('txUrl').value = localStorage.getItem('txUrl')||"" );
   ['cashPLN','penaltyPct','intervalMin','rateEUR','rateUSD','blacklist'].forEach(k=>{ if($id(k)) $id(k).value = localStorage.getItem(k)|| $id(k).value || ""; });
   if($id('autoCash')) $id('autoCash').checked = localStorage.getItem('autoCash')==='1';
@@ -1394,13 +1371,12 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   render();
   scheduleAutosync();
 
-  // Remote pull once, then push snapshot
-  await pullState(); loadLocal(); inferAccounts(); render();
-  pushState();
+  // Remote pull once, then push snapshot (только если API доступен)
+  if(API_OK){ await pullState(); loadLocal(); inferAccounts(); render(); pushState(); }
 
   // Save on unload (sendBeacon fallback)
   window.addEventListener('beforeunload', ()=>{
-    if(!REMOTE_OK) return;
+    if(!API_OK) return;
     try{
       const email=localStorage.getItem(USER_KEY)||"";
       if(!email) return;
