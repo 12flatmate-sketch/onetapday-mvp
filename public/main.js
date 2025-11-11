@@ -26,7 +26,7 @@
     ru:{ access_title:"Доступ к MVP", login_tab:"Вход", reg_tab:"Регистрация", login_btn:"Войти",
          pay_or_demo:"Оплата/Демо", after_login_hint:"После входа можно оплатить или включить демо.",
          status_title:"Статус", status_guest:"Гость — войдите или зарегистрируйтесь",
-         stripe_2m:"Оплатить Stripe)", demo_24:"Демо 24 часа", access_note:"Оплата даёт мгновенный доступ. Демо — 24 часа.",
+         stripe_2m:"Оплатить (Stripe)", demo_24:"Демо 24 часа", access_note:"Оплата даёт мгновенный доступ. Демо — 24 часа.",
          status_none:"Ожидается оплата депозита", status_deposit_paid:"Депозит оплачен", status_active:"Пилот активен",
          status_ended:"Пилот завершён", status_discount_active:"Скидка активна" }
   };
