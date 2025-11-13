@@ -1,3 +1,13 @@
+// ==== Firebase wiring (глобальные ссылки из index.html) ====
+const fbApp  = window.firebaseApp || null;
+const fbAuth = window.firebaseAuth || null;
+const fbDb   = window.firebaseDb   || null;
+
+// Простейшая проверка, чтобы не падать, если вдруг Firebase не прогрузился
+if (!fbApp) {
+  console.warn("Firebase не инициализирован (fbApp === null). Приложение работает в локальном режиме.");
+}
+
 // public/main.js
 (() => {
   const LANG_ORDER = ['pl','en','uk','ru'];
