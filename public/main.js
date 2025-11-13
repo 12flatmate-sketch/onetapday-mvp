@@ -1,12 +1,7 @@
-// ==== Firebase wiring (глобальные ссылки из index.html) ====
-const fbApp  = window.firebaseApp || null;
-const fbAuth = window.firebaseAuth || null;
-const fbDb   = window.firebaseDb   || null;
-
-// Простейшая проверка, чтобы не падать, если вдруг Firebase не прогрузился
-if (!fbApp) {
-  console.warn("Firebase не инициализирован (fbApp === null). Приложение работает в локальном режиме.");
-}
+// Firebase объекты 
+const firebaseApp = window._firebaseApp;
+const firebaseDb = window._firebaseDb;
+const firebaseAuth = window._firebaseAuth;
 
 // public/main.js
 (() => {
