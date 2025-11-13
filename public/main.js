@@ -1,7 +1,7 @@
 // Firebase объекты 
-const firebaseApp  = window._firebaseApp;
-const firebaseDb   = window._firebaseDb;
-const firebaseAuth = window._firebaseAuth;
+//const firebaseApp  = window._firebaseApp;
+//const firebaseDb   = window._firebaseDb;
+//const firebaseAuth = window._firebaseAuth;
 // Глобальный helper из firebase-init.js
 const FirebaseSync = window.FirebaseSync || null;
 
