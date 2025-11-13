@@ -488,7 +488,7 @@ app.post('/create-checkout-session', async (req, res) => {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'subscription',
-      line_items: [{ price: 'price_1SSFEf3toYNoS0oeMxmOsID5', quantity: 1 }],
+      line_items: [{ price: 'price_1SSHX0KQldLeJYVfxcZe4eKr', quantity: 1 }],
       customer_email: user.email,
       metadata: { email: user.email },
       success_url: `${req.protocol}://${req.get('host')}/app.html?session_id={CHECKOUT_SESSION_ID}`,
@@ -565,6 +565,7 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`✅ Server listening on port ${PORT}`);
 });
+
 
 
 
