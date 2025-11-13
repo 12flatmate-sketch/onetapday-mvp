@@ -1,7 +1,9 @@
 // Firebase объекты 
-const firebaseApp = window._firebaseApp;
-const firebaseDb = window._firebaseDb;
+const firebaseApp  = window._firebaseApp;
+const firebaseDb   = window._firebaseDb;
 const firebaseAuth = window._firebaseAuth;
+// Глобальный helper из firebase-init.js
+const FirebaseSync = window.FirebaseSync || null;
 
 // public/main.js
 (() => {
@@ -13,9 +15,9 @@ const firebaseAuth = window._firebaseAuth;
     pl:{ access_title:"Dostęp do MVP", login_tab:"Logowanie", reg_tab:"Rejestracja", login_btn:"Zaloguj",
          pay_or_demo:"Płatność/Demo", after_login_hint:"Po zalogowaniu możesz zapłacić lub włączyć demo.",
          status_title:"Status", status_guest:"Gość — zaloguj się lub zarejestruj",
-         stripe_2m:"Zapłać (Stripe)", demo_24:"Demo 24 godziny", access_note:"Płatność daje natychmiastowy dostęp. Demo trwa 24h.",
+         stripe_2m:"Zapłać (Stripe)", demo_24:"Demo 24 godziny", access_note:"Płatność daje natychmiastowy доступ. Demo trwa 24h.",
          status_none:"Oczekuje płatności depozytu", status_deposit_paid:"Depozyt opłacony", status_active:"Pilot aktywny",
-         status_ended:"Pilot zakońчony", status_discount_active:"Zniżka aktywna" },
+         status_ended:"Pilot zakończony", status_discount_active:"Zniżka aktywna" },
     en:{ access_title:"MVP Access", login_tab:"Login", reg_tab:"Sign Up", login_btn:"Sign In",
          pay_or_demo:"Pay/Demo", after_login_hint:"After signing in, you can pay or start a demo.",
          status_title:"Status", status_guest:"Guest — sign in or register",
@@ -169,15 +171,27 @@ const firebaseAuth = window._firebaseAuth;
     } catch (e) {}
   }
 
-  // push incoming local state to server (merge endpoint)
+  // Пушим локальное состояние и на backend, и в Firebase
   async function pushLocalStateToServer() {
     const email = _currentUserEmail();
     if (!email) return { ok:false, error: 'no user' };
+
     const state = readLocalState();
+    let resp;
     try {
-      const r = await postJSON('/app-state/merge', { state });
-      return r;
-    } catch (e) { return { ok:false, error: String(e) }; }
+      resp = await postJSON('/app-state/merge', { state });
+    } catch (e) {
+      resp = { ok:false, status:0, body:{ error:String(e) } };
+    }
+
+    if (FirebaseSync && state) {
+      try {
+        await FirebaseSync.saveUserState(email, state);
+      } catch (e) {
+        console.warn('Firebase saveUserState error', e);
+      }
+    }
+    return resp;
   }
 
   // pull server state and merge into local; then persist merged state locally and to server
@@ -200,6 +214,37 @@ const firebaseAuth = window._firebaseAuth;
     // push merged back (best effort)
     await postJSON('/app-state', { state: local });
     return { ok:true };
+  }
+
+  // Реальный realtime-синк через Firebase
+  function startFirebaseRealtimeSyncForCurrentUser() {
+    if (!FirebaseSync) return;
+    const email = _currentUserEmail();
+    if (!email) return;
+
+    try {
+      FirebaseSync.subscribeUserState(email, (remoteState) => {
+        if (!remoteState || typeof remoteState !== 'object') return;
+        const local = readLocalState() || {};
+
+        // merge transactions by id
+        if (Array.isArray(remoteState.transactions) || Array.isArray(local.transactions)) {
+          const map = {};
+          (local.transactions || []).forEach(t => { if (t && t.id) map[t.id] = t; });
+          (remoteState.transactions || []).forEach(t => { if (t && t.id) map[t.id] = t; });
+          local.transactions = Object.values(map);
+        }
+
+        // остальные поля — Firebase поверх локальных
+        Object.keys(remoteState).forEach(k => {
+          if (k !== 'transactions') local[k] = remoteState[k];
+        });
+
+        writeLocalState(local);
+      });
+    } catch (e) {
+      console.warn('Firebase subscribeUserState error', e);
+    }
   }
 
   // Demo timer
@@ -292,6 +337,9 @@ const firebaseAuth = window._firebaseAuth;
       // Sync server state into local after successful auth
       await syncStateFromServerToLocal().catch(()=>null);
 
+      // Включаем realtime-синк с Firebase
+      startFirebaseRealtimeSyncForCurrentUser();
+
       if (isReg) {
         const sd = await tryStartDemo();
         if (sd.ok) { setTimeout(()=>{ window.location.href = '/app.html'; }, 300); return; }
@@ -361,11 +409,16 @@ const firebaseAuth = window._firebaseAuth;
         const saved = localStorage.getItem('otd_user') || '';
         if (!saved) return;
         const r = await fetch('/user?email=' + encodeURIComponent(saved), { credentials:'include' });
-        if (r.ok){ const j = await r.json().catch(()=>null); if (j && j.user) {
-          setStatusAfterAuth(j.user);
-          // pull server state into local upon page load
-          await syncStateFromServerToLocal().catch(()=>null);
-        } }
+        if (r.ok){
+          const j = await r.json().catch(()=>null);
+          if (j && j.user) {
+            setStatusAfterAuth(j.user);
+            // pull server state into local upon page load
+            await syncStateFromServerToLocal().catch(()=>null);
+            // и сразу подписываемся на Firebase
+            startFirebaseRealtimeSyncForCurrentUser();
+          }
+        }
       } catch(e){}
     })();
 
