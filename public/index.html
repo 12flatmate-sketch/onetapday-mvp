@@ -119,34 +119,10 @@
 
     <footer>OneTapDay — MVP. Тестовый режим.</footer>
   </div>
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-  import { getDatabase } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
-  import { getAuth } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyClatmXXE1ZG-MjKcHrquz2HSOZ4SswVVs",
-    authDomain: "onetapday-d45a6.firebaseapp.com",
-    databaseURL: "https://onetapday-d45a6-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "onetapday-d45a6",
-    storageBucket: "onetapday-d45a6.firebasestorage.app",
-    messagingSenderId: "402338811274",
-    appId: "1:402338811274:web:ad8ce7c6d47bb51b22cc73",
-    measurementId: "G-DEDSHTT30C"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-  const auth = getAuth(app);
-
-  // Пробрасываем в глобалку, чтобы main.js мог пользоваться
-  window._firebaseApp = app;
-  window._firebaseDb = db;
-  window._firebaseAuth = auth;
-</script>
-
+<script type="module" src="/firebase-init.js"></script>
   <script src="/main.js" defer></script>
 </body>
 </html>
+
 
 
