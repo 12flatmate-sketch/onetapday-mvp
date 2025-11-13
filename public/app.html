@@ -1365,14 +1365,14 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     localStorage.removeItem(DEMO_START); updateSubUI(); gateAccess();
   });
   $id('payNow')?.addEventListener('click', async ()=>{
-    const link = localStorage.getItem('stripe_link')||localStorage.getItem('stripePaymentLink');
-    if(link){ location.href=link; return; }
-    try{
-      const r=await fetch('/create-checkout-session',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({demo:true})});
-      const j=await r.json(); if(j?.url) { location.href=j.url; return; }
-      alert('No Stripe URL from backend');
-    }catch(e){ alert('Stripe error: '+(e?.message||e)); }
-  });
+  try{
+    const r=await fetch('/create-checkout-session',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({demo:true})});
+    const j=await r.json();
+    if(j?.url) { location.href=j.url; return; }
+    alert('No Stripe URL from backend');
+  }catch(e){ alert('Stripe error: '+(e?.message||e)); }
+});
+
 
   // INIT
   loadLocal(); loadKasa();
@@ -1412,3 +1412,4 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 </script>
 </body>
 </html>
+
