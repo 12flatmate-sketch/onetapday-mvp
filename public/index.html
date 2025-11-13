@@ -119,13 +119,11 @@
 
     <footer>OneTapDay — MVP. Тестовый режим.</footer>
   </div>
-<!-- Firebase SDKs -->
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+  import { getDatabase } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
+  import { getAuth } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 
-<script>
-  // SDK setup - Config
   const firebaseConfig = {
     apiKey: "AIzaSyClatmXXE1ZG-MjKcHrquz2HSOZ4SswVVs",
     authDomain: "onetapday-d45a6.firebaseapp.com",
@@ -137,14 +135,18 @@
     measurementId: "G-DEDSHTT30C"
   };
 
-  // Инициализация Firebase (глобально для main.js)
-  window.firebaseApp = firebase.initializeApp(firebaseConfig);
-  window.firebaseAuth = firebase.auth();
-  window.firebaseDb = firebase.database();
-</script>
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const auth = getAuth(app);
 
+  // Пробрасываем в глобалку, чтобы main.js мог пользоваться
+  window._firebaseApp = app;
+  window._firebaseDb = db;
+  window._firebaseAuth = auth;
+</script>
 
   <script src="/main.js" defer></script>
 </body>
 </html>
+
 
