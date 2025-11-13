@@ -1408,13 +1408,93 @@ document.addEventListener('DOMContentLoaded', async ()=>{
       navigator.sendBeacon && navigator.sendBeacon(`${API_BASE}/state/save`, blob);
     }catch(e){}
   });
-});
-<script type="module" src="/firebase-init.js"></script>
+  
+<script type="module">
+  import "./firebase-init.js";
+
+  // 1️⃣ Достаём email пользователя.
+  // Вариант A: ты уже где-то хранишь пользователя в localStorage.
+  // Если у тебя другое место хранения — подставь оттуда.
+  let currentUserEmail = null;
+
+  try {
+    const rawUser = localStorage.getItem("currentUser");
+    if (rawUser) {
+      const parsed = JSON.parse(rawUser);
+      currentUserEmail = parsed.email || parsed.userEmail || null;
+    }
+    // fallback: если ты хранишь email отдельно
+    if (!currentUserEmail) {
+      currentUserEmail = localStorage.getItem("userEmail") || null;
+    }
+  } catch (e) {
+    console.error("Failed to parse currentUser from localStorage", e);
+  }
+
+  // 2️⃣ Функция, которая применяет новый стейт в твоём приложении
+  function applyRemoteState(remoteState) {
+    try {
+      // сохраняем в localStorage, чтобы твой текущий код мог это использовать
+      localStorage.setItem("appState", JSON.stringify(remoteState));
+
+      // если в main.js есть какая-то функция рендера – дергаем её
+      if (typeof window.renderAppFromState === "function") {
+        window.renderAppFromState(remoteState);
+      }
+
+      // если у тебя глобальная переменная appState
+      if (window.appState) {
+        window.appState = remoteState;
+      }
+
+      console.log("Firebase sync: state applied from cloud");
+    } catch (e) {
+      console.error("Failed to apply remote state", e);
+    }
+  }
+
+  // 3️⃣ Стартуем подписку на обновления, если есть email
+  if (currentUserEmail && window.FirebaseSync) {
+    const { subscribeUserState } = window.FirebaseSync;
+    subscribeUserState(currentUserEmail, (remoteState) => {
+      applyRemoteState(remoteState);
+    });
+  } else {
+    console.warn("No currentUserEmail or FirebaseSync on app.html");
+  }
+
+  // 4️⃣ Оборачиваем сохранение стейта,
+  // чтобы при каждом локальном сохранении пушить данные и в Firebase.
+  if (!window.saveAppStateToCloud) {
+    window.saveAppStateToCloud = async function (newState) {
+      try {
+        const state = newState || window.appState || {};
+        localStorage.setItem("appState", JSON.stringify(state));
+
+        // ТВОЙ текущий бекенд (если есть)
+        try {
+          await fetch("/app-state", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(state)
+          });
+        } catch (e) {
+          console.warn("Backend /app-state save failed:", e?.message || e);
+        }
+
+        // Firebase
+        if (currentUserEmail && window.FirebaseSync) {
+          const { saveUserState } = window.FirebaseSync;
+          await saveUserState(currentUserEmail, state);
+        }
+      } catch (e) {
+        console.error("saveAppStateToCloud failed:", e);
+      }
+    };
+  }
+
+</script>
+
 <script src="/main.js"></script> 
 </body>
 </html>
-
-</body>
-</html>
-
-
