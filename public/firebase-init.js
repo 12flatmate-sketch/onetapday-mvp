@@ -1,8 +1,16 @@
 // firebase-init.js
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-import { getDatabase } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
+// Подключаем Firebase SDK через CDN-модули
 
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+import {
+  getDatabase,
+  ref,
+  onValue,
+  set,
+  update
+} from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
+
+// 🔑 ТВОЙ КОНФИГ
 const firebaseConfig = {
   apiKey: "AIzaSyClatmXXE1ZG-MjKcHrquz2HSOZ4SswVVs",
   authDomain: "onetapday-d45a6.firebaseapp.com",
@@ -14,10 +22,52 @@ const firebaseConfig = {
   measurementId: "G-DEDSHTT30C"
 };
 
+// Инициализация
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
 const db = getDatabase(app);
 
-window.firebaseApp = app;
-window.firebaseAuth = auth;
-window.firebaseDb = db;
+// Нормализуем email, чтобы он был валидным ключом
+function userKeyFromEmail(email) {
+  if (!email) return null;
+  return btoa(email.toLowerCase()); // base64
+}
+
+// Получаем ссылку на ветку userState в Realtime DB
+function getUserStateRef(email) {
+  const key = userKeyFromEmail(email);
+  if (!key) return null;
+  return ref(db, `users/${key}/state`);
+}
+
+// Подписка на данные пользователя
+function subscribeUserState(email, onChange) {
+  const r = getUserStateRef(email);
+  if (!r) return;
+  onValue(r, (snapshot) => {
+    const val = snapshot.val();
+    if (val && typeof onChange === "function") {
+      onChange(val);
+    }
+  });
+}
+
+// Сохранение полного стейта
+async function saveUserState(email, stateObj) {
+  const r = getUserStateRef(email);
+  if (!r) return;
+  await set(r, stateObj || {});
+}
+
+// Частичное обновление
+async function patchUserState(email, patchObj) {
+  const r = getUserStateRef(email);
+  if (!r) return;
+  await update(r, patchObj || {});
+}
+
+// Делаем функции доступными глобально (чтобы main.js мог взять из window)
+window.FirebaseSync = {
+  subscribeUserState,
+  saveUserState,
+  patchUserState
+};
