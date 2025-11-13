@@ -488,15 +488,7 @@ app.post('/create-checkout-session', async (req, res) => {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'subscription',
-      line_items: [{line_items: [{ price: 'price_xxx', quantity: 1 }]
-
-        price_data: {
-          currency: 'pln',
-          product_data: { name: 'OneTapDay Pilot Deposit (2 months access)' },
-          unit_amount: 9900
-        },
-        quantity: 1
-      }],
+      line_items: [{ price: 'price_xxx', quantity: 1 }],
       customer_email: user.email,
       metadata: { email: user.email },
       success_url: `${req.protocol}://${req.get('host')}/app.html?session_id={CHECKOUT_SESSION_ID}`,
@@ -573,4 +565,5 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`✅ Server listening on port ${PORT}`);
 });
+
 
