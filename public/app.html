@@ -1295,9 +1295,17 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 
   // File/url
   $id('txFile')?.addEventListener('change', async e=>{ const f=e.target.files[0]; if(!f) return; tx=parseCSV(await f.text()); inferAccounts(); render(); saveLocal(); pushState(); });
-  $id('txImage')?.addEventListener('change', async e=>{ const files=[...e.target.files]; if(!files.length) return; await ocrBankFiles(files); });
+  $id('txImage')?.addEventListener('change', async e => {
+  const files = [...e.target.files];
+  if (!files.length) return;
+  await ocrBankFiles(files);
+});
   $id('billFile')?.addEventListener('change', async e=>{ const f=e.target.files[0]; if(!f) return; bills=parseCSV(await f.text()); render(); saveLocal(); pushState(); });
-  $id('billImage')?.addEventListener('change', async e=>{ const files=[...e.target.files]; if(!files.length) return; await ocrInvoiceFiles(files); });
+$id('billImage')?.addEventListener('change', async e => {
+  const files = [...e.target.files];
+  if (!files.length) return;
+  await ocrInvoiceFiles(files);
+});
   $id('saveTxUrl')?.addEventListener('click',()=>{ const v=$id('txUrl')?.value.trim()||""; localStorage.setItem('txUrl',v); alert('Zapisano URL wyciągu'); scheduleAutosync(); });
 
   // Cash quick & ops
@@ -1492,9 +1500,9 @@ document.addEventListener('DOMContentLoaded', async ()=>{
       }
     };
   }
-
 </script>
 
 <script src="/main.js"></script> 
 </body>
 </html>
+
