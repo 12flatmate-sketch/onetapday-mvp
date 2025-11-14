@@ -4,6 +4,8 @@ const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+// простое in-memory хранилище по email
+const appStateStore = {};
 
 // stripe is optional but kept
 let stripe = null;
@@ -565,6 +567,7 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`✅ Server listening on port ${PORT}`);
 });
+
 
 
 
