@@ -609,6 +609,90 @@ function getVal(obj,keys){
 let tx=[], bills=[], kasa=[], accMeta={};
 const stateKeys = ['tx_manual_import','bills_manual_import','kasa','accMeta','cashPLN','penaltyPct','intervalMin','rateEUR','rateUSD','blacklist','autoCash',SUB_KEY,SUB_FROM,SUB_TO,DEMO_START,'txUrl','billUrl','otd_lang','speechLang'];
 
+/* ==== CLOUD SYNC (Firebase, общий стейт для всех устройств) ==== */
+function getCloudEmail(){
+  return localStorage.getItem(USER_KEY) || '';
+}
+
+function buildCloudState(){
+  const settings = stateKeys.reduce((m,k)=>{
+    m[k] = localStorage.getItem(k);
+    return m;
+  }, {});
+  return {
+    tx,
+    bills,
+    kasa,
+    accMeta,
+    settings
+  };
+}
+
+async function pushCloudState(){
+  if (!window.FirebaseSync) return;           // /sync-cloud.js ещё не загрузился
+  const email = getCloudEmail();
+  if (!email) return;                         // нет email → не знаем куда писать
+
+  try{
+    await window.FirebaseSync.saveUserState(email, buildCloudState());
+    console.log('[cloud] saved to Firebase');
+  }catch(e){
+    console.warn('[cloud] save error', e);
+  }
+}
+
+function applyCloudState(remote){
+  if (!remote || typeof remote !== 'object') return;
+
+  try{
+    if (Array.isArray(remote.tx)){
+      tx = remote.tx;
+      localStorage.setItem('tx_manual_import', JSON.stringify(tx));
+    }
+    if (Array.isArray(remote.bills)){
+      bills = remote.bills;
+      localStorage.setItem('bills_manual_import', JSON.stringify(bills));
+    }
+    if (Array.isArray(remote.kasa)){
+      kasa = remote.kasa;
+      localStorage.setItem('kasa', JSON.stringify(kasa));
+    }
+    if (remote.accMeta && typeof remote.accMeta === 'object'){
+      accMeta = remote.accMeta;
+      localStorage.setItem('accMeta', JSON.stringify(accMeta));
+    }
+    if (remote.settings && typeof remote.settings === 'object'){
+      Object.entries(remote.settings).forEach(([k,v])=>{
+        if (typeof v === 'string') localStorage.setItem(k, v);
+      });
+    }
+
+    // пересчитать и перерисовать UI
+    inferAccounts();
+    render();
+  }catch(e){
+    console.warn('[cloud] apply error', e);
+  }
+}
+
+function startCloudSync(){
+  if (!window.FirebaseSync){
+    console.warn('[cloud] FirebaseSync not available');
+    return;
+  }
+  const email = getCloudEmail();
+  if (!email){
+    console.warn('[cloud] no email in localStorage.'+USER_KEY);
+    return;
+  }
+
+  // 1) подписываемся на изменения в Firebase
+  window.FirebaseSync.subscribeUserState(email, applyCloudState);
+
+  // 2) пушим текущий стейт устройства в облако
+  pushCloudState();
+}
+
 /* ==== REMOTE SYNC (optional) ==== */
 async function pullState(){
   if(!REMOTE_OK) return null;
@@ -857,7 +941,11 @@ function saveLocal(){
   try{ localStorage.setItem('tx_manual_import', JSON.stringify(tx)); }catch(e){}
   try{ localStorage.setItem('bills_manual_import', JSON.stringify(bills)); }catch(e){}
   try{ localStorage.setItem('accMeta', JSON.stringify(accMeta)); }catch(e){}
+
+  // NEW: обновляем облако
+  pushCloudState();
 }
+
 
 /* ==== ACCOUNTS ==== */
 function inferAccounts(){
@@ -1407,7 +1495,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 
   // Remote pull once, then push snapshot
   await pullState(); loadLocal(); inferAccounts(); render();
-  pushState();
+  pushState(); startCloudSync();
 
   // Save on unload (sendBeacon fallback)
   window.addEventListener('beforeunload', ()=>{
@@ -1456,6 +1544,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   <script type="module" src="/sync-cloud.js"></script>
 </body>
 </html>
+
 
 
 
