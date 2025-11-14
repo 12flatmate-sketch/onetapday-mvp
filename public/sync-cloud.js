@@ -153,7 +153,7 @@ function writeLocalState(st) {
   if (Array.isArray(st.kasa)) {
     localStorage.setItem("kasa", JSON.stringify(st.kasa));
   }
-  if (Array.isArray(st.tx)) {
+ if (Array.isArray(st.tx) && st.tx.length > 0) {
     localStorage.setItem("tx_manual_import", JSON.stringify(st.tx));
   }
   if (Array.isArray(st.bills)) {
