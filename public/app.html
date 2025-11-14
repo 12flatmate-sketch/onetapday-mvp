@@ -612,49 +612,68 @@ const stateKeys = ['tx_manual_import','bills_manual_import','kasa','accMeta','ca
 /* ==== REMOTE SYNC (optional) ==== */
 async function pullState(){
   if(!REMOTE_OK) return null;
-  const email = localStorage.getItem(USER_KEY)||"";
-  if(!email) return null;
   try{
-    const r=await fetch(`${API_BASE}/state/get?email=${encodeURIComponent(email)}`,{credentials:'include'});
-    if(!r.ok){ if(r.status===404){ REMOTE_OK=false; localStorage.setItem('remote_disabled','1'); } return null; }
-    const json=await r.json();
-    if(!json) return null;
-    if(json.tx) localStorage.setItem('tx_manual_import', JSON.stringify(json.tx));
-    if(json.bills) localStorage.setItem('bills_manual_import', JSON.stringify(json.bills));
-    if(json.kasa) localStorage.setItem('kasa', JSON.stringify(json.kasa));
-    if(json.accMeta) localStorage.setItem('accMeta', JSON.stringify(json.accMeta));
-    if(json.settings) Object.entries(json.settings).forEach(([k,v])=> localStorage.setItem(k, typeof v==='string'?v:JSON.stringify(v)));
-    return json;
-  }catch(e){ REMOTE_OK=false; localStorage.setItem('remote_disabled','1'); return null; }
+    const res = await fetch('/app-state', {
+      credentials: 'include'
+    });
+    if(!res.ok) return null;
+    const json = await res.json();
+    const st = json && json.state ? json.state : {};
+
+    if (st.transactions) {
+      localStorage.setItem('tx_manual_import', JSON.stringify(st.transactions));
+    }
+    if (st.bills) {
+      localStorage.setItem('bills_manual_import', JSON.stringify(st.bills));
+    }
+    if (st.cash) {
+      localStorage.setItem('kasa', JSON.stringify(st.cash));
+    }
+    if (st.meta) {
+      localStorage.setItem('accMeta', JSON.stringify(st.meta));
+    }
+
+    loadLocal();
+    inferAccounts();
+    render();
+    return st;
+  } catch (e) {
+    console.warn('pullState error', e);
+    return null;
+  }
 }
+
 const pushState = (function(){
-  let t=null, inflight=false;
+  let timer = null;
+  let inflight = false;
   return function(){
     if(!REMOTE_OK) return;
-    if(inflight) return;
-    clearTimeout(t);
-    t=setTimeout(async ()=>{
-      const email = localStorage.getItem(USER_KEY)||"";
-      if(!email) return;
-      inflight=true;
-      const body={
-        email,
-        tx: JSON.parse(localStorage.getItem('tx_manual_import')||'[]'),
-        bills: JSON.parse(localStorage.getItem('bills_manual_import')||'[]'),
-        kasa: JSON.parse(localStorage.getItem('kasa')||'[]'),
-        accMeta: JSON.parse(localStorage.getItem('accMeta')||'{}'),
-        settings: stateKeys.reduce((m,k)=> (m[k]=localStorage.getItem(k), m), {})
-      };
+    clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if(inflight) return;
+      inflight = true;
       try{
-        const res=await fetch(`${API_BASE}/state/save`,{
-          method:'POST',headers:{'Content-Type':'application/json'},
-          credentials:'include',body:JSON.stringify(body)
+        const state = {
+          transactions: tx,
+          bills,
+          cash: kasa,
+          meta: accMeta
+        };
+        await fetch('/app-state/merge', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ state })
         });
-        if(!res.ok && res.status===404){ REMOTE_OK=false; localStorage.setItem('remote_disabled','1'); }
-      }catch(e){ REMOTE_OK=false; localStorage.setItem('remote_disabled','1'); } finally{ inflight=false; }
+      } catch (e) {
+        console.warn('pushState error', e);
+      } finally {
+        inflight = false;
+      }
     }, 600);
-  }
+  };
 })();
+
 
 /* ==== MONEY / RATES ==== */
 function rate(cur){
@@ -1412,4 +1431,5 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 </script>
 </body>
 </html>
+
 
