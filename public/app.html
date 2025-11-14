@@ -608,7 +608,29 @@ function getVal(obj,keys){
 /* ==== STATE ==== */
 let tx=[], bills=[], kasa=[], accMeta={};
 const stateKeys = ['tx_manual_import','bills_manual_import','kasa','accMeta','cashPLN','penaltyPct','intervalMin','rateEUR','rateUSD','blacklist','autoCash',SUB_KEY,SUB_FROM,SUB_TO,DEMO_START,'txUrl','billUrl','otd_lang','speechLang'];
+function ensureTxIds(){
+  if(!Array.isArray(tx)) tx = [];
+  tx.forEach((r, idx) => {
+    if(!r || r.id) return;
 
+    // пытаемся взять уже существующий ID
+    let id = getVal(r, ["ID transakcji","ID","id"]);
+    if(!id){
+      // генерим стабильный id, если его не было
+      const baseDate = r["Data księgowania"] || today();
+      id = `tx-${baseDate}-${idx}-${Math.random().toString(36).slice(2,8)}`;
+    }
+
+    r.id = String(id);
+
+    // чтобы всё было консистентно по полям
+    if(!r["ID transakcji"]) {
+      r["ID transakcji"] = r.id;
+    }
+  });
+}
+
+  
 /* ==== CLOUD SYNC (Firebase, общий стейт для всех устройств) ==== */
 function getCloudEmail(){
   return localStorage.getItem(USER_KEY) || '';
@@ -747,12 +769,16 @@ const pushState = (function(){
       if(inflight) return;
       inflight = true;
       try{
+        // гарантируем id перед пушем
+        ensureTxIds();
+
         const state = {
           transactions: tx,
           bills,
           cash: kasa,
           meta: accMeta
         };
+
         await fetch('/app-state/merge', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -767,6 +793,7 @@ const pushState = (function(){
     }, 600);
   };
 })();
+
 
 
 /* ==== MONEY / RATES ==== */
@@ -863,6 +890,24 @@ async function recognizeImage(file){
   const { data:{ text } } = await Tesseract.recognize(file, 'pol+eng+rus', { logger:()=>{} });
   return text.replace(/\u00A0/g,' ').replace(/\r/g,'').replace(/\t/g,' ').replace(/ +/g,' ').trim();
 }
+async function ocrBankFiles(files){
+  for(const f of files){
+    try{
+      thumb($id('txLastThumb'), f);
+      const text = await recognizeImage(f);
+      const rows = parseBankOCR(text);
+      if(rows.length){
+        tx = tx.concat(rows);
+      }
+    }catch(e){ console.warn('OCR bank error', e); }
+  }
+  ensureTxIds();
+  inferAccounts();
+  render();
+  saveLocal();
+  pushState();
+}
+
 function parseBankOCR(text){
   const lines = text.split(/\n+/).map(s=>s.trim()).filter(Boolean);
   const out = [];
@@ -945,7 +990,9 @@ function loadLocal(){
   try{ tx = JSON.parse(localStorage.getItem('tx_manual_import')||'[]'); }catch(e){tx=[]}
   try{ bills = JSON.parse(localStorage.getItem('bills_manual_import')||'[]'); }catch(e){bills=[]}
   try{ accMeta = JSON.parse(localStorage.getItem('accMeta')||'{}'); }catch(e){accMeta={}}
+  ensureTxIds();
 }
+
 function saveLocal(){
   try{ localStorage.setItem('kasa', JSON.stringify(kasa)); }catch(e){}
   try{ localStorage.setItem('tx_manual_import', JSON.stringify(tx)); }catch(e){}
@@ -1016,7 +1063,10 @@ async function fetchSources(){
   try{
     const u1=localStorage.getItem('txUrl')||$id('txUrl')?.value||"";
     const u2=localStorage.getItem('billUrl')||$id('billUrl')?.value||"";
-    if(u1){ const r=await fetch(u1,{cache:'no-store'}); tx = parseCSV(await r.text()); }
+  if(u1){const r = await fetch(u1,{cache:'no-store'});tx = parseCSV(await r.text());
+  ensureTxIds();
+}
+
     if(u2){ const r2=await fetch(u2,{cache:'no-store'}); bills = parseCSV(await r2.text()); }
     inferAccounts(); render();
     const last=$id('lastSync'); if(last) last.textContent = (M[localStorage.getItem('otd_lang')||'pl'].sync_ts||"Synchronizacja: —").replace('—', new Date().toLocaleString());
@@ -1411,7 +1461,15 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   $id('exportBook')?.addEventListener('click', exportBookCSV);
 
   // File/url
-  $id('txFile')?.addEventListener('change', async e=>{ const f=e.target.files[0]; if(!f) return; tx=parseCSV(await f.text()); inferAccounts(); render(); saveLocal(); pushState(); });
+ $id('txFile')?.addEventListener('change', async e=>{const f=e.target.files[0]; if(!f) return;
+  tx = parseCSV(await f.text());
+  ensureTxIds();
+  inferAccounts();
+  render();
+  saveLocal();
+  pushState();
+});
+
   $id('txImage')?.addEventListener('change', async e=>{ const files=[...e.target.files]; if(!files.length) return; await ocrBankFiles(files); });
   $id('billFile')?.addEventListener('change', async e=>{ const f=e.target.files[0]; if(!f) return; bills=parseCSV(await f.text()); render(); saveLocal(); pushState(); });
   $id('billImage')?.addEventListener('change', async e=>{ const files=[...e.target.files]; if(!files.length) return; await ocrInvoiceFiles(files); });
@@ -1554,6 +1612,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   <script type="module" src="/sync-cloud.js"></script>
 </body>
 </html>
+
 
 
 
