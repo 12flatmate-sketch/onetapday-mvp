@@ -727,55 +727,37 @@ function startCloudSync(){
 
 /* ==== REMOTE SYNC (optional) ==== */
 async function pullState(){
-  if(!REMOTE_OK) return null;
-  try{
+  if (!REMOTE_OK) return null;
+  try {
     const res = await fetch('/app-state', {
       credentials: 'include'
     });
-    if(!res.ok) return null;
+    if (!res.ok) return null;
     const json = await res.json();
     const st = json && json.state ? json.state : {};
 
-    // Текущее локальное состояние (чтобы не потерять его, если с сервера пришло пусто)
-    let localTx = [];
-    let localBills = [];
-    let localCash = [];
-    let localMeta = {};
-    try{ localTx   = JSON.parse(localStorage.getItem('tx_manual_import')      || '[]'); }catch(e){}
-    try{ localBills= JSON.parse(localStorage.getItem('bills_manual_import')   || '[]'); }catch(e){}
-    try{ localCash = JSON.parse(localStorage.getItem('kasa')                  || '[]'); }catch(e){}
-    try{ localMeta = JSON.parse(localStorage.getItem('accMeta')               || '{}'); }catch(e){}
+    // ВАЖНО:
+    // 1) НЕ затираем локальные выписки пустым state с сервера
+    // 2) Обновляем только если реально есть данные
 
-    // ТРАНЗАКЦИИ (выписка)
-    if (Array.isArray(st.transactions) && st.transactions.length > 0) {
-      // с сервера пришли реальные данные — обновляем
+    // Выписки (tx)
+    if (Array.isArray(st.transactions) && st.transactions.length) {
       localStorage.setItem('tx_manual_import', JSON.stringify(st.transactions));
-    } else {
-      // сервер пустой — оставляем то, что уже есть локально (например, после OCR)
-      if (localTx && localTx.length) {
-        localStorage.setItem('tx_manual_import', JSON.stringify(localTx));
-      }
     }
 
-    // ФАКТУРЫ
-    if (Array.isArray(st.bills) && st.bills.length > 0) {
+    // Фактуры
+    if (Array.isArray(st.bills) && st.bills.length) {
       localStorage.setItem('bills_manual_import', JSON.stringify(st.bills));
-    } else if (localBills && localBills.length) {
-      localStorage.setItem('bills_manual_import', JSON.stringify(localBills));
     }
 
-    // КАССА
-    if (Array.isArray(st.cash) && st.cash.length > 0) {
+    // Касса
+    if (Array.isArray(st.cash) && st.cash.length) {
       localStorage.setItem('kasa', JSON.stringify(st.cash));
-    } else if (localCash && localCash.length) {
-      localStorage.setItem('kasa', JSON.stringify(localCash));
     }
 
-    // МЕТАДАННЫЕ СЧЕТОВ
-    if (st.meta && typeof st.meta === 'object' && Object.keys(st.meta).length > 0) {
+    // Метаданные аккаунтов
+    if (st.meta && typeof st.meta === 'object') {
       localStorage.setItem('accMeta', JSON.stringify(st.meta));
-    } else if (localMeta && Object.keys(localMeta).length > 0) {
-      localStorage.setItem('accMeta', JSON.stringify(localMeta));
     }
 
     loadLocal();
@@ -787,6 +769,7 @@ async function pullState(){
     return null;
   }
 }
+
 
 
 const pushState = (function(){
@@ -1642,6 +1625,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   <script type="module" src="/sync-cloud.js"></script>
 </body>
 </html>
+
 
 
 
