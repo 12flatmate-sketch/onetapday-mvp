@@ -736,17 +736,46 @@ async function pullState(){
     const json = await res.json();
     const st = json && json.state ? json.state : {};
 
-    if (st.transactions) {
+    // Текущее локальное состояние (чтобы не потерять его, если с сервера пришло пусто)
+    let localTx = [];
+    let localBills = [];
+    let localCash = [];
+    let localMeta = {};
+    try{ localTx   = JSON.parse(localStorage.getItem('tx_manual_import')      || '[]'); }catch(e){}
+    try{ localBills= JSON.parse(localStorage.getItem('bills_manual_import')   || '[]'); }catch(e){}
+    try{ localCash = JSON.parse(localStorage.getItem('kasa')                  || '[]'); }catch(e){}
+    try{ localMeta = JSON.parse(localStorage.getItem('accMeta')               || '{}'); }catch(e){}
+
+    // ТРАНЗАКЦИИ (выписка)
+    if (Array.isArray(st.transactions) && st.transactions.length > 0) {
+      // с сервера пришли реальные данные — обновляем
       localStorage.setItem('tx_manual_import', JSON.stringify(st.transactions));
+    } else {
+      // сервер пустой — оставляем то, что уже есть локально (например, после OCR)
+      if (localTx && localTx.length) {
+        localStorage.setItem('tx_manual_import', JSON.stringify(localTx));
+      }
     }
-    if (st.bills) {
+
+    // ФАКТУРЫ
+    if (Array.isArray(st.bills) && st.bills.length > 0) {
       localStorage.setItem('bills_manual_import', JSON.stringify(st.bills));
+    } else if (localBills && localBills.length) {
+      localStorage.setItem('bills_manual_import', JSON.stringify(localBills));
     }
-    if (st.cash) {
+
+    // КАССА
+    if (Array.isArray(st.cash) && st.cash.length > 0) {
       localStorage.setItem('kasa', JSON.stringify(st.cash));
+    } else if (localCash && localCash.length) {
+      localStorage.setItem('kasa', JSON.stringify(localCash));
     }
-    if (st.meta) {
+
+    // МЕТАДАННЫЕ СЧЕТОВ
+    if (st.meta && typeof st.meta === 'object' && Object.keys(st.meta).length > 0) {
       localStorage.setItem('accMeta', JSON.stringify(st.meta));
+    } else if (localMeta && Object.keys(localMeta).length > 0) {
+      localStorage.setItem('accMeta', JSON.stringify(localMeta));
     }
 
     loadLocal();
@@ -758,6 +787,7 @@ async function pullState(){
     return null;
   }
 }
+
 
 const pushState = (function(){
   let timer = null;
@@ -1612,6 +1642,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   <script type="module" src="/sync-cloud.js"></script>
 </body>
 </html>
+
 
 
 
