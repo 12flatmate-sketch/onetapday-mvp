@@ -453,11 +453,20 @@ function shallowMergeServerState(existing, incoming) {
 }
 
 app.get('/app-state', (req, res) => {
-  const user = getUserBySession(req);
-  if (!user) return res.status(401).json({ success:false, error:'Not authenticated' });
-  if (typeof expireStatuses === 'function') expireStatuses(user);
-  return res.json({ success:true, state: (user.appState || {}) });
+  const emailRaw =
+    (req.query && req.query.email) ||
+    (req.session && req.session.user && req.session.user.email) ||
+    '';
+
+  const email = String(emailRaw).trim().toLowerCase();
+  if (!email) {
+    return res.json({ state: null });
+  }
+
+  const state = appStateStore[email] || null;
+  res.json({ state });
 });
+
 
 app.post('/app-state', (req, res) => {
   const user = getUserBySession(req);
@@ -469,13 +478,30 @@ app.post('/app-state', (req, res) => {
 });
 
 app.post('/app-state/merge', (req, res) => {
-  const user = getUserBySession(req);
-  if (!user) return res.status(401).json({ success:false, error:'Not authenticated' });
-  const incoming = req.body && req.body.state || {};
-  const merged = shallowMergeServerState(user.appState || {}, incoming);
-  user.appState = merged;
-  saveUsers();
-  return res.json({ success:true, state: merged });
+  const body = req.body || {};
+  const emailRaw =
+    body.email ||
+    (req.session && req.session.user && req.session.user.email) ||
+    '';
+
+  const email = String(emailRaw).trim().toLowerCase();
+  if (!email) {
+    return res.status(400).json({ error: 'NO_EMAIL' });
+  }
+
+  const incoming = body.state || {};
+  const prev = appStateStore[email] || {};
+
+  const merged = {
+    transactions: incoming.transactions || prev.transactions || [],
+    bills:        incoming.bills        || prev.bills        || [],
+    cash:         incoming.cash         || prev.cash         || [],
+    meta:         incoming.meta         || prev.meta         || {}
+  };
+
+  appStateStore[email] = merged;
+
+  res.json({ ok: true });
 });
 
 // Stripe checkout creation route (requires stripe configured)
@@ -567,6 +593,7 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`✅ Server listening on port ${PORT}`);
 });
+
 
 
 
