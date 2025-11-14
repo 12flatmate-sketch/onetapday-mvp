@@ -95,8 +95,30 @@ function readLocalState() {
   return st;
 }
 
+// читаем новый формат: всё лежит в blob как одна JSON-строка
+function fromBlob(remote) {
+  if (remote && typeof remote.blob === "string") {
+    try {
+      const parsed = JSON.parse(remote.blob);
+      if (parsed && typeof parsed === "object") {
+        return parsed;
+      }
+    } catch (e) {
+      console.warn("[cloud-sync] failed to parse blob", e);
+    }
+  }
+  return null;
+}
+
 // приводим удалённый стейт в нормальный вид + читаем старую структуру (где всё было в settings строками)
 function normalizeRemote(remote) {
+  // Новый формат через blob
+  const blobState = fromBlob(remote);
+  if (blobState) {
+    return blobState;
+  }
+
+  // Старый формат — оставляем для совместимости
   const out = {
     kasa: [],
     tx: [],
@@ -153,7 +175,8 @@ function writeLocalState(st) {
   if (Array.isArray(st.kasa)) {
     localStorage.setItem("kasa", JSON.stringify(st.kasa));
   }
- if (Array.isArray(st.tx) && st.tx.length > 0) {
+  // не даём пустому массиву затирать локальную выписку
+  if (Array.isArray(st.tx) && st.tx.length > 0) {
     localStorage.setItem("tx_manual_import", JSON.stringify(st.tx));
   }
   if (Array.isArray(st.bills)) {
@@ -170,12 +193,11 @@ function writeLocalState(st) {
     });
   }
 }
+
 // === Адаптер для app.html: window.FirebaseSync ===
 // app.html вызывает:
 //   FirebaseSync.saveUserState(email, state)
 //   FirebaseSync.subscribeUserState(email, callback)
-//
-// Мы используем существующий db / keyFromEmail / normalizeRemote / readLocalState / writeLocalState
 
 if (!window.FirebaseSync) {
   window.FirebaseSync = {
@@ -186,8 +208,6 @@ if (!window.FirebaseSync) {
         return;
       }
 
-      // state прилетает из app.html (buildCloudState),
-      // но на всякий случай подстрахуемся и подставим локальные значения, если чего-то нет
       const local = readLocalState();
       const state = {
         kasa: Array.isArray(fullState && fullState.kasa) ? fullState.kasa : local.kasa,
@@ -205,7 +225,7 @@ if (!window.FirebaseSync) {
 
       const userRef = ref(db, "users/" + key + "/state");
       try {
-        await set(userRef, state);
+        await set(userRef, { blob: JSON.stringify(state) });
         console.log("[FirebaseSync] saved state for", email);
       } catch (e) {
         console.warn("[FirebaseSync] save error", e);
@@ -233,88 +253,3 @@ if (!window.FirebaseSync) {
     }
   };
 }
-
-
-(function initCloudSync() {
-  const email = localStorage.getItem("otd_user") || "";
-  const key = keyFromEmail(email);
-
-  if (!email || !key) {
-    console.log("[cloud-sync] no user email, skip");
-    return;
-  }
-
-  const userRef = ref(db, "users/" + key + "/state");
-
-  let initializedRemote = false;
-  let applyingRemote = false;
-
-  // слушаем изменения из Firebase
-  onValue(userRef, snap => {
-    const val = snap.val();
-    // первый запуск: если в облаке пусто, заливаем туда локальный стейт и живём дальше
-    if (!val) {
-      if (!initializedRemote) {
-        initializedRemote = true;
-        const local = readLocalState();
-        const hasData =
-          (local.kasa && local.kasa.length) ||
-          (local.tx && local.tx.length) ||
-          (local.bills && local.bills.length);
-
-        if (hasData) {
-          console.log("[cloud-sync] remote empty, push local snapshot");
-          set(userRef, local).catch(err =>
-            console.warn("[cloud-sync] set error (init)", err)
-          );
-        }
-      }
-      return;
-    }
-
-    initializedRemote = true;
-    const remoteNorm = normalizeRemote(val);
-    const local = readLocalState();
-
-    // если одинаково — не дёргаем UI
-    if (JSON.stringify(remoteNorm) === JSON.stringify(local)) {
-      return;
-    }
-
-    console.log("[cloud-sync] applying remote → local");
-    applyingRemote = true;
-    writeLocalState(remoteNorm);
-
-    // дергаем функции из app.html, если они есть
-    try {
-      if (typeof window.loadLocal === "function") window.loadLocal();
-      if (typeof window.loadKasa === "function") window.loadKasa();
-      if (typeof window.inferAccounts === "function") window.inferAccounts();
-      if (typeof window.render === "function") window.render();
-    } catch (e) {
-      console.warn("[cloud-sync] render error", e);
-    } finally {
-      applyingRemote = false;
-    }
-  });
-
-  // перехватываем saveLocal, чтобы КАЖДОЕ изменение kasa/wyciąg/faktury шло в Firebase
-  const origSaveLocal = window.saveLocal;
-  if (typeof origSaveLocal === "function") {
-    window.saveLocal = function patchedSaveLocal() {
-      origSaveLocal();
-      if (!initializedRemote || applyingRemote) {
-        return;
-      }
-      const state = readLocalState();
-      console.log("[cloud-sync] push local → remote");
-      set(userRef, state).catch(err =>
-        console.warn("[cloud-sync] set error (saveLocal)", err)
-      );
-    };
-  } else {
-    console.warn("[cloud-sync] saveLocal not found, nothing to patch");
-  }
-
-  console.log("[cloud-sync] initialized for", email, "->", key);
-})();
