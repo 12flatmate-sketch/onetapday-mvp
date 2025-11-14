@@ -170,6 +170,70 @@ function writeLocalState(st) {
     });
   }
 }
+// === Адаптер для app.html: window.FirebaseSync ===
+// app.html вызывает:
+//   FirebaseSync.saveUserState(email, state)
+//   FirebaseSync.subscribeUserState(email, callback)
+//
+// Мы используем существующий db / keyFromEmail / normalizeRemote / readLocalState / writeLocalState
+
+if (!window.FirebaseSync) {
+  window.FirebaseSync = {
+    async saveUserState(email, fullState) {
+      const key = keyFromEmail(email);
+      if (!key) {
+        console.warn("[FirebaseSync] empty email, skip save");
+        return;
+      }
+
+      // state прилетает из app.html (buildCloudState),
+      // но на всякий случай подстрахуемся и подставим локальные значения, если чего-то нет
+      const local = readLocalState();
+      const state = {
+        kasa: Array.isArray(fullState && fullState.kasa) ? fullState.kasa : local.kasa,
+        tx: Array.isArray(fullState && fullState.tx) ? fullState.tx : local.tx,
+        bills: Array.isArray(fullState && fullState.bills) ? fullState.bills : local.bills,
+        accMeta:
+          fullState && fullState.accMeta && typeof fullState.accMeta === "object"
+            ? fullState.accMeta
+            : local.accMeta,
+        settings:
+          fullState && fullState.settings && typeof fullState.settings === "object"
+            ? fullState.settings
+            : local.settings
+      };
+
+      const userRef = ref(db, "users/" + key + "/state");
+      try {
+        await set(userRef, state);
+        console.log("[FirebaseSync] saved state for", email);
+      } catch (e) {
+        console.warn("[FirebaseSync] save error", e);
+      }
+    },
+
+    subscribeUserState(email, callback) {
+      const key = keyFromEmail(email);
+      if (!key) {
+        console.warn("[FirebaseSync] empty email, skip subscribe");
+        return;
+      }
+
+      const userRef = ref(db, "users/" + key + "/state");
+
+      onValue(userRef, snap => {
+        const val = snap.val();
+        const remoteNorm = normalizeRemote(val || {});
+        try {
+          callback(remoteNorm);
+        } catch (e) {
+          console.warn("[FirebaseSync] callback error", e);
+        }
+      });
+    }
+  };
+}
+
 
 (function initCloudSync() {
   const email = localStorage.getItem("otd_user") || "";
