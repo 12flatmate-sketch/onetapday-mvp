@@ -1,7 +1,13 @@
-// sync-cloud.js — синк кассы, выписок и фактур через Firebase, без ломания кассы
+// /sync-cloud.js
+// Синхронизация всего стейта (kasa + wyciąg + faktury + accMeta + настройки) через Firebase
 
-import { initializeApp, getApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+import {
+  getDatabase,
+  ref,
+  onValue,
+  set
+} from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyClatmXXE1ZG-MjKcHrquz2HSOZ4SswVVs",
@@ -14,27 +20,22 @@ const firebaseConfig = {
   measurementId: "G-DEDSHTT30C"
 };
 
-// не падаем от "app already exists"
-let app;
-try {
-  app = getApp();
-} catch (e) {
-  app = initializeApp(firebaseConfig);
-}
+const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// тот же ключ, что и в базе: 1tapday@gmail.com -> 1tapday@gmail,com
+// тот же формат ключа, который ты уже видишь в базе: 1tapday@gmail,com
 function keyFromEmail(email) {
-  if (!email) return "anon";
-  return String(email)
+  return String(email || "")
     .trim()
     .toLowerCase()
     .replace(/\./g, ",")
-    .replace(/[^a-z0-9,@_-]/g, "_");
+    .replace(/[^a-z0-9,@_-]/g, "");
 }
 
-// какие настройки тащим отдельно
+// какие ключи настроек таскаем как строки
 const SETTINGS_KEYS = [
+  "txUrl",
+  "billUrl",
   "cashPLN",
   "penaltyPct",
   "intervalMin",
@@ -42,185 +43,214 @@ const SETTINGS_KEYS = [
   "rateUSD",
   "blacklist",
   "autoCash",
-  "otd_lang",
-  "speechLang",
-  "txUrl",
-  "billUrl",
-  "otd_demo_started_at",
   "otd_sub_active",
   "otd_sub_from",
-  "otd_sub_to"
+  "otd_sub_to",
+  "otd_demo_started_at",
+  "otd_lang",
+  "speechLang"
 ];
 
-function readJSON(key, fallback) {
+// читаем локальный стейт из localStorage
+function readLocalState() {
+  const st = {
+    kasa: [],
+    tx: [],
+    bills: [],
+    accMeta: {},
+    settings: {}
+  };
+
   try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return fallback;
-    return JSON.parse(raw);
+    st.kasa = JSON.parse(localStorage.getItem("kasa") || "[]");
   } catch (e) {
-    console.warn("[sync-cloud] parse error", key, e);
-    return fallback;
+    st.kasa = [];
   }
-}
 
-// собираем СЕЙЧАСШНЕЕ локальное состояние → в Firebase
-function buildLocalState() {
-  const tx    = readJSON("tx_manual_import", []);
-  const bills = readJSON("bills_manual_import", []);
-  const kasa  = readJSON("kasa", []);
-  const accMeta = readJSON("accMeta", {});
+  try {
+    st.tx = JSON.parse(localStorage.getItem("tx_manual_import") || "[]");
+  } catch (e) {
+    st.tx = [];
+  }
 
-  const settings = {};
+  try {
+    st.bills = JSON.parse(localStorage.getItem("bills_manual_import") || "[]");
+  } catch (e) {
+    st.bills = [];
+  }
+
+  try {
+    st.accMeta = JSON.parse(localStorage.getItem("accMeta") || "{}");
+  } catch (e) {
+    st.accMeta = {};
+  }
+
   SETTINGS_KEYS.forEach(k => {
     const v = localStorage.getItem(k);
-    if (v != null) settings[k] = v;
+    if (v !== null && v !== undefined) {
+      st.settings[k] = v;
+    }
   });
 
-  // совместимость со старой схемой (всё в settings как строки)
-  settings.tx_manual_import     = localStorage.getItem("tx_manual_import")     || "[]";
-  settings.bills_manual_import  = localStorage.getItem("bills_manual_import")  || "[]";
-  settings.kasa                 = localStorage.getItem("kasa")                 || "[]";
-  settings.accMeta              = localStorage.getItem("accMeta")              || "{}";
+  return st;
+}
 
-  return {
-    tx,
-    bills,
-    kasa,
-    accMeta,
-    settings
+// приводим удалённый стейт в нормальный вид + читаем старую структуру (где всё было в settings строками)
+function normalizeRemote(remote) {
+  const out = {
+    kasa: [],
+    tx: [],
+    bills: [],
+    accMeta: {},
+    settings: {}
   };
-}
 
-// применяем состояние из Firebase → в localStorage и память
-function applyStateToLocal(state) {
-  if (!state || typeof state !== "object") return;
-
-  const s = state.settings || {};
-
-  // --- TX (wyciąg) ---
-  let tx = [];
-  if (Array.isArray(state.tx)) {
-    tx = state.tx;
-  } else if (typeof s.tx_manual_import === "string") {
-    try { tx = JSON.parse(s.tx_manual_import); } catch (e) { tx = []; }
+  if (remote && Array.isArray(remote.kasa)) out.kasa = remote.kasa;
+  if (remote && Array.isArray(remote.tx)) out.tx = remote.tx;
+  if (remote && Array.isArray(remote.bills)) out.bills = remote.bills;
+  if (remote && remote.accMeta && typeof remote.accMeta === "object") {
+    out.accMeta = remote.accMeta;
   }
 
-  // --- Bills (faktury) ---
-  let bills = [];
-  if (Array.isArray(state.bills)) {
-    bills = state.bills;
-  } else if (typeof s.bills_manual_import === "string") {
-    try { bills = JSON.parse(s.bills_manual_import); } catch (e) { bills = []; }
-  }
+  // старая схема: всё лежит в state.settings.{kasa, tx_manual_import, bills_manual_import, accMeta} как строки
+  if (remote && remote.settings && typeof remote.settings === "object") {
+    const s = remote.settings;
 
-  // --- Kasa (наличка) ---
-  let kasa = [];
-  if (Array.isArray(state.kasa)) {
-    kasa = state.kasa;
-  } else if (typeof s.kasa === "string") {
-    try { kasa = JSON.parse(s.kasa); } catch (e) { kasa = []; }
-  }
-
-  // --- accMeta ---
-  let accMeta = {};
-  if (state.accMeta && typeof state.accMeta === "object") {
-    accMeta = state.accMeta;
-  } else if (typeof s.accMeta === "string") {
-    try { accMeta = JSON.parse(s.accMeta); } catch (e) { accMeta = {}; }
-  }
-
-  localStorage.setItem("tx_manual_import", JSON.stringify(tx));
-  localStorage.setItem("bills_manual_import", JSON.stringify(bills));
-  localStorage.setItem("kasa", JSON.stringify(kasa));
-  localStorage.setItem("accMeta", JSON.stringify(accMeta));
-
-  // настройки
-  Object.entries(s).forEach(([k, v]) => {
-    if (v != null && typeof v !== "undefined") {
-      localStorage.setItem(k, v);
+    if (!out.kasa.length && typeof s.kasa === "string") {
+      try {
+        out.kasa = JSON.parse(s.kasa);
+      } catch {}
     }
-  });
-
-  // дергаем твои функции из app.html
-  if (typeof window.loadLocal === "function") window.loadLocal();
-  if (typeof window.inferAccounts === "function") window.inferAccounts();
-  if (typeof window.render === "function") window.render();
-}
-
-// обёртка для пуша в Firebase
-function createPusher(stateRef) {
-  let timer = null;
-  let pushing = false;
-
-  async function pushNow() {
-    if (pushing) return;
-    pushing = true;
-    try {
-      const snapshot = buildLocalState();
-      await set(stateRef, snapshot);
-      console.info("[sync-cloud] pushed");
-    } catch (e) {
-      console.warn("[sync-cloud] push error", e);
-    } finally {
-      pushing = false;
+    if (!out.tx.length && typeof s.tx_manual_import === "string") {
+      try {
+        out.tx = JSON.parse(s.tx_manual_import);
+      } catch {}
     }
+    if (!out.bills.length && typeof s.bills_manual_import === "string") {
+      try {
+        out.bills = JSON.parse(s.bills_manual_import);
+      } catch {}
+    }
+    if (!Object.keys(out.accMeta).length && typeof s.accMeta === "string") {
+      try {
+        out.accMeta = JSON.parse(s.accMeta);
+      } catch {}
+    }
+
+    Object.entries(s).forEach(([k, v]) => {
+      if (["kasa", "tx", "bills", "accMeta"].includes(k)) return;
+      out.settings[k] = String(v);
+    });
   }
 
-  function schedule() {
-    clearTimeout(timer);
-    timer = setTimeout(pushNow, 500);
-  }
-
-  return { pushNow, schedule };
+  return out;
 }
 
-(function boot() {
-  try {
-    const EMAIL_KEY = "otd_user"; // тот же ключ, что и в app.html
-    const email = localStorage.getItem(EMAIL_KEY);
+// пишем стейт в localStorage
+function writeLocalState(st) {
+  if (!st || typeof st !== "object") return;
 
-    if (!email) {
-      console.info("[sync-cloud] no otd_user → cloud sync off");
+  if (Array.isArray(st.kasa)) {
+    localStorage.setItem("kasa", JSON.stringify(st.kasa));
+  }
+  if (Array.isArray(st.tx)) {
+    localStorage.setItem("tx_manual_import", JSON.stringify(st.tx));
+  }
+  if (Array.isArray(st.bills)) {
+    localStorage.setItem("bills_manual_import", JSON.stringify(st.bills));
+  }
+  if (st.accMeta && typeof st.accMeta === "object") {
+    localStorage.setItem("accMeta", JSON.stringify(st.accMeta));
+  }
+
+  if (st.settings && typeof st.settings === "object") {
+    Object.entries(st.settings).forEach(([k, v]) => {
+      if (v === undefined || v === null) return;
+      localStorage.setItem(k, String(v));
+    });
+  }
+}
+
+(function initCloudSync() {
+  const email = localStorage.getItem("otd_user") || "";
+  const key = keyFromEmail(email);
+
+  if (!email || !key) {
+    console.log("[cloud-sync] no user email, skip");
+    return;
+  }
+
+  const userRef = ref(db, "users/" + key + "/state");
+
+  let initializedRemote = false;
+  let applyingRemote = false;
+
+  // слушаем изменения из Firebase
+  onValue(userRef, snap => {
+    const val = snap.val();
+    // первый запуск: если в облаке пусто, заливаем туда локальный стейт и живём дальше
+    if (!val) {
+      if (!initializedRemote) {
+        initializedRemote = true;
+        const local = readLocalState();
+        const hasData =
+          (local.kasa && local.kasa.length) ||
+          (local.tx && local.tx.length) ||
+          (local.bills && local.bills.length);
+
+        if (hasData) {
+          console.log("[cloud-sync] remote empty, push local snapshot");
+          set(userRef, local).catch(err =>
+            console.warn("[cloud-sync] set error (init)", err)
+          );
+        }
+      }
       return;
     }
 
-    const key = keyFromEmail(email);
-    const stateRef = ref(db, "users/" + key + "/state");
+    initializedRemote = true;
+    const remoteNorm = normalizeRemote(val);
+    const local = readLocalState();
 
-    const { pushNow, schedule } = createPusher(stateRef);
-
-    // 1) слушаем Firebase → обновляем локальное состояние
-    onValue(stateRef, snap => {
-      const val = snap.val();
-      if (!val) return;
-      console.info("[sync-cloud] remote update received");
-      applyStateToLocal(val);
-    });
-
-    // 2) патчим saveLocal, чтобы ЛЮБОЕ локальное сохранение улетало в Firebase
-    if (typeof window.saveLocal === "function") {
-      const orig = window.saveLocal;
-      window.saveLocal = function patchedSaveLocal() {
-        orig.apply(this, arguments);
-        schedule();
-      };
-      console.info("[sync-cloud] saveLocal patched");
-    } else {
-      // fallback, если вдруг что
-      console.warn("[sync-cloud] saveLocal not found, fallback timer");
-      setInterval(schedule, 30000);
+    // если одинаково — не дёргаем UI
+    if (JSON.stringify(remoteNorm) === JSON.stringify(local)) {
+      return;
     }
 
-    // 3) стартовый пуш (чтобы в базе было хоть что-то актуальное)
-    pushNow();
+    console.log("[cloud-sync] applying remote → local");
+    applyingRemote = true;
+    writeLocalState(remoteNorm);
 
-    // дебаг-хук
-    window._otdCloudDebug = {
-      path: "users/" + key + "/state",
-      pushNow
+    // дергаем функции из app.html, если они есть
+    try {
+      if (typeof window.loadLocal === "function") window.loadLocal();
+      if (typeof window.loadKasa === "function") window.loadKasa();
+      if (typeof window.inferAccounts === "function") window.inferAccounts();
+      if (typeof window.render === "function") window.render();
+    } catch (e) {
+      console.warn("[cloud-sync] render error", e);
+    } finally {
+      applyingRemote = false;
+    }
+  });
+
+  // перехватываем saveLocal, чтобы КАЖДОЕ изменение kasa/wyciąg/faktury шло в Firebase
+  const origSaveLocal = window.saveLocal;
+  if (typeof origSaveLocal === "function") {
+    window.saveLocal = function patchedSaveLocal() {
+      origSaveLocal();
+      if (!initializedRemote || applyingRemote) {
+        return;
+      }
+      const state = readLocalState();
+      console.log("[cloud-sync] push local → remote");
+      set(userRef, state).catch(err =>
+        console.warn("[cloud-sync] set error (saveLocal)", err)
+      );
     };
-
-  } catch (e) {
-    console.error("[sync-cloud] boot error", e);
+  } else {
+    console.warn("[cloud-sync] saveLocal not found, nothing to patch");
   }
+
+  console.log("[cloud-sync] initialized for", email, "->", key);
 })();
