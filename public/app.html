@@ -676,22 +676,32 @@ function applyCloudState(remote){
 }
 
 function startCloudSync(){
-  if (!window.FirebaseSync){
-    console.warn('[cloud] FirebaseSync not available');
-    return;
-  }
   const email = getCloudEmail();
   if (!email){
-    console.warn('[cloud] no email in localStorage.'+USER_KEY);
+    console.warn('[cloud] no email in localStorage.' + USER_KEY);
     return;
   }
 
-  // 1) подписываемся на изменения в Firebase
-  window.FirebaseSync.subscribeUserState(email, applyCloudState);
+  function tryInit(){
+    if (!window.FirebaseSync){
+      console.log('[cloud] wait FirebaseSync…');
+      setTimeout(tryInit, 500);  // ждём, пока загрузится /sync-cloud.js
+      return;
+    }
 
-  // 2) пушим текущий стейт устройства в облако
-  pushCloudState();
+    console.log('[cloud] start for', email);
+    try {
+      window.FirebaseSync.subscribeUserState(email, applyCloudState);
+      // сразу же заливаем локальный стейт в облако
+      pushCloudState();
+    } catch (e) {
+      console.warn('[cloud] subscribe error', e);
+    }
+  }
+
+  tryInit();
 }
+
 
 /* ==== REMOTE SYNC (optional) ==== */
 async function pullState(){
@@ -1544,6 +1554,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   <script type="module" src="/sync-cloud.js"></script>
 </body>
 </html>
+
 
 
 
