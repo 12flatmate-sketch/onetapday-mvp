@@ -20,12 +20,12 @@ function keyFromEmail(email) {
   return email
     .trim()
     .toLowerCase()
-    .replace(/\./g, ',')
-    .replace(/[^a-z0-9,@_-]/g, '');
+    .replace(/\./g, ",")
+    .replace(/[^a-z0-9,@_-]/g, "");
 }
 
 function normalizeState(raw) {
-  if (!raw || typeof raw !== 'object') return {};
+  if (!raw || typeof raw !== "object") return {};
   return {
     tx: raw.tx || [],
     bills: raw.bills || [],
@@ -35,19 +35,17 @@ function normalizeState(raw) {
   };
 }
 
-// Глобальный объект, к которому будет обращаться app.html
 window.FirebaseSync = {
   subscribeUserState(email, cb) {
     const key = keyFromEmail(email);
     if (!key) return;
-    const r = ref(db, 'users/' + key + '/state');
-    onValue(r, snap => {
-      cb(snap.val() || null);
-    });
+    const r = ref(db, "users/" + key + "/state");
+    onValue(r, snap => cb(snap.val() || null));
   },
+
   async saveUserState(email, state) {
     const key = keyFromEmail(email);
     if (!key) return;
-    await set(ref(db, 'users/' + key + '/state'), normalizeState(state));
+    await set(ref(db, "users/" + key + "/state"), normalizeState(state));
   }
 };
