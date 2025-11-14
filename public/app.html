@@ -726,29 +726,6 @@ function startCloudSync(){
 
 
 /* ==== REMOTE SYNC (optional) ==== */
-  function normalizeRemoteState(raw){
-  const st = raw || {};
-  // Выписки: или transactions, или tx
-  const txRemote = Array.isArray(st.transactions) ? st.transactions
-                   : Array.isArray(st.tx) ? st.tx
-                   : [];
-  // Фактуры: bills
-  const billsRemote = Array.isArray(st.bills) ? st.bills : [];
-  // Касса: или cash, или kasa
-  const cashRemote = Array.isArray(st.cash) ? st.cash
-                    : Array.isArray(st.kasa) ? st.kasa
-                    : [];
-  // Метаданные по счетам: meta или accMeta
-  const metaRemote = st.meta || st.accMeta || {};
-
-  return {
-    txRemote,
-    billsRemote,
-    cashRemote,
-    metaRemote
-  };
-}
-
 async function pullState(){
   if(!REMOTE_OK) return null;
   try{
@@ -759,13 +736,18 @@ async function pullState(){
     const json = await res.json();
     const st = json && json.state ? json.state : {};
 
-    const norm = normalizeRemoteState(st);
-
-    // ВСЕГДА кладём нормализованное состояние в localStorage
-    localStorage.setItem('tx_manual_import', JSON.stringify(norm.txRemote || []));
-    localStorage.setItem('bills_manual_import', JSON.stringify(norm.billsRemote || []));
-    localStorage.setItem('kasa', JSON.stringify(norm.cashRemote || []));
-    localStorage.setItem('accMeta', JSON.stringify(norm.metaRemote || {}));
+    if (st.transactions) {
+      localStorage.setItem('tx_manual_import', JSON.stringify(st.transactions));
+    }
+    if (st.bills) {
+      localStorage.setItem('bills_manual_import', JSON.stringify(st.bills));
+    }
+    if (st.cash) {
+      localStorage.setItem('kasa', JSON.stringify(st.cash));
+    }
+    if (st.meta) {
+      localStorage.setItem('accMeta', JSON.stringify(st.meta));
+    }
 
     loadLocal();
     inferAccounts();
@@ -776,7 +758,6 @@ async function pullState(){
     return null;
   }
 }
-
 
 const pushState = (function(){
   let timer = null;
@@ -1585,39 +1566,24 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   pushState(); startCloudSync();
 
   // Save on unload (sendBeacon fallback)
- window.addEventListener('beforeunload', ()=>{
-  if(!REMOTE_OK) return;
-  try{
-    const email = localStorage.getItem(USER_KEY)||"";
-    if(!email) return;
-
-    const txLocal    = JSON.parse(localStorage.getItem('tx_manual_import')||'[]');
-    const billsLocal = JSON.parse(localStorage.getItem('bills_manual_import')||'[]');
-    const kasaLocal  = JSON.parse(localStorage.getItem('kasa')||'[]');
-    const metaLocal  = JSON.parse(localStorage.getItem('accMeta')||'{}');
-
-    const body = {
-      email,
-      // два ключа для выписок
-      tx: txLocal,
-      transactions: txLocal,
-      // фактуры
-      bills: billsLocal,
-      // два ключа для кассы
-      kasa: kasaLocal,
-      cash: kasaLocal,
-      // два ключа для meta
-      accMeta: metaLocal,
-      meta: metaLocal,
-      // всё остальное как было
-      settings: stateKeys.reduce((m,k)=> (m[k]=localStorage.getItem(k), m), {})
-    };
-
-    const blob=new Blob([JSON.stringify(body)],{type:'application/json'});
-    navigator.sendBeacon && navigator.sendBeacon(`${API_BASE}/state/save`, blob);
-  }catch(e){}
+  window.addEventListener('beforeunload', ()=>{
+    if(!REMOTE_OK) return;
+    try{
+      const email=localStorage.getItem(USER_KEY)||"";
+      if(!email) return;
+      const body={
+        email,
+        tx: JSON.parse(localStorage.getItem('tx_manual_import')||'[]'),
+        bills: JSON.parse(localStorage.getItem('bills_manual_import')||'[]'),
+        kasa: JSON.parse(localStorage.getItem('kasa')||'[]'),
+        accMeta: JSON.parse(localStorage.getItem('accMeta')||'{}'),
+        settings: stateKeys.reduce((m,k)=> (m[k]=localStorage.getItem(k), m), {})
+      };
+      const blob=new Blob([JSON.stringify(body)],{type:'application/json'});
+      navigator.sendBeacon && navigator.sendBeacon(`${API_BASE}/state/save`, blob);
+    }catch(e){}
+  });
 });
-
 </script>
   <script type="module">
   // Import the functions you need from the SDKs you need
@@ -1646,9 +1612,6 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   <script type="module" src="/sync-cloud.js"></script>
 </body>
 </html>
-
-
-
 
 
 
