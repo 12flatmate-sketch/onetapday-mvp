@@ -17,7 +17,11 @@ try {
 
 const app = express();
 const PORT = process.env.PORT || 10000;
-const USERS_FILE = path.join(__dirname, 'users.json');
+
+// Путь к файлу с юзерами: по умолчанию __dirname/users.json,
+// но если прописана USERS_FILE в env — используем её (на Render → /data/users.json)
+const USERS_FILE = process.env.USERS_FILE || path.join(__dirname, 'users.json');
+
 
 app.use((req, res, next) => {
   console.log(new Date().toISOString(), req.method, req.url);
@@ -593,6 +597,7 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`✅ Server listening on port ${PORT}`);
 });
+
 
 
 
