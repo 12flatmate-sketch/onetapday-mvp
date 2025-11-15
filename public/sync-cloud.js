@@ -47,9 +47,11 @@ const SETTINGS_KEYS = [
   "otd_sub_from",
   "otd_sub_to",
   "otd_demo_started_at",
+  "otd_demo_used",
   "otd_lang",
   "speechLang"
 ];
+
 
 // читаем локальный стейт из localStorage
 function readLocalState() {
