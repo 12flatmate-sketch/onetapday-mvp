@@ -607,14 +607,32 @@ function getVal(obj,keys){
 }
 
 /* ==== STATE ==== */
-let tx=[], bills=[], kasa=[], accMeta={};
-cconst stateKeys = [
-  'tx_manual_import','bills_manual_import','kasa','accMeta',
-  'cashPLN','penaltyPct','intervalMin','rateEUR','rateUSD',
-  'blacklist','autoCash',
-  SUB_KEY,SUB_FROM,SUB_TO,
-  DEMO_START,DEMO_USED,
-  'txUrl','billUrl','otd_lang','speechLang'
+let tx    = [];
+let bills = [];
+let kasa  = [];
+let accMeta = {};
+
+const stateKeys = [
+  'tx_manual_import',
+  'bills_manual_import',
+  'kasa',
+  'accMeta',
+  'cashPLN',
+  'penaltyPct',
+  'intervalMin',
+  'rateEUR',
+  'rateUSD',
+  'blacklist',
+  'autoCash',
+  SUB_KEY,
+  SUB_FROM,
+  SUB_TO,
+  DEMO_START,
+  DEMO_USED,
+  'txUrl',
+  'billUrl',
+  'otd_lang',
+  'speechLang'
 ];
 
 function ensureTxIds(){
@@ -1677,6 +1695,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   <script type="module" src="/sync-cloud.js"></script>
 </body>
 </html>
+
 
 
 
