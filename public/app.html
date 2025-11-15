@@ -1546,25 +1546,108 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   $id('q200')?.addEventListener('click',()=>{ const el=$id('quickAmt'); if(el) el.value=(Number(el.value||0)+200).toFixed(2); });
 
   // Speech
-  const micBtn=$id('micBtn');
-  if(micBtn && (window.SpeechRecognition||window.webkitSpeechRecognition)){
-    const SR=window.SpeechRecognition||window.webkitSpeechRecognition; const rec=new SR();
-    rec.continuous=false; rec.interimResults=false; rec.maxAlternatives=1;
-    rec.lang=localStorage.getItem('speechLang')||'pl-PL';
-    rec.onstart=()=>{ micBtn.classList.add('on'); $id('micStatus')&&( $id('micStatus').textContent=`🎙️ ... (${rec.lang})` ); };
-    rec.onend=()=>{ micBtn.classList.remove('on'); };
-    rec.onresult=(e)=>{
-      const text=(e.results[0][0].transcript||"").toLowerCase();
-      $id('micStatus')&&( $id('micStatus').textContent='🎙️ '+text );
-      const numMatch=text.match(/(\d+[.,]?\d*)\s*(zł|pln|eur|usd)?/); const num=numMatch?numMatch[1]:null;
-      const isOut=/(wyda|minus|wydat|выда|минус|расход|видат)/.test(text);
-      const note=text.replace(/(\d+[.,]?\d*\s*(zł|pln|eur|usd)?)/,"").trim();
-      if(!num){ $id('micStatus')&&( $id('micStatus').textContent='🎙️ сумма не найдена'); return; }
-      addKasa(isOut?'wydanie':'przyjęcie', asNum(num), note||'voice', 'voice');
+  const micBtn = $id('micBtn');
+  if (micBtn && (window.SpeechRecognition || window.webkitSpeechRecognition)) {
+    const SR  = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const rec = new SR();
+
+    rec.continuous     = false;
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
+    rec.lang = localStorage.getItem('speechLang') || 'pl-PL';
+
+    // Слова для ПРИХОДА (IN)
+    const CMD_IN = [
+      // PL
+      'przyjęcie','przyjecie','wpłata','wplata','depozyt','depozit',
+      // EN
+      'plus','income','cash in','received','receive','deposit',
+      // RU / UKR
+      'плюс','принять','пополнить','пополнил','приход','зачислить'
+    ];
+
+    // Слова для РАСХОДА (OUT)
+    const CMD_OUT = [
+      // PL
+      'wyda','wydat','wypłat','wyplata','koszt',
+      // EN
+      'minus','pay out','payout','expense','cash out','payment',
+      // RU / UKR
+      'выда','выдать','выдал','расход','списать','минус','выточка'
+    ];
+
+    function detectType(text) {
+      const t = text.toLowerCase();
+
+      // 1) Явный знак перед числом: "+200", "-150", "−300"
+      const signMatch = t.match(/([+\-−])\s*\d+[.,]?\d*/);
+      if (signMatch) {
+        const sign = signMatch[1];
+        if (sign === '-' || sign === '−') return 'wydanie';   // расход
+        if (sign === '+')               return 'przyjęcie';   // приход
+      }
+
+      // 2) Ключевые слова
+      if (CMD_OUT.some(w => t.includes(w))) return 'wydanie';
+      if (CMD_IN.some(w  => t.includes(w))) return 'przyjęcie';
+
+      // 3) По умолчанию считаем приход
+      return 'przyjęcie';
+    }
+
+    rec.onstart = () => {
+      micBtn.classList.add('on');
+      if ($id('micStatus')) {
+        $id('micStatus').textContent = `🎙️ ... (${rec.lang})`;
+      }
     };
-    $id('speechLang')?.addEventListener('change',e=>{ rec.lang=e.target.value; localStorage.setItem('speechLang', rec.lang); });
-    micBtn.addEventListener('click',()=>{ try{ rec.start(); }catch(e){ $id('micStatus')&&( $id('micStatus').textContent='🎙️ не смог запустить: '+e.message ); } });
+
+    rec.onend = () => {
+      micBtn.classList.remove('on');
+    };
+
+    rec.onresult = (e) => {
+      const text = (e.results[0][0].transcript || "").toLowerCase();
+      if ($id('micStatus')) {
+        $id('micStatus').textContent = '🎙️ ' + text;
+      }
+
+      // Число: "200", "200,50", "200.50" и т.п.
+      const numMatch = text.match(/(\d+[.,]?\d*)\s*(zł|pln|eur|usd)?/i);
+      const num = numMatch ? numMatch[1] : null;
+
+      // Определяем тип: приход / расход
+      const type = detectType(text);
+
+      // Комментарий = текст без числа и валюты
+      const note = text.replace(/(\d+[.,]?\d*\s*(zł|pln|eur|usd)?)/i, "").trim();
+
+      if (!num) {
+        if ($id('micStatus')) {
+          $id('micStatus').textContent = '🎙️ сумма не найдена';
+        }
+        return;
+      }
+
+      addKasa(type, asNum(num), note || 'voice', 'voice');
+    };
+
+    $id('speechLang')?.addEventListener('change', (e) => {
+      rec.lang = e.target.value;
+      localStorage.setItem('speechLang', rec.lang);
+    });
+
+    micBtn.addEventListener('click', () => {
+      try {
+        rec.start();
+      } catch (e) {
+        if ($id('micStatus')) {
+          $id('micStatus').textContent = '🎙️ не смог запустить: ' + e.message;
+        }
+      }
+    });
   }
+
 
   // Settings
   $id('applySettings')?.addEventListener('click',()=>{
@@ -1695,6 +1778,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   <script type="module" src="/sync-cloud.js"></script>
 </body>
 </html>
+
 
 
 
