@@ -374,10 +374,11 @@
 <script>
 /* ==== CONFIG / API ==== */
 const API_BASE = '/api';
-const SUB_KEY = 'otd_sub_active';
-const SUB_FROM = 'otd_sub_from';
-const SUB_TO   = 'otd_sub_to';
+const SUB_KEY    = 'otd_sub_active';
+const SUB_FROM   = 'otd_sub_from';
+const SUB_TO     = 'otd_sub_to';
 const DEMO_START = 'otd_demo_started_at';
+const DEMO_USED  = 'otd_demo_used'; // флаг: демо уже один раз запускали
 const USER_KEY = 'otd_user'; // email
 let REMOTE_OK = localStorage.getItem('remote_disabled')==='1' ? false : true;
 
@@ -607,7 +608,15 @@ function getVal(obj,keys){
 
 /* ==== STATE ==== */
 let tx=[], bills=[], kasa=[], accMeta={};
-const stateKeys = ['tx_manual_import','bills_manual_import','kasa','accMeta','cashPLN','penaltyPct','intervalMin','rateEUR','rateUSD','blacklist','autoCash',SUB_KEY,SUB_FROM,SUB_TO,DEMO_START,'txUrl','billUrl','otd_lang','speechLang'];
+cconst stateKeys = [
+  'tx_manual_import','bills_manual_import','kasa','accMeta',
+  'cashPLN','penaltyPct','intervalMin','rateEUR','rateUSD',
+  'blacklist','autoCash',
+  SUB_KEY,SUB_FROM,SUB_TO,
+  DEMO_START,DEMO_USED,
+  'txUrl','billUrl','otd_lang','speechLang'
+];
+
 function ensureTxIds(){
   if(!Array.isArray(tx)) tx = [];
   tx.forEach((r, idx) => {
@@ -1031,42 +1040,64 @@ function inferAccounts(){
 
 /* ==== GATE: DEMO / SUB ==== */
 function isSubActive(){
-  const a=localStorage.getItem(SUB_KEY)==='1';
-  if(!a) return false;
-  const to=localStorage.getItem(SUB_TO)||''; if(!to) return a;
+  const a = localStorage.getItem(SUB_KEY) === '1';
+  if (!a) return false;
+  const to = localStorage.getItem(SUB_TO) || '';
+  if (!to) return a;
   return new Date(to) >= new Date();
 }
+
 function demoLeftMs(){
-  const t=localStorage.getItem(DEMO_START); if(!t) return 0;
-  const start=new Date(t).getTime(); const left = (start + 24*3600*1000) - Date.now();
+  const t = localStorage.getItem(DEMO_START);
+  if (!t) return 0;
+  const start = new Date(t).getTime();
+  const left  = (start + 24*3600*1000) - Date.now();
   return left;
 }
-function isDemoActive(){ return demoLeftMs() > 0; }
+
+function isDemoActive(){ 
+  return demoLeftMs() > 0; 
+}
+
 function gateAccess(){
-  const ok = isSubActive() || isDemoActive();
-  const gate = $id('gate'); const tabs = document.querySelectorAll('.tabs .tab');
-  if(!gate) return;
+  const ok   = isSubActive() || isDemoActive();
+  const gate = $id('gate');
+  const tabs = document.querySelectorAll('.tabs .tab');
+  if (!gate) return;
+
   gate.classList.toggle('hidden', ok);
   tabs.forEach(t=>{
-    if(t.dataset.sec==='ustawienia') t.classList.remove('disabled');
+    if (t.dataset.sec === 'ustawienia') t.classList.remove('disabled');
     else t.classList.toggle('disabled', !ok);
   });
-  if(!ok){
+
+  if (!ok){
     document.querySelector('[data-sec=ustawienia]')?.click();
   }
 }
+
 function updateSubUI(){
-  const el=$id('subStatus'); if(!el) return;
-  let s='—';
-  if(isSubActive()){
-    s=`✅ Sub aktywna: ${localStorage.getItem(SUB_FROM)||'—'} → ${localStorage.getItem(SUB_TO)||'—'}`;
-  }else if(isDemoActive()){
-    const leftMs=demoLeftMs(); const hrs=Math.ceil(leftMs/3600000);
-    s=`🧪 Demo aktywne ~ ${hrs}h`;
-  }else{
-    s='⛔ Brak dostępu: włącz demo lub opłać.';
+  const el = $id('subStatus');
+  if (!el) return;
+
+  const demoUsed = localStorage.getItem(DEMO_USED) === '1';
+  let s = '—';
+
+  if (isSubActive()){
+    s = `✅ Sub aktywna: ${localStorage.getItem(SUB_FROM)||'—'} → ${localStorage.getItem(SUB_TO)||'—'}`;
+  } else if (isDemoActive()){
+    const left = demoLeftMs();
+    const h = Math.floor(left/3600000);
+    const m = Math.floor((left%3600000)/60000);
+    s = `🧪 Demo aktywne: ~${h}h ${m}m`;
+  } else if (demoUsed) {
+    // демо уже было, больше не даём
+    s = '⛔ Demo zakończone. Dostęp tylko z subskrypcją.';
+  } else {
+    s = '⛔ Brak dostępu: włącz demo (24h) lub opłać.';
   }
-  el.textContent=s;
+
+  el.textContent = s;
 }
 
 /* ==== AUTOSYNC ==== */
@@ -1546,20 +1577,41 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   });
 
   // Demo/Sub controls
-  $id('startDemo')?.addEventListener('click',()=>{
-    localStorage.setItem(DEMO_START, new Date().toISOString()); updateSubUI(); gateAccess();
+  $id('startDemo')?.addEventListener('click', ()=>{
+    if (localStorage.getItem(DEMO_USED) === '1') {
+      alert('Demo уже было использовано. Доступ только по подписке.');
+      return;
+    }
+    localStorage.setItem(DEMO_START, new Date().toISOString());
+    localStorage.setItem(DEMO_USED, '1');
+    updateSubUI();
+    gateAccess();
+    // saveLocal триггерит sync в Firebase через saveLocal/pushState
   });
-  $id('endDemo')?.addEventListener('click',()=>{
-    localStorage.removeItem(DEMO_START); updateSubUI(); gateAccess();
+
+  $id('endDemo')?.addEventListener('click', ()=>{
+    localStorage.removeItem(DEMO_START);
+    // DEMO_USED не трогаем: демо уже использовано
+    updateSubUI();
+    gateAccess();
   });
+
   $id('payNow')?.addEventListener('click', async ()=>{
-  try{
-    const r=await fetch('/create-checkout-session',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({demo:true})});
-    const j=await r.json();
-    if(j?.url) { location.href=j.url; return; }
-    alert('No Stripe URL from backend');
-  }catch(e){ alert('Stripe error: '+(e?.message||e)); }
-});
+    try{
+      const r = await fetch('/create-checkout-session', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        credentials:'include',
+        body:JSON.stringify({ demo:true })
+      });
+      const j = await r.json();
+      if(j?.url) { location.href=j.url; return; }
+      alert('No Stripe URL from backend');
+    }catch(e){ 
+      alert('Stripe error: '+(e?.message||e)); 
+    }
+  });
+
 
 
   // INIT
@@ -1625,6 +1677,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   <script type="module" src="/sync-cloud.js"></script>
 </body>
 </html>
+
 
 
 
