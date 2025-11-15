@@ -31,6 +31,12 @@
          status_ended:"Пилот завершён", status_discount_active:"Скидка активна" }
   };
 
+    const SUB_KEY       = 'otd_sub_active';
+  const SUB_FROM_KEY  = 'otd_sub_from';
+  const SUB_TO_KEY    = 'otd_sub_to';
+  const DEMO_START_KEY = 'otd_demo_started_at';
+  const DEMO_USED_KEY  = 'otd_demo_used';
+
   const $ = id => document.getElementById(id);
 
   // simple GET wrapper
@@ -226,29 +232,56 @@
     if ($('statusText')) $('statusText').textContent = `${localStorage.getItem('otd_user')||'User'} — DEMO ${hh}:${mm}:${ss} (оплатить)`;
   }
 
+ 
   // Try start demo: /start-demo preferred, fallback /demo
   async function tryStartDemo(){
+    const email = localStorage.getItem('otd_user') || '';
+    if (!email) {
+      return { ok:false, status:401, body:{ error:'no_user' } };
+    }
+
+    // демо уже использовано — второй раз не даём
+    if (localStorage.getItem(DEMO_USED_KEY) === '1') {
+      return { ok:false, status:403, body:{ error:'demo_used' } };
+    }
+
     // 1) /start-demo (authenticated)
     let resp = await postJSON('/start-demo', {});
     if (resp.ok && resp.body && (resp.body.demoUntil || resp.body.demo_until || resp.body.success)) {
-      const until = resp.body.demoUntil || resp.body.demo_until || resp.body.demoUntilISO || null;
-      const ts = until ? (isNaN(Number(until)) ? Date.parse(until) : Number(until)) : (Date.now() + 24*60*60*1000);
+      const untilRaw = resp.body.demoUntil || resp.body.demo_until || resp.body.demoUntilISO || null;
+      const ts = untilRaw
+        ? (isNaN(Number(untilRaw)) ? Date.parse(String(untilRaw)) : Number(untilRaw))
+        : (Date.now() + 24*60*60*1000);
+
+      // фиксируем демо как "один раз" и старт для app.html
+      localStorage.setItem(DEMO_START_KEY, new Date().toISOString());
+      localStorage.setItem(DEMO_USED_KEY, '1');
+
       startDemoCountdown(ts);
       // merge server state after starting demo
       await syncStateFromServerToLocal().catch(()=>null);
-      return { ok: true };
+      return { ok: true, status: 200, body: resp.body };
     }
+
     // 2) fallback /demo (server may not have)
     resp = await postJSON('/demo', {});
     if (resp.ok && resp.body && (resp.body.demo_until || resp.body.demoUntil || resp.body.success)) {
-      const until = resp.body.demo_until || resp.body.demoUntil || null;
-      const ts = until ? (isNaN(Number(until)) ? Date.parse(until) : Number(until)) : (Date.now() + 24*60*60*1000);
+      const untilRaw = resp.body.demo_until || resp.body.demoUntil || null;
+      const ts = untilRaw
+        ? (isNaN(Number(untilRaw)) ? Date.parse(String(untilRaw)) : Number(untilRaw))
+        : (Date.now() + 24*60*60*1000);
+
+      localStorage.setItem(DEMO_START_KEY, new Date().toISOString());
+      localStorage.setItem(DEMO_USED_KEY, '1');
+
       startDemoCountdown(ts);
       await syncStateFromServerToLocal().catch(()=>null);
-      return { ok: true };
+      return { ok: true, status: 200, body: resp.body };
     }
+
     return { ok:false, status: resp.status, body: resp.body };
   }
+
 
   document.addEventListener('DOMContentLoaded', () => {
     // initial language
@@ -305,14 +338,20 @@
     });
 
     // Demo button manual
+       
     if (demoBtn) demoBtn.addEventListener('click', async ()=>{
       const md = await tryStartDemo();
-      if (md.ok) { alert('Демо активировано — 24 часа'); }
-      else {
-        if (md.status === 401) alert('Сначала войдите в систему.');
-        else alert('Не удалось включить демо. Посмотри логи.');
+      if (md.ok) {
+        alert('Демо активировано — 24 часа');
+      } else if (md.status === 401) {
+        alert('Сначала войдите в систему.');
+      } else if (md.status === 403 && md.body && md.body.error === 'demo_used') {
+        alert('Демо уже было использовано. Доступ только по оплате.');
+      } else {
+        alert('Не удалось включить демо. Посмотри логи.');
       }
     });
+
 
     // Stripe
     if (stripeBtn) stripeBtn.addEventListener('click', async (e)=>{
@@ -365,20 +404,63 @@
     })();
 
     // helper to update UI after auth; keep simple
+    // helper to update UI after auth; привязываем статус к локальным ключам подписки
     window.setStatusAfterAuth = function(user){
-      const lang = localStorage.getItem('otd_lang') || DEFAULT_LANG;
-      if (!user) { if ($('statusText')) $('statusText').textContent = T[lang].status_guest; return; }
+      const lang    = localStorage.getItem('otd_lang') || DEFAULT_LANG;
+      const statusEl = $('statusText');
+      const payBtn   = $('payStripe');
+
+      if (!user) {
+        if (statusEl) statusEl.textContent = T[lang].status_guest || 'No access';
+        return;
+      }
+
+      const email  = user.email || localStorage.getItem('otd_user') || 'User';
       const status = user.status || (user.demo_until ? 'active' : 'none');
-      if (status === 'active' || status === 'discount_active') {
-        const until = user.demo_until || user.demoUntil || user.endAt || user.end_at;
-        if (until) startDemoCountdown(until);
-        else if ($('statusText')) $('statusText').textContent = `${user.email} — ${T[lang].status_active}`;
-        $('payStripe') && ($('payStripe').style.display = '');
+
+      // считаем, что это платный / активный доступ
+      const hasAccess =
+        status === 'active' ||
+        status === 'discount_active';
+
+      if (hasAccess) {
+        const untilRaw =
+          user.sub_until ||
+          user.sub_until_ts ||
+          user.demo_until ||
+          user.demoUntil ||
+          user.endAt ||
+          user.end_at ||
+          null;
+
+        let ts = null;
+        if (untilRaw) {
+          ts = isNaN(Number(untilRaw)) ? Date.parse(String(untilRaw)) : Number(untilRaw);
+        }
+
+        if (ts && !isNaN(ts)) {
+          // таймер на лендинге
+          startDemoCountdown(ts);
+
+          // фиксируем подписку для app.html (SUB_KEY / SUB_TO_KEY)
+          localStorage.setItem(SUB_KEY, '1');
+          localStorage.setItem(SUB_TO_KEY, new Date(ts).toISOString());
+          if (!localStorage.getItem(SUB_FROM_KEY)) {
+            localStorage.setItem(SUB_FROM_KEY, new Date().toISOString().slice(0,10));
+          }
+
+          // демо в таком случае нам больше не интересно
+          localStorage.removeItem(DEMO_START_KEY);
+        }
+
+        if (statusEl) statusEl.textContent = `${email} — ${T[lang].status_active || 'Sub active'}`;
+        if (payBtn)  payBtn.style.display = '';
       } else {
-        if ($('statusText')) $('statusText').textContent = `${user.email} — ${T[lang].status_none}`;
-        $('payStripe') && ($('payStripe').style.display = '');
+        if (statusEl) statusEl.textContent = `${email} — ${T[lang].status_none || 'Awaiting deposit'}`;
+        if (payBtn)  payBtn.style.display = '';
       }
     };
+
 
   }); // DOMContentLoaded end
 
