@@ -416,15 +416,17 @@
       }
 
       const email  = user.email || localStorage.getItem('otd_user') || 'User';
-      const status = user.status || (user.demo_until ? 'active' : 'none');
+           const status = user.status || (user.demo_until ? 'active' : 'none');
 
       // считаем, что это платный / активный доступ
       const hasAccess =
+        (user && user.isAdmin) ||      // админ всегда имеет доступ
         status === 'active' ||
         status === 'discount_active';
 
+
       if (hasAccess) {
-        const untilRaw =
+                const untilRaw =
           user.sub_until ||
           user.sub_until_ts ||
           user.demo_until ||
@@ -437,6 +439,12 @@
         if (untilRaw) {
           ts = isNaN(Number(untilRaw)) ? Date.parse(String(untilRaw)) : Number(untilRaw);
         }
+
+        // если это админ и нет явной даты окончания — даём ему доступ на год вперёд
+        if ((!ts || isNaN(ts)) && user && user.isAdmin) {
+          ts = Date.now() + 365 * 24 * 3600 * 1000; // +1 год
+        }
+
 
         if (ts && !isNaN(ts)) {
           // таймер на лендинге
