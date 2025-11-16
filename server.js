@@ -29,8 +29,17 @@ app.use((req, res, next) => {
 });
 
 app.use(cookieParser());
-app.use(express.json({ limit: '10mb' })); // allow larger payload for base64 images
+
+// не трогаем /webhook, для всех остальных — json
+app.use((req, res, next) => {
+  if (req.originalUrl === '/webhook') {
+    return next();
+  }
+  return express.json({ limit: '10mb' })(req, res, next);
+});
+
 app.use(express.static('public'));
+
 
 // serve uploaded images (if any)
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -180,30 +189,46 @@ function findUserByEmail(email) {
   return null;
 }
 
+function ensureAdminFlag(user) {
+  if (!user) return user;
+  if (normalizeEmail(user.email) === ADMIN_EMAIL && !user.isAdmin) {
+    user.isAdmin = true;
+    saveUsers();
+    console.log('[ADMIN] upgraded', user.email, 'to admin based on ADMIN_EMAIL');
+  }
+  return user;
+}
+
 // Helper: get user by session cookie — supports new JWT-like cookie and old sessions map
 function getUserBySession(req) {
   const t = req.cookies && req.cookies.session;
   if (!t) return null;
+
   // 1) try JWT-like
   const payload = verifySessionToken(t);
   if (payload && payload.email) {
-    const u = findUserByEmail(payload.email);
+    let u = findUserByEmail(payload.email);
     if (u) {
+      u = ensureAdminFlag(u);
       if (typeof expireStatuses === 'function') expireStatuses(u);
       return u;
     }
   }
+
   // 2) fallback: old random token stored in sessions map
   if (sessions[t]) {
     const e = sessions[t];
-    const u = findUserByEmail(e);
+    let u = findUserByEmail(e);
     if (u) {
+      u = ensureAdminFlag(u);
       if (typeof expireStatuses === 'function') expireStatuses(u);
       return u;
     }
   }
+
   return null;
 }
+
 
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || '1tapday@gmail.com').toLowerCase();
 
@@ -597,6 +622,7 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`✅ Server listening on port ${PORT}`);
 });
+
 
 
 
