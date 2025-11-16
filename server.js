@@ -458,14 +458,19 @@ app.get('/me', (req, res) => {
 app.get('/user', (req, res) => {
   const emailQ = normalizeEmail(req.query && req.query.email || '');
   if (!emailQ) return res.status(400).json({ success: false, error: 'missing email' });
-  const u = findUserByEmail(emailQ);
+
+  let u = findUserByEmail(emailQ);
   if (!u) return res.status(404).json({ success: false, error: 'user not found' });
+
+  // автоподнятие админа по ADMIN_EMAIL
+  u = ensureAdminFlag(u);
 
   expireStatuses(u);
 
   const safe = Object.assign({}, u); delete safe.hash; delete safe.salt;
   return res.json({ success: true, user: safe });
 });
+
 
 // --- app-state endpoints (per-user persisted state) ---
 function shallowMergeServerState(existing, incoming) {
@@ -626,6 +631,7 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`✅ Server listening on port ${PORT}`);
 });
+
 
 
 
