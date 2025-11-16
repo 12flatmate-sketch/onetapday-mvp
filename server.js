@@ -317,10 +317,14 @@ app.post('/login', (req, res) => {
 
     if (!email || !password) return res.status(400).json({ success: false, error: 'Missing email or password' });
 
-    let user = findUserByEmail(email);
+       let user = findUserByEmail(email);
     if (!user) {
       return res.status(401).json({ success: false, error: 'User not found' });
     }
+
+    // важно: поднять админ-флаг, если это ADMIN_EMAIL
+    user = ensureAdminFlag(user);
+
 
     if (user.hash && user.salt) {
       if (!verifyPassword(password, user.salt, user.hash)) {
@@ -622,6 +626,7 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`✅ Server listening on port ${PORT}`);
 });
+
 
 
 
