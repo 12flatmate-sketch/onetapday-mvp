@@ -602,6 +602,45 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
   return res.json({ received: true });
 });
 
+// Админ-роут: активировать пользователя по email
+app.get('/admin/activate-user', (req, res) => {
+  const me = getUserBySession(req);
+  if (!me || !me.isAdmin) {
+    return res.status(403).json({ success: false, error: 'Forbidden' });
+  }
+
+  const emailQ = normalizeEmail(
+    (req.query && req.query.email) ||
+    (req.body && (req.body.email || req.body.mail || req.body.login)) ||
+    ''
+  );
+
+  if (!emailQ) {
+    return res.status(400).json({ success: false, error: 'missing email' });
+  }
+
+  const u = findUserByEmail(emailQ);
+  if (!u) {
+    return res.status(404).json({ success: false, error: 'user not found' });
+  }
+
+  u.status = 'active';
+  u.startAt = new Date().toISOString();
+  const end = new Date();
+  end.setMonth(end.getMonth() + 1); // даём 1 месяцев пилота
+  u.endAt = end.toISOString();
+  u.demoUsed = true;
+
+  saveUsers();
+
+  const safe = Object.assign({}, u);
+  delete safe.hash;
+  delete safe.salt;
+
+  console.log(`[ADMIN] manually activated ${u.email} until ${u.endAt}`);
+  return res.json({ success: true, user: safe });
+});
+
 // Admin helpers
 app.post('/mark-paid', (req, res) => {
   const user = getUserBySession(req);
@@ -631,6 +670,7 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`✅ Server listening on port ${PORT}`);
 });
+
 
 
 
