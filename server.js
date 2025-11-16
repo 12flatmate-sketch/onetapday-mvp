@@ -557,7 +557,7 @@ app.post('/create-checkout-session', async (req, res) => {
       line_items: [{ price: 'price_1SSHX0KQldLeJYVfxcZe4eKr', quantity: 1 }],
       customer_email: user.email,
       metadata: { email: user.email },
-      success_url: `${req.protocol}://${req.get('host')}/app.html?session_id={CHECKOUT_SESSION_ID}`,
+     success_url: `${req.protocol}://${req.get('host')}/?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.protocol}://${req.get('host')}/?cancel=1`
     });
 
@@ -631,6 +631,7 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`✅ Server listening on port ${PORT}`);
 });
+
 
 
 
