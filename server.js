@@ -641,6 +641,49 @@ app.get('/admin/activate-user', (req, res) => {
   return res.json({ success: true, user: safe });
 });
 
+// Админ: выдать бесплатный период (по умолчанию 1 месяц)
+app.get('/admin/grant-free', (req, res) => {
+  const me = getUserBySession(req);
+  if (!me || !me.isAdmin) {
+    return res.status(403).json({ success: false, error: 'Forbidden' });
+  }
+
+  const emailQ = normalizeEmail(
+    (req.query && req.query.email) ||
+    (req.body && (req.body.email || req.body.mail || req.body.login)) ||
+    ''
+  );
+
+  if (!emailQ) {
+    return res.status(400).json({ success: false, error: 'missing email' });
+  }
+
+  const u = findUserByEmail(emailQ);
+  if (!u) {
+    return res.status(404).json({ success: false, error: 'user not found' });
+  }
+
+  // сколько месяцев даём — по умолчанию 1
+  const months = Number(req.query.months || 1);
+
+  u.status = 'active';
+  u.startAt = new Date().toISOString();
+  const end = new Date();
+  end.setMonth(end.getMonth() + months);
+  u.endAt = end.toISOString();
+  u.demoUsed = true;
+
+  saveUsers();
+
+  const safe = Object.assign({}, u);
+  delete safe.hash;
+  delete safe.salt;
+
+  console.log(`[ADMIN] granted free access for ${months} month(s) to ${u.email} until ${u.endAt}`);
+  return res.json({ success: true, user: safe });
+});
+
+
 // Admin helpers
 app.post('/mark-paid', (req, res) => {
   const user = getUserBySession(req);
@@ -670,6 +713,7 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`✅ Server listening on port ${PORT}`);
 });
+
 
 
 
