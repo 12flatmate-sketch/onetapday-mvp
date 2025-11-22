@@ -1349,8 +1349,16 @@ function render(){
     document.querySelectorAll(".btn-accept").forEach(b=> b.addEventListener('click',()=>acceptOne(b.getAttribute('data-invid'))));
   }
 
-  renderMinPay(); renderForecast(); renderAccounts(); renderKasa(); renderBook(); updateSubUI(); gateAccess();
+    renderMinPay(); 
+  renderForecast(); 
+  renderMonthSummary();
+  renderAccounts(); 
+  renderKasa(); 
+  renderBook(); 
+  updateSubUI(); 
+  gateAccess();
 }
+
 
 /* ==== PLAN / FORECAST / MINPAY (kept) ==== */
 function toDueList(mode){
@@ -1431,6 +1439,59 @@ function renderForecast(){
   if(meta) meta.textContent = firstNeg?`Гэп через ${out.indexOf(firstNeg)+1} дн.: не хватает ${Math.abs(firstNeg.after).toFixed(2)} PLN.`:"На 7 дней хватает кассы.";
 }
 
+function renderMonthSummary(){
+  const el = $id('monthSummary');
+  if(!el) return;
+
+  const todayStr = today();
+  const now = new Date(todayStr);
+  if (isNaN(now)) { 
+    el.textContent = '—'; 
+    return; 
+  }
+
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  // последний день текущего месяца
+  const last = new Date(year, month + 1, 0);
+  const lastISO = last.toISOString().slice(0,10);
+
+  // берём только PLN-фактуры со статусом "к оплате / просрочено" в этом месяце
+  const dueBills = (bills || []).filter(r => {
+    const status = String(
+      getVal(r,["Status faktury","Status фактуры","Status"]) || ""
+    ).toLowerCase();
+    if (!["do zapłaty","przeterminowane","к оплате","просрочено","to pay"].includes(status)) return false;
+
+    const cur = String((getVal(r,["Waluta","Waluta "]) || "")).toUpperCase();
+    if (cur !== "PLN") return false;
+
+    const d = toISO(getVal(r,["Termin płatności","Termin","Termin платності"]) || "");
+    if (!d) return false;
+
+    return d >= todayStr && d <= lastISO;
+  });
+
+  const totalDue = dueBills.reduce(
+    (sum,r) => sum + asNum(getVal(r,["Kwota do zapłaty","Kwota","Kwота"]) || 0),
+    0
+  );
+
+  const avail = availableTotal(); // банки + касса по твоим правилам
+  const needTotal = Math.max(0, totalDue - avail);
+
+  const daysLeftRaw = (last - now) / 86400000;
+  const daysLeft = Math.max(1, Math.floor(daysLeftRaw) + 1); // включаем сегодняшний день
+
+  if (needTotal <= 0) {
+    el.textContent = 'На этот месяц обязательные платежи уже покрыты текущей кассой.';
+  } else {
+    const perDay = needTotal / daysLeft;
+    el.textContent = `До конца месяца нужно ещё ${needTotal.toFixed(2)} PLN, это около ${perDay.toFixed(2)} PLN в день.`;
+  }
+}
+
+  
 /* ==== ACCEPT ONE ==== */
 function acceptOne(id){
   const b=(bills||[]).find(x=> (getVal(x,["Numer faktury","Numer фактуры","Invoice number"])||"")===id);
@@ -1795,5 +1856,6 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   <script type="module" src="/sync-cloud.js"></script>
 </body>
 </html>
+
 
 
