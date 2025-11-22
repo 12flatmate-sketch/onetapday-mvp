@@ -1230,7 +1230,9 @@ function exportBookCSV(){
 /* ==== RENDER ==== */
 function renderKasa(){
   const tb=document.querySelector('#kasaTable tbody'); if(!tb) return; tb.innerHTML='';
-  kasa.forEach((k,i)=>{
+    const kasaRows = (kasa||[]).slice().sort((a,b)=> String(b.date||"").localeCompare(String(a.date||"")));
+  kasaRows.forEach((k,i)=>{
+
     const tr=document.createElement('tr');
     tr.innerHTML = `<td>${i+1}</td><td>${k.date}</td><td>${k.type}</td><td>${k.amount.toFixed(2)}</td><td>${k.source||""}</td><td>${k.comment||""}</td>
                     <td class="actions">
@@ -1288,7 +1290,13 @@ function render(){
   // TX table
   const txBody=document.querySelector('#txTable tbody'); if(txBody){
     txBody.innerHTML='';
-    (tx||[]).forEach(r=>{
+        const txRows = (tx||[]).slice().sort((a,b)=>{
+      const da = toISO(getVal(a,["Data księgowania","date","Дата"]))||"";
+      const db = toISO(getVal(b,["Data księgowania","date","Дата"]))||"";
+      return db.localeCompare(da); // новые сверху
+    });
+    txRows.forEach(r=>{
+
       const id=getVal(r,["ID transakcji","ID","id"])||("noid-"+Math.random());
       const curStr = getVal(r,["Waluta","currency"])||''; const cur = detectCurrency(curStr);
       const tr=document.createElement('tr');
@@ -1310,7 +1318,13 @@ function render(){
   // Bills
   const billBody=document.querySelector('#billTable tbody'); if(billBody){
     billBody.innerHTML='';
-    (bills||[]).forEach(r=>{
+        const billRows = (bills||[]).slice().sort((a,b)=>{
+      const da = toISO(getVal(a,["Termin płatności","Termin","Termin платності"])||"");
+      const db = toISO(getVal(b,["Termin płatności","Termin","Termin платności"])||"");
+      return db.localeCompare(da); // более свежие сроки/создания сверху
+    });
+    billRows.forEach(r=>{
+
       const s=String(getVal(r,["Status faktury","Status фактуры","Status"])||"").toLowerCase();
       const cls=(s.includes('przetermin')||s.includes('проср'))?'overdue':'due';
       const cand=getVal(r,["Kandydat (AI)"])||"";
@@ -1783,3 +1797,4 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   <script type="module" src="/sync-cloud.js"></script>
 </body>
 </html>
+
