@@ -116,7 +116,6 @@
       <button id="syncNow" class="btn" data-i="btn_sync">Synchronizuj</button>
       <button id="runAI" class="btn secondary" data-i="btn_ai_match">Dopasowanie AI</button>
       <button id="acceptSafe" class="btn secondary" data-i="btn_accept_safe">Akceptuj bezpieczne pary</button>
-      <button id="exportPDF" class="btn secondary" data-i="btn_pdf">Raport PDF</button>
       <button id="exportBook" class="btn secondary">Eksport księgi (CSV)</button>
       <span id="lastSync" class="pill" data-i="sync_ts">Synchronizacja: —</span>
       <span class="right pill" id="modeCash">Mode: auto</span>
@@ -1537,7 +1536,6 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   $id('makePlan')?.addEventListener('click', renderPlan);
   $id('applyPlan')?.addEventListener('click', renderPlan);
   $id('applyMinPay')?.addEventListener('click', ()=>{ const m=computeMinPay(); if(!m) return alert('Нет кандидатов'); m.r["Status faktury"]="Opłacone"; m.r["Data płatności"]=today(); render(); saveLocal(); pushState(); });
-  $id('exportPDF')?.addEventListener('click',()=>window.print());
   $id('syncNow')?.addEventListener('click', fetchSources);
   $id('exportBook')?.addEventListener('click', exportBookCSV);
 
@@ -1797,4 +1795,5 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   <script type="module" src="/sync-cloud.js"></script>
 </body>
 </html>
+
 
