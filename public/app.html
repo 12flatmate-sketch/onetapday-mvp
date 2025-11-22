@@ -116,7 +116,7 @@
       <button id="syncNow" class="btn" data-i="btn_sync">Synchronizuj</button>
       <button id="runAI" class="btn secondary" data-i="btn_ai_match">Dopasowanie AI</button>
       <button id="acceptSafe" class="btn secondary" data-i="btn_accept_safe">Akceptuj bezpieczne pary</button>
-      <button id="exportPDF" class="btn secondary" data-i="btn_pdf">Raport PDF</button>
+     
       <button id="exportBook" class="btn secondary">Eksport księgi (CSV)</button>
       <span id="lastSync" class="pill" data-i="sync_ts">Synchronizacja: —</span>
       <span class="right pill" id="modeCash">Mode: auto</span>
@@ -364,9 +364,9 @@
       <div style="font-weight:700" data-i="sub_title">Subskrypcja / Demo</div>
       <div class="muted" id="subStatus">—</div>
       <div class="row" style="margin-top:8px">
-        <button id="startDemo" class="btn secondary" data-i="btn_start_demo">Uruchom demo (24h)</button>
+       
         <button id="payNow" class="btn" data-i="btn_pay_sub">Opłać subskrypcję</button>
-        <button id="endDemo" class="btn ghost" data-i="btn_end_demo">Zakończ demo</button>
+     
       </div>
       <div class="hint" style="margin-top:6px" data-i="sub_hint">
         Opłata dostępna tylko tutaj. Jeśli masz link Stripe — ustaw <code>localStorage.stripe_link</code>.
@@ -1229,10 +1229,12 @@ function exportBookCSV(){
 
 /* ==== RENDER ==== */
 function renderKasa(){
-  const tb=document.querySelector('#kasaTable tbody'); if(!tb) return; tb.innerHTML='';
-  kasa.forEach((k,i)=>{
+  const tb=document.querySelector('#kasaTable tbody'); if(!tb) return; 
+  tb.innerHTML='';
+  const rows = (kasa||[]).slice().sort((a,b)=> String(b.date||"").localeCompare(String(a.date||"")));
+  rows.forEach((k,i)=>{
     const tr=document.createElement('tr');
-    tr.innerHTML = `<td>${i+1}</td><td>${k.date}</td><td>${k.type}</td><td>${k.amount.toFixed(2)}</td><td>${k.source||""}</td><td>${k.comment||""}</td>
+    tr.innerHTML = `<td>${i+1}</td><td>${k.date||""}</td><td>${k.type||""}</td><td>${(Number(k.amount)||0).toFixed(2)}</td><td>${k.source||""}</td><td>${k.comment||""}</td>
                     <td class="actions">
                       <button data-act="edit" data-kind="kasa" data-id="${k.id}">✎</button>
                       <button data-act="del" data-kind="kasa" data-id="${k.id}">🗑</button>
@@ -1240,6 +1242,7 @@ function renderKasa(){
     tb.appendChild(tr);
   });
 }
+
 function renderAccounts(){
   const tb=document.querySelector('#autoAcc tbody'); if(!tb) return; tb.innerHTML='';
   Object.values(accMeta).forEach(a=>{
@@ -1286,9 +1289,14 @@ function render(){
   $id('kpiGap')&&( $id('kpiGap').textContent = Math.max(0,sumDue-avail).toFixed(2) );
 
   // TX table
-  const txBody=document.querySelector('#txTable tbody'); if(txBody){
+const txBody=document.querySelector('#txTable tbody'); if(txBody){
     txBody.innerHTML='';
-    (tx||[]).forEach(r=>{
+    const rows = (tx||[]).slice().sort((a,b)=>{
+      const da = toISO(getVal(a,["Data księgowania","date","Дата"]))||"";
+      const db = toISO(getVal(b,["Data księgowania","date","Дата"]))||"";
+      return db.localeCompare(da); // новые сверху
+    });
+    rows.forEach(r=>{
       const id=getVal(r,["ID transakcji","ID","id"])||("noid-"+Math.random());
       const curStr = getVal(r,["Waluta","currency"])||''; const cur = detectCurrency(curStr);
       const tr=document.createElement('tr');
@@ -1308,9 +1316,17 @@ function render(){
   }
 
   // Bills
-  const billBody=document.querySelector('#billTable tbody'); if(billBody){
+
+
+  // Bills
+const billBody=document.querySelector('#billTable tbody'); if(billBody){
     billBody.innerHTML='';
-    (bills||[]).forEach(r=>{
+    const rows = (bills||[]).slice().sort((a,b)=>{
+      const da = toISO(getVal(a,["Termin płatności","Termin","Termin платності"])||"")||"";
+      const db = toISO(getVal(b,["Termin płatności","Termin","Termin платності"])||"")||"";
+      return db.localeCompare(da); // более свежие сроки наверху
+    });
+    rows.forEach(r=>{
       const s=String(getVal(r,["Status faktury","Status фактуры","Status"])||"").toLowerCase();
       const cls=(s.includes('przetermin')||s.includes('проср'))?'overdue':'due';
       const cand=getVal(r,["Kandydat (AI)"])||"";
@@ -1337,7 +1353,7 @@ function render(){
   }
 
   renderMinPay(); renderForecast(); renderAccounts(); renderKasa(); renderBook(); updateSubUI(); gateAccess();
-}
+
 
 /* ==== PLAN / FORECAST / MINPAY (kept) ==== */
 function toDueList(mode){
@@ -1523,7 +1539,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   $id('makePlan')?.addEventListener('click', renderPlan);
   $id('applyPlan')?.addEventListener('click', renderPlan);
   $id('applyMinPay')?.addEventListener('click', ()=>{ const m=computeMinPay(); if(!m) return alert('Нет кандидатов'); m.r["Status faktury"]="Opłacone"; m.r["Data płatności"]=today(); render(); saveLocal(); pushState(); });
-  $id('exportPDF')?.addEventListener('click',()=>window.print());
+ 
   $id('syncNow')?.addEventListener('click', fetchSources);
   $id('exportBook')?.addEventListener('click', exportBookCSV);
 
@@ -1783,6 +1799,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   <script type="module" src="/sync-cloud.js"></script>
 </body>
 </html>
+
 
 
 
