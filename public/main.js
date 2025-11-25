@@ -1,5 +1,8 @@
 // public/main.js
 (() => {
+  function setLang(lang) {
+    i18n.load(lang);
+}
   const apiBase = ''; // same origin
 
     const SUB_KEY       = 'otd_sub_active';
