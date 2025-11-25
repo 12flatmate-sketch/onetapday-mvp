@@ -17,6 +17,51 @@ let REMOTE_OK = localStorage.getItem('remote_disabled')==='1' ? false : true;
 /* ==== I18N ==== */
 const M = {
   ru:{ /* ——— RU ——— */
+     'ai.profile_who_solo':"Собственник / фрилансер",
+    'ai.profile_who_partner':"Партнёр в бизнесе",
+    'ai.profile_who_team':"Фирма с командой",
+    'ai.profile_niche_ph':"Например: барбершоп, маркетинг, IT-услуги",
+    'ai.profile_goal_survive':"Выжить и не влететь в долги",
+    'ai.profile_goal_stable':"Стабильно держаться на плаву",
+    'ai.profile_goal_grow':"Расти и масштабироваться",
+
+    
+        'ai.q_rent':"Почему не хватает на квартиру?",
+    'ai.q_spending':"Где я трачу лишнее?",
+    'ai.q_withdraw':"Сколько можно безопасно вывести?",
+    'ai.q_month':"Хватит ли денег до конца месяца?",
+    'ai.ask_btn':"Спросить",
+    
+    'spending.title':"Расходы по категориям",
+    'spending.desc':"Видно, куда чаще всего уходят деньги (Żabka, Biedronka, топливо и т.д.).",
+    'spending.add_custom':"+ Своя категория",
+    'spending.empty':"Пока нет данных для разбора.",
+
+    'settings.lang_title':"Язык интерфейса",
+    'settings.lang_desc':"Выбери язык, на котором тебе удобнее работать. Можно менять в любой момент.",
+    
+        'home.tagline':"Premium AI-CFO для владельцев, которые не хотят тонуть в таблицах.",
+    'home.trend_title':"Движение за месяц",
+    'home.trend_empty':"Мало данных, чтобы показать движение.",
+
+    'home.tile_docs_title':"Документы",
+    'home.tile_docs_desc':"Загрузи выписки, фактуры и чеки (CSV, скрин, фото).",
+
+    'home.tile_money_title':"Деньги и платежи",
+    'home.tile_money_desc':"Увидеть, куда ушли деньги и что нужно заплатить.",
+
+    'home.tile_ai_title':"AI-бухгалтер",
+    'home.tile_ai_desc':"Поможет с экономией, масштабированием и штрафами.",
+
+    'home.tile_cash_title':"Касса",
+    'home.tile_cash_desc':"Наличка: голосом или вручную, закрытие дня.",
+
+    'home.tile_accounts_title':"Счета и карты",
+    'home.tile_accounts_desc':"Какие счета подключены и что учитывать в расчётах.",
+
+    'home.tile_reports_title':"Отчёты и экспорт",
+    'home.tile_reports_desc':"Выгрузка CSV и отчёты для бухгалтера и инвестора.",
+
         // Документы
     'documents.title':"Документы",
     'documents.desc':"Здесь ты кидаешь всё сырьё: выписки, фактуры и чеки. OneTapDay разложит по полкам.",
@@ -77,6 +122,50 @@ const M = {
     ph_amount:"Сумма", ph_comment:"Комментарий"
   },
   en:{ /* ——— EN ——— */
+        'ai.profile_who_solo':"Owner / freelancer",
+    'ai.profile_who_partner':"Business partner",
+    'ai.profile_who_team':"Company with a team",
+    'ai.profile_niche_ph':"For example: barbershop, marketing, IT services",
+    'ai.profile_goal_survive':"Survive and avoid going into debt",
+    'ai.profile_goal_stable':"Stay stable and afloat",
+    'ai.profile_goal_grow':"Grow and scale",
+
+  
+     'ai.q_rent':"Why is there not enough for rent?",
+    'ai.q_spending':"Where am I overspending?",
+    'ai.q_withdraw':"How much can I safely withdraw?",
+    'ai.q_month':"Will the money last until the end of the month?",
+    'ai.ask_btn':"Ask",
+    
+      'spending.title':"Spending by category",
+    'spending.desc':"See where money most often goes (groceries, fuel, etc.).",
+    'spending.add_custom':"+ Custom category",
+    'spending.empty':"No data to analyse yet.",
+    
+    'settings.lang_title':"Interface language",
+    'settings.lang_desc':"Choose the language you prefer to work in. You can change it anytime.",
+        'home.tagline':"Premium AI-CFO for owners who don't want to drown in spreadsheets.",
+    'home.trend_title':"Movement this month",
+    'home.trend_empty':"Not enough data to show the trend yet.",
+
+    'home.tile_docs_title':"Documents",
+    'home.tile_docs_desc':"Upload statements, invoices and receipts (CSV, screenshot, photo).",
+
+    'home.tile_money_title':"Money & payments",
+    'home.tile_money_desc':"See where the money went and what needs to be paid.",
+
+    'home.tile_ai_title':"AI accountant",
+    'home.tile_ai_desc':"Helps with saving, scaling and avoiding penalties.",
+
+    'home.tile_cash_title':"Cash",
+    'home.tile_cash_desc':"Cash: voice or manual input, close-the-day.",
+
+    'home.tile_accounts_title':"Accounts & cards",
+    'home.tile_accounts_desc':"Which accounts are connected and what is included in calculations.",
+
+    'home.tile_reports_title':"Reports & export",
+    'home.tile_reports_desc':"CSV exports and reports for your accountant or investor.",
+
         // Documents
     'documents.title':"Documents",
     'documents.desc':"This is where you drop all the raw data: statements, invoices and receipts. OneTapDay will sort it for you.",
@@ -138,6 +227,50 @@ const M = {
     ph_amount:"Amount", ph_comment:"Comment"
   },
   pl:{ /* ——— PL ——— */
+        'ai.profile_who_solo':"Właściciel / freelancer",
+    'ai.profile_who_partner':"Wspólnik w biznesie",
+    'ai.profile_who_team':"Firma z zespołem",
+    'ai.profile_niche_ph':"Np. barbershop, marketing, usługi IT",
+    'ai.profile_goal_survive':"Przetrwać i nie wpaść w długi",
+    'ai.profile_goal_stable':"Stabilnie utrzymać się na powierzchni",
+    'ai.profile_goal_grow':"Rośnąć i skalować",
+
+     'ai.q_rent':"Dlaczego nie starcza na mieszkanie?",
+    'ai.q_spending':"Gdzie wydaję za dużo?",
+    'ai.q_withdraw':"Ile mogę bezpiecznie wypłacić?",
+    'ai.q_month':"Czy wystarczy pieniędzy do końca miesiąca?",
+    'ai.ask_btn':"Zapytaj",
+    
+     'spending.title':"Wydatki według kategorii",
+    'spending.desc':"Widać, gdzie najczęściej uciekają pieniądze (Żabka, Biedronka, paliwo itd.).",
+    'spending.add_custom':"+ Własna kategoria",
+    'spending.empty':"Na razie brak danych do analizy.",
+    
+        'settings.lang_title':"Język interfejsu",
+    'settings.lang_desc':"Wybierz język, w którym najwygodniej Ci pracować. Możesz zmienić go w każdej chwili.",
+    
+        'home.tagline':"Premium AI-CFO dla właścicieli, którzy nie chcą tonąć w tabelkach.",
+    'home.trend_title':"Ruch za miesiąc",
+    'home.trend_empty':"Za mało danych, żeby pokazać ruch.",
+
+    'home.tile_docs_title':"Dokumenty",
+    'home.tile_docs_desc':"Wgraj wyciągi, faktury i paragony (CSV, screen, zdjęcie).",
+
+    'home.tile_money_title':"Pieniądze i płatności",
+    'home.tile_money_desc':"Zobacz, gdzie uciekają pieniądze i co trzeba zapłacić.",
+
+    'home.tile_ai_title':"AI-księgowy",
+    'home.tile_ai_desc':"Pomoże z oszczędzaniem, skalowaniem i unikaniem kar.",
+
+    'home.tile_cash_title':"Kasa",
+    'home.tile_cash_desc':"Gotówka: głosowo lub ręcznie, zamknięcie dnia.",
+
+    'home.tile_accounts_title':"Konta i karty",
+    'home.tile_accounts_desc':"Które konta są podłączone i co liczymy w analizie.",
+
+    'home.tile_reports_title':"Raporty i eksport",
+    'home.tile_reports_desc':"Eksport CSV i raporty dla księgowego lub inwestora.",
+
         // Dokumenty
     'documents.title':"Dokumenty",
     'documents.desc':"Tutaj wrzucasz całe surowe dane: wyciągi, faktury i paragony. OneTapDay poukłada je na półkach.",
@@ -199,6 +332,49 @@ const M = {
     ph_amount:"Kwota", ph_comment:"Komentarz"
   },
   uk:{ /* ——— UK ——— */
+      'ai.profile_who_solo':"Власник / фрилансер",
+    'ai.profile_who_partner':"Партнер у бізнесі",
+    'ai.profile_who_team':"Компанія з командою",
+    'ai.profile_niche_ph':"Наприклад: барбершоп, маркетинг, IT-послуги",
+    'ai.profile_goal_survive':"Вижити й не залізти в борги",
+    'ai.profile_goal_stable':"Стабільно триматися на плаву",
+    'ai.profile_goal_grow':"Рости й масштабуватися",
+    
+      'ai.q_rent':"Чому не вистачає на квартиру?",
+    'ai.q_spending':"Де я витрачаю зайве?",
+    'ai.q_withdraw':"Скільки можна безпечно вивести?",
+    'ai.q_month':"Чи вистачить грошей до кінця місяця?",
+    'ai.ask_btn':"Запитати",
+    
+       'spending.title':"Витрати за категоріями",
+    'spending.desc':"Видно, куди найчастіше йдуть гроші (магазини, пальне тощо).",
+    'spending.add_custom':"+ Власна категорія",
+    'spending.empty':"Поки що немає даних для аналізу.",
+    
+        'settings.lang_title':"Мова інтерфейсу",
+    'settings.lang_desc':"Обери мову, якою тобі зручніше працювати. Можна змінити в будь-який момент.",
+        'home.tagline':"Premium AI-CFO для власників, які не хочуть тонути в таблицях.",
+    'home.trend_title':"Рух за місяць",
+    'home.trend_empty':"Замало даних, щоб показати рух.",
+
+    'home.tile_docs_title':"Документи",
+    'home.tile_docs_desc':"Завантажуй виписки, рахунки та чеки (CSV, скрін, фото).",
+
+    'home.tile_money_title':"Гроші та платежі",
+    'home.tile_money_desc':"Побачити, куди йдуть гроші і що потрібно оплатити.",
+
+    'home.tile_ai_title':"AI-бухгалтер",
+    'home.tile_ai_desc':"Допоможе з економією, зростанням і уникненням штрафів.",
+
+    'home.tile_cash_title':"Каса",
+    'home.tile_cash_desc':"Готівка: голосом чи вручну, закриття дня.",
+
+    'home.tile_accounts_title':"Рахунки та картки",
+    'home.tile_accounts_desc':"Які рахунки підключені і що враховуємо в розрахунках.",
+
+    'home.tile_reports_title':"Звіти та експорт",
+    'home.tile_reports_desc':"Вигрузка CSV та звіти для бухгалтера й інвестора.",
+
         // Документи
     'documents.title':"Документи",
     'documents.desc':"Тут ти скидаєш всі сирі дані: виписки, рахунки і чеки. OneTapDay розкладе все по поличках.",
