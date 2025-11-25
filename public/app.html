@@ -501,22 +501,17 @@
     </div>
 
     
-    <div class="card" id="spendingCard" style="margin-top:10px">
-      <div style="font-weight:700">Расходы по категориям</div>
-      <div class="muted small">
-        Видно, куда чаще всего уходят деньги (Żabka, Biedronka, топливо и т.д.).
-      </div>
+<div class="card" id="spendingCard" style="margin-top:10px">
+  <div style="font-weight:700" data-i="spending.title"></div>
+  <div class="muted small" data-i="spending.desc"></div>
 
-      <div id="spendingFilters" class="spFilters"></div>
+  <div id="spendingFilters" class="spFilters"></div>
 
-      <button type="button" id="addSpCatBtn" class="linkBtn small">
-        + Своя категория
-      </button>
+  <button type="button" id="addSpCatBtn" class="linkBtn small" data-i="spending.add_custom"></button>
 
-      <div id="spendingStats" class="spStats muted small" style="margin-top:6px">
-        Пока нет данных для разбора.
-      </div>
-    </div>
+  <div id="spendingStats" class="spStats muted small" style="margin-top:6px" data-i="spending.empty"></div>
+</div>
+
 
 <!-- Modals -->
     <div id="addTodayModal" class="modal-overlay">
@@ -550,33 +545,32 @@
         </div>
       </div>
     </div>
-    <div id="addSpCatModal" class="modal-overlay">
-      <div class="modal-card">
-        <h3>Новая категория расходов</h3>
-        <div class="muted small" style="margin-bottom:8px">
-          Дай ей название и выбери эмодзи.
-        </div>
+   <div id="addSpCatModal" class="modal-overlay">
+  <div class="modal-card">
+    <h3 data-i="spcat.title"></h3>
+    <div class="muted small" style="margin-bottom:8px" data-i="spcat.desc"></div>
 
-        <label class="muted small">Название</label>
-        <input id="spCatName" type="text" class="input" placeholder="Например, Подписки" />
+    <label class="muted small" data-i="spcat.name_label"></label>
+    <input id="spCatName" type="text" class="input" data-i-ph="spcat.name_ph" />
 
-        <div class="muted small" style="margin-top:8px">Эмодзи</div>
-        <div id="spCatEmojiList" class="emojiList">
-          <button type="button">🍞</button>
-          <button type="button">☕</button>
-          <button type="button">🚗</button>
-          <button type="button">🏠</button>
-          <button type="button">💊</button>
-          <button type="button">🎮</button>
-          <button type="button">💳</button>
-        </div>
-
-        <div class="modal-row" style="margin-top:12px">
-          <button id="spCatSave" class="btn" style="flex:1">Сохранить</button>
-          <button id="spCatCancel" class="btn secondary" style="flex:1">Отмена</button>
-        </div>
-      </div>
+    <div class="muted small" style="margin-top:8px" data-i="spcat.emoji_label"></div>
+    <div id="spCatEmojiList" class="emojiList">
+      <button type="button">🍞</button>
+      <button type="button">☕</button>
+      <button type="button">🚗</button>
+      <button type="button">🏠</button>
+      <button type="button">💊</button>
+      <button type="button">🎮</button>
+      <button type="button">💳</button>
     </div>
+
+    <div class="modal-row" style="margin-top:12px">
+      <button id="spCatSave" class="btn" style="flex:1" data-i="spcat.save"></button>
+      <button id="spCatCancel" class="btn secondary" style="flex:1" data-i="spcat.cancel"></button>
+    </div>
+  </div>
+</div>
+
 
 
 
@@ -584,40 +578,40 @@
 
 <!-- STATEMENT -->
   <div id="docs" class="section">
-    <div class="card">
-      <div style="font-weight:700" data-i="documents.title"></div>
-      <div class="muted small" data-i="documents.desc"></div>
-      <div class="homeSub" style="margin:10px 0 0;font-size:12px;padding:0">Что добавить?</div>
-      <div class="homeGrid" style="margin-top:10px">
-        <div class="homeTile" style="padding:12px 10px;border-radius:14px">
-          <div class="homeTileTitle" data-i="documents.statements"></div>
-          <div class="homeTileDesc" data-i="documents.statements_desc"></div>
-          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-            <button class="btn secondary" id="docTxCsvBtn">CSV</button>
-            <button class="btn secondary" id="docTxImgBtn">Скрин / фото</button>
-            <button class="btn ghost small" type="button" onclick="appGoSection('wyciag')">Открыть выписки</button>
-          </div>
-        </div>
-        <div class="homeTile" style="padding:12px 10px;border-radius:14px">
-          <div class="homeTileTitle" data-i="documents.invoices"></div>
-          <div class="homeTileDesc" data-i="documents.invoices_desc"></div>
-          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-            <button class="btn secondary" id="docBillCsvBtn">CSV</button>
-            <button class="btn secondary" id="docBillImgBtn">Скрин / фото</button>
-            <button class="btn ghost small" type="button" onclick="appGoSection('faktury')">Открыть фактуры</button>
-          </div>
-        </div>
-        <div class="homeTile" style="padding:12px 10px;border-radius:14px">
-          <div class="homeTileTitle" data-i="documents.receipts"></div>
-          <div class="homeTileDesc" data-i="documents.receipts_desc"></div>
-          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-            <button class="btn secondary" id="docCashImgBtn">Фото / скан</button>
-            <button class="btn ghost small" type="button" onclick="appGoSection('kasa')">Открыть кассу</button>
-          </div>
-        </div>
+ <div class="card">
+  <div style="font-weight:700" data-i="documents.title"></div>
+  <div class="muted small" data-i="documents.desc"></div>
+  <div class="homeSub" style="margin:10px 0 0;font-size:12px;padding:0" data-i="documents.add_what"></div>
+  <div class="homeGrid" style="margin-top:10px">
+    <div class="homeTile" style="padding:12px 10px;border-radius:14px">
+      <div class="homeTileTitle" data-i="documents.statements"></div>
+      <div class="homeTileDesc" data-i="documents.statements_desc"></div>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+        <button class="btn secondary" id="docTxCsvBtn">CSV</button>
+        <button class="btn secondary" id="docTxImgBtn" data-i="documents.btn_screenshot"></button>
+        <button class="btn ghost small" type="button" onclick="appGoSection('wyciag')" data-i="documents.btn_open_statements"></button>
+      </div>
+    </div>
+    <div class="homeTile" style="padding:12px 10px;border-radius:14px">
+      <div class="homeTileTitle" data-i="documents.invoices"></div>
+      <div class="homeTileDesc" data-i="documents.invoices_desc"></div>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+        <button class="btn secondary" id="docBillCsvBtn">CSV</button>
+        <button class="btn secondary" id="docBillImgBtn" data-i="documents.btn_screenshot"></button>
+        <button class="btn ghost small" type="button" onclick="appGoSection('faktury')" data-i="documents.btn_open_invoices"></button>
+      </div>
+    </div>
+    <div class="homeTile" style="padding:12px 10px;border-radius:14px">
+      <div class="homeTileTitle" data-i="documents.receipts"></div>
+      <div class="homeTileDesc" data-i="documents.receipts_desc"></div>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+        <button class="btn secondary" id="docCashImgBtn" data-i="documents.btn_photo_scan"></button>
+        <button class="btn ghost small" type="button" onclick="appGoSection('kasa')" data-i="documents.btn_open_cash"></button>
       </div>
     </div>
   </div>
+</div>
+
 
 
   <div id="wyciag" class="section">
@@ -835,46 +829,44 @@
       <div style="font-weight:700" data-i="ai.top_title"></div>
       <div class="muted small" data-i="ai.top_desc"></div>
       <div style="margin-top:10px" id="aiProfileBlock">
-        <div class="muted small" data-i="ai.profile_who"></div>
-        <select id="aiProfileType">
-          <option value="solo">Фриланс / частное лицо</option>
-          <option value="owner">Предприниматель без команды</option>
-          <option value="team">Фирма с командой</option>
-        </select>
-        <div class="muted small" data-i="ai.profile_niche"></div>
-        <input id="aiProfileNiche" type="text" placeholder="Например: барбершоп, маркетинг, IT-услуги"/>
-        <div class="muted small" data-i="ai.profile_goal"></div>
-        <select id="aiProfileGoal">
-          <option value="survive">Выжить и не влететь в долги</option>
-          <option value="stable">Стабильно держаться на плаву</option>
-          <option value="grow">Расти и масштабироваться</option>
-        </select>
-        <button class="btn" id="aiProfileSave" style="margin-top:10px" data-i="ai.profile_save"></button>
-        <div class="muted small" id="aiProfileSaved" style="margin-top:6px;display:none" data-i="ai.profile_saved"></div>
-      </div>
-    </div>
-    <div class="card" style="margin-top:10px">
-      <div style="font-weight:700">Задай вопрос AI-бухгалтеру</div>
-      
-      <div class="muted small">
-        Спроси, почему не хватает на аренду, где сэкономить или как не получить штраф.
-      </div>
-      <div class="aiQuickRow" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">
-        <button type="button" class="btn secondary small" id="aiQRent">Почему не хватает на квартиру?</button>
-        <button type="button" class="btn secondary small" id="aiQSpending">Где я трачу лишнее?</button>
-        <button type="button" class="btn secondary small" id="aiQWithdraw">Сколько можно безопасно вывести?</button>
-        <button type="button" class="btn secondary small" id="aiQMonth">Хватит ли денег до конца месяца?</button>
-      </div>
-      <div style="margin-top:8px">
-        <textarea id="aiChatInput" data-i-ph="ai.placeholders.goal_input" style="width:100%;resize:vertical;border-radius:10px;border:1px solid #20262b;background:#0f1214;color:#e6edf3;padding:8px;font-size:13px"></textarea>
-        <button class="btn" id="aiChatSend" style="margin-top:8px">Спросить</button>
-      </div>
-      <div id="aiChatLog" class="muted small" style="margin-top:8px;max-height:200px;overflow:auto;border-top:1px solid #20262b;padding-top:6px">
-        Здесь позже будет живой диалог с AI-бухгалтером. Сейчас это прототип интерфейса.
-      </div>
+  <div class="muted small" data-i="ai.profile_who"></div>
+  <select id="aiProfileType">
+    <option value="solo" data-i="ai.profile_who_solo"></option>
+    <option value="owner" data-i="ai.profile_who_owner"></option>
+    <option value="team" data-i="ai.profile_who_team"></option>
+  </select>
+
+  <div class="muted small" data-i="ai.profile_niche"></div>
+  <input id="aiProfileNiche" type="text" data-i-ph="ai.profile_niche_ph"/>
+
+  <div class="muted small" data-i="ai.profile_goal"></div>
+  <select id="aiProfileGoal">
+    <option value="survive" data-i="ai.profile_goal_survive"></option>
+    <option value="stable" data-i="ai.profile_goal_stable"></option>
+    <option value="grow" data-i="ai.profile_goal_grow"></option>
+  </select>
+  <button class="btn" id="aiProfileSave" style="margin-top:10px" data-i="ai.profile_save"></button>
+  <div class="muted small" id="aiProfileSaved" style="margin-top:6px;display:none" data-i="ai.profile_saved"></div>
 </div>
-    </div>
+<div class="card" style="margin-top:10px">
+  <div style="font-weight:700" data-i="ai.ask_title"></div>
+  <div class="muted small" data-i="ai.ask_desc"></div>
+
+  <div class="aiQuickRow" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">
+    <button type="button" class="btn secondary small" id="aiQRent" data-i="ai.q_rent"></button>
+    <button type="button" class="btn secondary small" id="aiQSpending" data-i="ai.q_spending"></button>
+    <button type="button" class="btn secondary small" id="aiQWithdraw" data-i="ai.q_withdraw"></button>
+    <button type="button" class="btn secondary small" id="aiQMonth" data-i="ai.q_month"></button>
   </div>
+
+  <div style="margin-top:8px">
+    <textarea id="aiChatInput" data-i-ph="ai.placeholders.goal_input" style="width:100%;resize:vertical;border-radius:10px;border:1px solid #20262b;background:#0f1214;color:#e6edf3;padding:8px;font-size:13px"></textarea>
+    <button class="btn" id="aiChatSend" style="margin-top:8px" data-i="ai.ask_btn"></button>
+  </div>
+
+  <div id="aiChatLog" class="muted small" style="margin-top:8px;max-height:200px;overflow:auto;border-top:1px solid #20262b;padding-top:6px" data-i="ai.chat_intro"></div>
+</div>
+
 
   <div id="reports" class="section">
     <div class="card">
