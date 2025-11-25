@@ -4,33 +4,6 @@
   const DEFAULT_LANG = 'pl';
   const apiBase = ''; // same origin
 
-  const T = {
-    pl:{ access_title:"Dostęp do MVP", login_tab:"Logowanie", reg_tab:"Rejestracja", login_btn:"Zaloguj",
-         pay_or_demo:"Płatność/Demo", after_login_hint:"Po zalogowaniu możesz zapłacić lub włączyć demo.",
-         status_title:"Status", status_guest:"Gość — zaloguj się lub zarejestruj",
-         stripe_2m:"Zapłać (Stripe)", demo_24:"Demo 24 godziny", access_note:"Płatność daje natychmiastowy dostęp. Demo trwa 24h.",
-         status_none:"Oczekuje płatności depozytu", status_deposit_paid:"Depozyt opłacony", status_active:"Pilot aktywny",
-         status_ended:"Pilot zakońчony", status_discount_active:"Zniżka aktywna" },
-    en:{ access_title:"MVP Access", login_tab:"Login", reg_tab:"Sign Up", login_btn:"Sign In",
-         pay_or_demo:"Pay/Demo", after_login_hint:"After signing in, you can pay or start a demo.",
-         status_title:"Status", status_guest:"Guest — sign in or register",
-         stripe_2m:"Pay (Stripe)", demo_24:"24h Demo", access_note:"Payment grants instant access. Demo lasts 24h.",
-         status_none:"Awaiting deposit", status_deposit_paid:"Deposit paid", status_active:"Pilot active",
-         status_ended:"Pilot ended", status_discount_active:"Discount active" },
-    uk:{ access_title:"Доступ до MVP", login_tab:"Вхід", reg_tab:"Реєстрація", login_btn:"Увійти",
-         pay_or_demo:"Оплата/Демо", after_login_hint:"Після входу можна оплатити або увімкнути демо.",
-         status_title:"Статус", status_guest:"Гість — увійдіть або зареєструйтесь",
-         stripe_2m:"Оплатити (Stripe)", demo_24:"Демо 24 години", access_note:"Оплата дає миттєвий доступ. Демо — 24 год.",
-         status_none:"Очікується депозит", status_deposit_paid:"Депозит сплачено", status_active:"Пілот активний",
-         status_ended:"Пілот завершено", status_discount_active:"Знижка активна" },
-    ru:{ access_title:"Доступ к MVP", login_tab:"Вход", reg_tab:"Регистрация", login_btn:"Войти",
-         pay_or_demo:"Оплата/Демо", after_login_hint:"После входа можно оплатить или включить демо.",
-         status_title:"Статус", status_guest:"Гость — войдите или зарегистрируйтесь",
-         stripe_2m:"Оплатить (Stripe)", demo_24:"Демо 24 часа", access_note:"Оплата даёт мгновенный доступ. Демо — 24 часа.",
-         status_none:"Ожидается оплата депозита", status_deposit_paid:"Депозит оплачен", status_active:"Пилот активен",
-         status_ended:"Пилот завершён", status_discount_active:"Скидка активна" }
-  };
-
     const SUB_KEY       = 'otd_sub_active';
   const SUB_FROM_KEY  = 'otd_sub_from';
   const SUB_TO_KEY    = 'otd_sub_to';
