@@ -352,51 +352,56 @@
     <div class="homeLogo">OneTapDay</div>
     <button class="homeMenuBtn" type="button" onclick="appGoSection('ustawienia')">⋯</button>
   </div>
-  <div class="homeSub">Premium AI-CFO для владельцев, которые не хотят тонуть в таблицах.</div>
+  <div class="homeSub" data-i="home.tagline"></div>
 
-  <div class="trendCard">
-    <div class="trendHeader">
-      <span>Движение за месяц</span>
-      <span id="trendChange" class="trendChip">—</span>
-    </div>
-    <div id="trendChart" class="trendChart">
-      <div class="muted small">Мало данных, чтобы показать движение.</div>
-    </div>
+<div class="trendCard">
+  <div class="trendHeader">
+    <span data-i="home.trend_title"></span>
+    <span id="trendChange" class="trendChip">—</span>
   </div>
-
-<div class="homeGrid">
-    <button class="homeTile" type="button" onclick="appGoSection('docs')">
-      <div class="homeTileIcon">📤</div>
-      <div class="homeTileTitle">Документы</div>
-      <div class="homeTileDesc">Загрузи выписки, фактуры и чеки (CSV, скрин, фото).</div>
-    </button>
-    <button class="homeTile" type="button" onclick="appGoSection('pulpit')">
-      <div class="homeTileIcon">💸</div>
-      <div class="homeTileTitle">Деньги и платежи</div>
-      <div class="homeTileDesc">Увидеть, куда ушли деньги и что нужно заплатить.</div>
-    </button>
-    <button class="homeTile" type="button" onclick="appGoSection('aiAssist')">
-      <div class="homeTileIcon">🧠</div>
-      <div class="homeTileTitle">AI-бухгалтер</div>
-      <div class="homeTileDesc">Поможет с экономией, масштабированием и штрафами.</div>
-    </button>
-    <button class="homeTile" type="button" onclick="appGoSection('kasa')">
-      <div class="homeTileIcon">💰</div>
-      <div class="homeTileTitle">Касса</div>
-      <div class="homeTileDesc">Наличка: голосом или вручную, закрытие дня.</div>
-    </button>
-    <button class="homeTile" type="button" onclick="appGoSection('konta')">
-      <div class="homeTileIcon">💳</div>
-      <div class="homeTileTitle">Счета и карты</div>
-      <div class="homeTileDesc">Какие счета подключены и что учитывать в расчётах.</div>
-    </button>
-    <button class="homeTile" type="button" onclick="appGoSection('reports')">
-      <div class="homeTileIcon">📊</div>
-      <div class="homeTileTitle">Отчёты и экспорт</div>
-      <div class="homeTileDesc">Выгрузка CSV и отчёты для бухгалтера и инвестора.</div>
-    </button>
+  <div id="trendChart" class="trendChart">
+    <div class="muted small" data-i="home.trend_empty"></div>
   </div>
 </div>
+
+<div class="homeGrid">
+  <button class="homeTile" type="button" onclick="appGoSection('docs')">
+    <div class="homeTileIcon">📤</div>
+    <div class="homeTileTitle" data-i="home.tile_docs_title"></div>
+    <div class="homeTileDesc" data-i="home.tile_docs_desc"></div>
+  </button>
+
+  <button class="homeTile" type="button" onclick="appGoSection('pulpit')">
+    <div class="homeTileIcon">💸</div>
+    <div class="homeTileTitle" data-i="home.tile_money_title"></div>
+    <div class="homeTileDesc" data-i="home.tile_money_desc"></div>
+  </button>
+
+  <button class="homeTile" type="button" onclick="appGoSection('aiAssist')">
+    <div class="homeTileIcon">🧠</div>
+    <div class="homeTileTitle" data-i="home.tile_ai_title"></div>
+    <div class="homeTileDesc" data-i="home.tile_ai_desc"></div>
+  </button>
+
+  <button class="homeTile" type="button" onclick="appGoSection('kasa')">
+    <div class="homeTileIcon">💰</div>
+    <div class="homeTileTitle" data-i="home.tile_cash_title"></div>
+    <div class="homeTileDesc" data-i="home.tile_cash_desc"></div>
+  </button>
+
+  <button class="homeTile" type="button" onclick="appGoSection('konta')">
+    <div class="homeTileIcon">💳</div>
+    <div class="homeTileTitle" data-i="home.tile_accounts_title"></div>
+    <div class="homeTileDesc" data-i="home.tile_accounts_desc"></div>
+  </button>
+
+  <button class="homeTile" type="button" onclick="appGoSection('reports')">
+    <div class="homeTileIcon">📊</div>
+    <div class="homeTileTitle" data-i="home.tile_reports_title"></div>
+    <div class="homeTileDesc" data-i="home.tile_reports_desc"></div>
+  </button>
+</div>
+
 
   <div class="top hidden">
     <div class="brand">
@@ -770,10 +775,8 @@
   <!-- SETTINGS -->
   <div id="ustawienia" class="section">
     <div class="card">
-      <div style="font-weight:700">Язык интерфейса</div>
-      <div class="muted small" style="margin-top:4px">
-        Выбери язык, на котором тебе удобнее работать. Можно менять в любой момент.
-      </div>
+     <div style="font-weight:700" data-i="settings.lang_title"></div>
+<div class="muted small" style="margin-top:4px" data-i="settings.lang_desc"></div>
             <div class="lang" id="langBarMain">
               <button data-lang="pl" class="on">PL</button>
               <button data-lang="ru">RU</button>
