@@ -1,8 +1,54 @@
 // public/main.js
 (() => {
-  function setLang(lang) {
-    i18n.load(lang);
-}
+  // минимальная i18n для страницы доступа
+  const DEFAULT_LANG = 'ru';
+  const T = {
+    ru: {
+      access_title: 'Доступ к MVP',
+      access_note: 'Оплата даёт мгновенный доступ. Демо — 24 часа.',
+      after_login_hint: 'После входа можно оплатить или включить демо.',
+      status_title: 'Статус',
+      status_guest: 'Гость — войдите или зарегистрируйтесь.',
+      demo_24: 'Демо 24 часа',
+      stripe_2m: 'Оплатить 2 месяца (Stripe)',
+      login_tab: 'Вход',
+      reg_tab: 'Регистрация'
+    },
+    pl: {
+      access_title: 'Dostęp do MVP',
+      access_note: 'Płatność daje natychmiastowy dostęp. Demo — 24h.',
+      after_login_hint: 'Po zalogowaniu możesz zapłacić lub włączyć demo.',
+      status_title: 'Status',
+      status_guest: 'Gość — zaloguj się lub zarejestruj.',
+      demo_24: 'Demo 24h',
+      stripe_2m: 'Opłać 2 miesiące (Stripe)',
+      login_tab: 'Logowanie',
+      reg_tab: 'Rejestracja'
+    },
+    en: {
+      access_title: 'Access to MVP',
+      access_note: 'Payment gives instant access. Demo lasts 24 hours.',
+      after_login_hint: 'After login you can pay or start a demo.',
+      status_title: 'Status',
+      status_guest: 'Guest — log in or sign up.',
+      demo_24: '24-hour demo',
+      stripe_2m: 'Pay for 2 months (Stripe)',
+      login_tab: 'Login',
+      reg_tab: 'Sign up'
+    },
+    uk: {
+      access_title: 'Доступ до MVP',
+      access_note: 'Оплата дає миттєвий доступ. Демо — 24 години.',
+      after_login_hint: 'Після входу можна оплатити або ввімкнути демо.',
+      status_title: 'Статус',
+      status_guest: 'Гість — увійдіть або зареєструйтесь.',
+      demo_24: 'Демо 24 години',
+      stripe_2m: 'Оплатити 2 місяці (Stripe)',
+      login_tab: 'Вхід',
+      reg_tab: 'Реєстрація'
+    }
+  };
+
   const apiBase = ''; // same origin
 
     const SUB_KEY       = 'otd_sub_active';
