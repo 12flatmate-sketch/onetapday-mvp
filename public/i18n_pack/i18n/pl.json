@@ -38,3 +38,72 @@
     }
   }
 }
+{
+  "app": {
+    "dashboard": {
+      "documents": "Dokumenty",
+      "documents_desc": "Wrzuć wyciągi, faktury i paragony. OneTapDay uporządkuje to automatycznie.",
+      "money": "Pieniądze i płatności",
+      "money_desc": "Zobacz, gdzie wypływają pieniądze i co musisz zapłacić.",
+      "ai": "AI-Księgowy",
+      "ai_desc": "Podpowiedzi oparte na Twoich danych i codziennych płatnościach.",
+      "cash": "Kasa",
+      "cash_desc": "Szybkie operacje gotówkowe, głos i zamknięcie dnia.",
+      "accounts": "Konta i karty",
+      "accounts_desc": "Twoje konta bankowe uwzględnione w analizie.",
+      "reports": "Raporty i eksport",
+      "reports_desc": "Eksport CSV i zestawienia dla księgowego lub inwestora."
+    }
+  },
+  "documents": {
+    "title": "Dokumenty",
+    "desc": "Wrzuć tu wyciągi, faktury, paragony. My je rozłożymy i dopasujemy.",
+    "statements": "Wyciągi",
+    "statements_desc": "Ruchy na koncie bankowym.",
+    "invoices": "Faktury",
+    "invoices_desc": "Rachunki od klientów i dostawców.",
+    "receipts": "Paragony / wydatki",
+    "receipts_desc": "Gotówka i drobne koszty."
+  },
+  "ai": {
+    "top_title": "AI-Księgowy",
+    "top_desc": "Powiedz kilka rzeczy o sobie, aby podpowiedzi były bardziej trafne.",
+    "profile_who": "Kim jesteś?",
+    "profile_niche": "Branża / czym się zajmujesz?",
+    "profile_goal": "Co jest najważniejsze teraz?",
+    "profile_save": "Zapisz profil",
+    "profile_saved": "Profil zapisany. AI-Księgowy dostosuje odpowiedzi.",
+    "questions": {
+      "overspend": "Gdzie wydaję za dużo?",
+      "scale": "Jak mogę się skalować?",
+      "goal_income": "Ile muszę zarabiać, aby osiągnąć mój cel?"
+    },
+    "placeholders": {
+      "goal_input": "Jaki masz cel finansowy? Na przykład: „20 000 PLN/mies.”"
+    }
+  },
+  "faq": {
+    "ritual": "Jak używać OneTapDay na co dzień?",
+    "sync": "Co oznacza „Synchronizacja”?",
+    "match": "Co to są dopasowania płatności?",
+    "close_day": "Po co zamykać dzień?",
+    "risk": "Skąd bierze się kolor ryzyka?",
+    "export": "Po co eksport CSV?",
+    "cash": "Jak pracować z gotówką?"
+  },
+  "reports": {
+    "title": "Raporty i eksport",
+    "desc": "Pobierz CSV i zestawienia dla księgowego lub inwestora.",
+    "export_statements": "Eksport wyciągów (CSV)",
+    "export_invoices": "Eksport faktur (CSV)",
+    "export_month": "Księga / raport miesiąca (CSV)"
+  },
+  "cash": {
+    "new_category": "Nowa kategoria wydatku",
+    "name": "Nazwa",
+    "save": "Zapisz",
+    "cancel": "Anuluj"
+  },
+  "ph_amount": "Kwota",
+  "ph_comment": "Komentarz"
+}
