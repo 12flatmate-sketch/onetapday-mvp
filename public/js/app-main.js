@@ -2432,15 +2432,49 @@ async function ocrInvoiceFiles(files){
 }
 
 /* ==== DOM READY ==== */
-window.appShowHome = function(){
+window.appGoSection = function(secId){
+  const homeEl = document.getElementById('homeScreen');
+  const topBar = document.querySelector('.top');
+  const tabsWrap = document.querySelector('.tabs');
+
   try{
-    const homeEl = document.getElementById('homeScreen');
-    const topBar = document.querySelector('.top');
-    document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-    if(homeEl) homeEl.style.display='block';
+    const sec = document.getElementById(secId);
+
+    if(!sec){
+      console.warn('appGoSection: section not found:', secId);
+      if(homeEl) homeEl.style.display = 'block';
+      if(topBar) topBar.classList.add('hidden');
+      if(tabsWrap) tabsWrap.style.display = 'none';
+      return;
+    }
+
+    if(homeEl) homeEl.style.display = 'none';
+    if(topBar) topBar.classList.remove('hidden');
+    if(tabsWrap) tabsWrap.style.display = 'flex';   // ← показываем вкладки при входе в любую секцию
+
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    sec.classList.add('active');
+
+    const tab = document.querySelector('.tabs .tab[data-sec="'+secId+'"]');
+    if(tab){
+      document.querySelectorAll('.tabs .tab').forEach(x => x.classList.remove('active'));
+      tab.classList.add('active');
+    }
+
+    try{
+      render();
+    }catch(e){
+      console.warn('render() error:', e);
+    }
+
+  }catch(e){
+    console.warn('appGoSection fatal error:', e);
+    if(homeEl) homeEl.style.display = 'block';
     if(topBar) topBar.classList.add('hidden');
-  }catch(e){ console.warn('appShowHome error', e); }
+    if(tabsWrap) tabsWrap.style.display = 'none';
+  }
 };
+
 
 window.appGoSection = function(secId){
   const homeEl = document.getElementById('homeScreen');
