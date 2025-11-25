@@ -580,15 +580,13 @@
 <!-- STATEMENT -->
   <div id="docs" class="section">
     <div class="card">
-      <div style="font-weight:700">Документы</div>
-      <div class="muted small">
-        Здесь ты кидаешь всё сырьё: выписки, фактуры и чеки. OneTapDay разложит по полкам.
-      </div>
+      <div style="font-weight:700" data-i="documents.title"></div>
+      <div class="muted small" data-i="documents.desc"></div>
       <div class="homeSub" style="margin:10px 0 0;font-size:12px;padding:0">Что добавить?</div>
       <div class="homeGrid" style="margin-top:10px">
         <div class="homeTile" style="padding:12px 10px;border-radius:14px">
-          <div class="homeTileTitle">Выписки</div>
-          <div class="homeTileDesc">Банк: движения по счёту.</div>
+          <div class="homeTileTitle" data-i="documents.statements"></div>
+          <div class="homeTileDesc" data-i="documents.statements_desc"></div>
           <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
             <button class="btn secondary" id="docTxCsvBtn">CSV</button>
             <button class="btn secondary" id="docTxImgBtn">Скрин / фото</button>
@@ -596,8 +594,8 @@
           </div>
         </div>
         <div class="homeTile" style="padding:12px 10px;border-radius:14px">
-          <div class="homeTileTitle">Фактуры</div>
-          <div class="homeTileDesc">Счета от клиентов и поставщиков.</div>
+          <div class="homeTileTitle" data-i="documents.invoices"></div>
+          <div class="homeTileDesc" data-i="documents.invoices_desc"></div>
           <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
             <button class="btn secondary" id="docBillCsvBtn">CSV</button>
             <button class="btn secondary" id="docBillImgBtn">Скрин / фото</button>
@@ -605,8 +603,8 @@
           </div>
         </div>
         <div class="homeTile" style="padding:12px 10px;border-radius:14px">
-          <div class="homeTileTitle">Чеки / расходы</div>
-          <div class="homeTileDesc">Наличка и мелкие траты.</div>
+          <div class="homeTileTitle" data-i="documents.receipts"></div>
+          <div class="homeTileDesc" data-i="documents.receipts_desc"></div>
           <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
             <button class="btn secondary" id="docCashImgBtn">Фото / скан</button>
             <button class="btn ghost small" type="button" onclick="appGoSection('kasa')">Открыть кассу</button>
@@ -831,27 +829,25 @@
 <div 
   <div id="aiAssist" class="section">
     <div class="card">
-      <div style="font-weight:700">AI-бухгалтер</div>
-      <div class="muted small">
-        Сначала расскажи пару вещей о себе и бизнесе, чтобы советы были точнее.
-      </div>
+      <div style="font-weight:700" data-i="ai.top_title"></div>
+      <div class="muted small" data-i="ai.top_desc"></div>
       <div style="margin-top:10px" id="aiProfileBlock">
-        <div class="muted small" style="margin-bottom:4px">Кто ты?</div>
+        <div class="muted small" data-i="ai.profile_who"></div>
         <select id="aiProfileType">
           <option value="solo">Фриланс / частное лицо</option>
           <option value="owner">Предприниматель без команды</option>
           <option value="team">Фирма с командой</option>
         </select>
-        <div class="muted small" style="margin-top:8px;margin-bottom:4px">Ниша / чем занимаешься?</div>
+        <div class="muted small" data-i="ai.profile_niche"></div>
         <input id="aiProfileNiche" type="text" placeholder="Например: барбершоп, маркетинг, IT-услуги"/>
-        <div class="muted small" style="margin-top:8px;margin-bottom:4px">Что главное сейчас?</div>
+        <div class="muted small" data-i="ai.profile_goal"></div>
         <select id="aiProfileGoal">
           <option value="survive">Выжить и не влететь в долги</option>
           <option value="stable">Стабильно держаться на плаву</option>
           <option value="grow">Расти и масштабироваться</option>
         </select>
-        <button class="btn" id="aiProfileSave" style="margin-top:10px">Сохранить профиль</button>
-        <div class="muted small" id="aiProfileSaved" style="margin-top:6px;display:none">Профиль сохранён. AI-бухгалтер будет опираться на эти данные.</div>
+        <button class="btn" id="aiProfileSave" style="margin-top:10px" data-i="ai.profile_save"></button>
+        <div class="muted small" id="aiProfileSaved" style="margin-top:6px;display:none" data-i="ai.profile_saved"></div>
       </div>
     </div>
     <div class="card" style="margin-top:10px">
@@ -867,7 +863,7 @@
         <button type="button" class="btn secondary small" id="aiQMonth">Хватит ли денег до конца месяца?</button>
       </div>
       <div style="margin-top:8px">
-        <textarea id="aiChatInput" rows="3" placeholder="Например: «Почему не хватает на квартиру?» или «Где я трачу лишнее?»" style="width:100%;resize:vertical;border-radius:10px;border:1px solid #20262b;background:#0f1214;color:#e6edf3;padding:8px;font-size:13px"></textarea>
+        <textarea id="aiChatInput" data-i-ph="ai.placeholders.goal_input" style="width:100%;resize:vertical;border-radius:10px;border:1px solid #20262b;background:#0f1214;color:#e6edf3;padding:8px;font-size:13px"></textarea>
         <button class="btn" id="aiChatSend" style="margin-top:8px">Спросить</button>
       </div>
       <div id="aiChatLog" class="muted small" style="margin-top:8px;max-height:200px;overflow:auto;border-top:1px solid #20262b;padding-top:6px">
@@ -879,12 +875,12 @@
 
   <div id="reports" class="section">
     <div class="card">
-      <div style="font-weight:700">Отчёты и экспорт</div>
-      <div class="muted small">Скачать CSV и отчёты для бухгалтера или инвестора.</div>
+      <div style="font-weight:700" data-i="reports.title"></div>
+      <div class="muted small" data-i="reports.desc"></div>
       <div class="row" style="margin-top:10px;flex-wrap:wrap;gap:8px">
-        <button class="btn secondary" id="reportsTx">Экспортировать выписки (CSV)</button>
-        <button class="btn secondary" id="reportsBills">Экспортировать фактуры (CSV)</button>
-        <button class="btn secondary" id="reportsBook">Книга / отчёт месяца (CSV)</button>
+        <button class="btn secondary" id="reportsTx" data-i="reports.export_statements"></button>
+        <button class="btn secondary" id="reportsBills" data-i="reports.export_invoices"></button>
+        <button class="btn secondary" id="reportsBook" data-i="reports.export_month"></button>
       </div>
     </div>
   </div>
@@ -942,16 +938,3 @@
   <script src="/public/i18n.js"></script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
