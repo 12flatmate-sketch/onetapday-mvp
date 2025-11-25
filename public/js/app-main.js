@@ -2396,23 +2396,26 @@ document.addEventListener('DOMContentLoaded', async ()=>{
       if(byId('aiProfileSaved')) byId('aiProfileSaved').style.display='block';
     });
     // Быстрые вопросы для AI-бухгалтера
-    const quickPairs = [
-      ['aiQRent','Почему не хватает на квартиру?'],
-      ['aiQSpending','Где я трачу лишнее?'],
-      ['aiQWithdraw','Сколько можно безопасно вывести?'],
-      ['aiQMonth','Хватит ли денег до конца месяца?']
-    ];
-    quickPairs.forEach(([id,text])=>{
-      const btn = byId(id);
-      if(!btn) return;
-      btn.addEventListener('click', ()=>{
-        const inp = byId('aiChatInput');
-        if(!inp) return;
-        inp.value = text;
-        const send = byId('aiChatSend');
-        if(send) send.click();
-      });
-    });
+   const quickPairs = [
+  ['aiQRent','ai.q_rent'],
+  ['aiQSpending','ai.q_spending'],
+  ['aiQWithdraw','ai.q_withdraw'],
+  ['aiQMonth','ai.q_month']
+];
+
+quickPairs.forEach(([id,key])=>{
+  const btn = document.getElementById(id);
+  if(!btn) return;
+  btn.addEventListener('click', ()=>{
+    const inp = document.getElementById('aiChatInput');
+    if(!inp) return;
+    const lang = localStorage.getItem('otd_lang') || 'pl';
+    const dict = M[lang] || M.pl;
+    inp.value = dict[key] || '';
+    const send = document.getElementById('aiChatSend');
+    if(send) send.click();
+  });
+});
 
 
 
