@@ -1,7 +1,5 @@
 // public/main.js
 (() => {
-  const LANG_ORDER = ['pl','en','uk','ru'];
-  const DEFAULT_LANG = 'pl';
   const apiBase = ''; // same origin
 
     const SUB_KEY       = 'otd_sub_active';
