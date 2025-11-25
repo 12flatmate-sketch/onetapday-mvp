@@ -11,18 +11,18 @@
   <title>OneTapDay — AI Księgowy (MVP)</title>
   <style>
     :root{
-      --accent:#35D36B;--bg:#0d0f10;--card:#15181a;--muted:#9aa3a9;--text:#e6edf3;
+      --accent:#47b500;--bg:#0d0f10;--card:#15181a;--muted:#9aa3a9;--text:#e6edf3;
       --danger:#ff7070;--warn:#f4d06f;--pos:#a8e8c7;--neg:#ff8a8a
     }
     html,body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;-webkit-tap-highlight-color:transparent}
     button,select,input,label{touch-action:manipulation}
-    .wrap{max-width:1240px;margin:0 auto;padding:12px 16px 48px}
+    .wrap{max-width:480px;margin:0 auto;padding:16px 12px 32px}
     .top{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;position:relative;z-index:2}
-    .brand{font-weight:700}
-    .tabs{display:flex;gap:6px;flex-wrap:wrap;position:relative;z-index:2}
+    .brand{font-weight:700;display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .tabs{display:none;gap:6px;flex-wrap:wrap;position:relative;z-index:2}
     .tab{padding:8px 12px;border-radius:10px;background:#0f1214;border:1px solid #20262b;color:#cfe6d7;cursor:pointer;font-weight:600}
     .tab.active{background:var(--accent);color:#08110b;border-color:#49e084}
-    .section{display:none;margin-top:14px;position:relative;z-index:1}
+    .section{display:none;margin-top:18px;position:relative;z-index:1}
     .section.active{display:block}
     .cards{display:grid;grid-template-columns:repeat(4,minmax(220px,1fr));gap:12px}
     .card{background:var(--card);border:1px solid #22282c;border-radius:12px;padding:14px}
@@ -68,12 +68,342 @@
     .hidden{display:none !important}
     @media (max-width:1080px){.cards{grid-template-columns:1fr 1fr}.grid2{grid-template-columns:1fr}}
     @media print{.tabs,.btn,.row input,.toast,.lang{display:none !important}body{background:#fff;color:#000}.card{background:#fff;border:1px solid #999}.wrap{max-width:1000px}}
-  </style>
+  
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:50;}
+    .modal-overlay.show{display:flex;}
+    .modal-card{background:var(--card);border-radius:14px;padding:16px 18px;max-width:420px;width:90%;box-shadow:0 16px 40px rgba(0,0,0,0.7);}
+    .modal-card h3{margin:0 0 8px;font-size:18px;}
+    .modal-row{font-size:14px;margin:4px 0;color:var(--muted);}
+    .modal-row strong{color:var(--text);}
+    .modal-actions{text-align:right;margin-top:12px;}
+
+    body.theme-light{
+      --bg:#f4f6f8;
+      --card:#ffffff;
+      --text:#111827;
+      --muted:#6b7280;
+    }
+    #helperFab{
+      position:fixed;
+      right:16px;
+      bottom:16px;
+      width:40px;
+      height:40px;
+      border-radius:999px;
+      background:var(--accent);
+      color:#000;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:700;
+      cursor:pointer;
+      box-shadow:0 6px 18px rgba(0,0,0,0.5);
+      z-index:60;
+    }
+    #helperPanel{
+      position:fixed;
+      right:16px;
+      bottom:64px;
+      width:320px;
+      max-height:60vh;
+      background:var(--card);
+      border-radius:14px;
+      box-shadow:0 12px 30px rgba(0,0,0,0.7);
+      padding:10px 12px;
+      display:none;
+      flex-direction:column;
+      z-index:60;
+    }
+    #helperPanel.show{display:flex;}
+    #helperPanelHeader{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:6px;
+      font-size:14px;
+      font-weight:600;
+    }
+    #helperSearch{
+      width:100%;
+      margin:4px 0 6px 0;
+      padding:4px 6px;
+      border-radius:8px;
+      border:1px solid rgba(255,255,255,0.1);
+      background:transparent;
+      color:var(--text);
+      font-size:13px;
+    }
+    #helperTopics{
+      display:flex;
+      flex-wrap:wrap;
+      gap:4px;
+      margin:4px 0 6px 0;
+    }
+    .helper-chip{
+      font-size:11px;
+      padding:3px 6px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,0.15);
+      cursor:pointer;
+      color:var(--muted);
+    }
+    .helper-chip:hover{
+      border-color:var(--accent);
+      color:var(--text);
+    }
+    #helperAnswer{
+      flex:1;
+      overflow:auto;
+      font-size:12px;
+      color:var(--muted);
+      border-top:1px solid rgba(255,255,255,0.1);
+      padding-top:4px;
+      margin-top:4px;
+    }
+
+    .hidden{display:none!important}
+    .homeScreen{padding:24px 16px 32px;max-width:480px;margin:0 auto}
+    .homeLogo{font-size:28px;font-weight:800;color:var(--accent);margin:6px 2px 4px}
+    .homeSub{font-size:13px;color:var(--muted);margin:0 2px 20px;line-height:1.5;text-align:center}
+.trendCard{
+  margin:12px 0 18px;
+  padding:10px 10px 12px;
+  border-radius:16px;
+  border:1px solid #20262b;
+  background:#050708;
+}
+.trendHeader{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-size:12px;
+  color:#aeb4bb;
+  margin-bottom:6px;
+}
+.trendChip{
+  font-size:11px;
+  padding:2px 8px;
+  border-radius:999px;
+  background:#111820;
+}
+.trendChip.up{background:rgba(71,181,0,0.18);color:#72ff4a;}
+.trendChip.down{background:rgba(255,64,64,0.18);color:#ff8a8a;}
+.trendChart{
+  width:100%;
+  height:70px;
+  position:relative;
+}
+.trendChart svg{
+  width:100%;
+  height:70px;
+  display:block;
+}
+.trendCursorLine{
+  position:absolute;
+  top:6px;
+  bottom:4px;
+  width:1px;
+  background:rgba(255,255,255,0.35);
+  pointer-events:none;
+}
+.trendTooltip{
+  position:absolute;
+  padding:2px 6px;
+  border-radius:10px;
+  background:#000;
+  color:#fff;
+  font-size:10px;
+  white-space:nowrap;
+  transform:translate(-50%,-120%);
+  pointer-events:none;
+}
+
+    .homeGrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .homeTile{border-radius:18px;border:1px solid #252b30;background:#101214;padding:16px 14px;text-align:left;cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;gap:8px;box-shadow:0 0 0 1px rgba(0,0,0,0.4);transition:background 0.12s,border-color 0.12s,transform 0.08s}
+    .homeTile:active{transform:scale(0.985);border-color:var(--accent)}
+    .homeTileIcon{font-size:20px;margin-bottom:2px}
+    .homeTileTitle{font-size:15px;font-weight:600;color:var(--accent)}
+    .homeTileDesc{font-size:11px;color:var(--muted);line-height:1.4}
+
+    .iconBtn{border:none;background:transparent;color:var(--muted);font-size:22px;line-height:1;padding:4px;cursor:pointer;border-radius:999px}
+    .iconBtn:active{transform:scale(0.92);background:#111;}
+
+.spFilters{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-top:8px;
+}
+.spFilterBtn{
+  border:none;
+  background:#11161a;
+  padding:4px 8px;
+  border-radius:999px;
+  font-size:12px;
+  color:#cfd5dd;
+  display:flex;
+  align-items:center;
+  gap:4px;
+}
+.spFilterBtn span.emoji{font-size:14px;}
+.spFilterBtn.active{
+  background:#47b500;
+  color:#fff;
+}
+.spStats div{
+  margin:2px 0;
+}
+.linkBtn{
+  border:none;
+  background:none;
+  color:#6ea6ff;
+  padding:0;
+  margin-top:6px;
+  font-size:12px;
+  text-decoration:underline;
+}
+.linkBtn.small{
+  font-size:11px;
+}
+.emojiList{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-top:4px;
+}
+.emojiList button{
+  border:none;
+  background:#11161a;
+  border-radius:999px;
+  padding:4px 6px;
+  font-size:18px;
+}
+.emojiList button.active{
+  background:#47b500;
+}
+
+.tableScroll{
+  width:100%;
+  overflow-x:auto;
+  margin-top:8px;
+}
+.tableScroll table{
+  min-width:100%;
+}
+#autoAcc{
+  width:100%;
+  border-collapse:collapse;
+  font-size:12px;
+}
+#autoAcc thead tr{
+  border-bottom:1px solid #20262b;
+}
+#autoAcc th{
+  font-weight:500;
+  color:#9aa2ae;
+  padding:6px 4px;
+  text-align:left;
+  white-space:nowrap;
+}
+#autoAcc td{
+  padding:6px 4px;
+  font-size:12px;
+  white-space:nowrap;
+}
+#autoAcc th:nth-child(4),
+#autoAcc th:nth-child(5),
+#autoAcc td:nth-child(4),
+#autoAcc td:nth-child(5){
+  text-align:right;
+}
+#autoAcc input{
+  width:100%;
+  max-width:90px;
+}
+#autoAcc select{
+  max-width:110px;
+}
+
+    .homeHeader{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+    }
+    .homeMenuBtn{
+      border:none;
+      background:transparent;
+      color:var(--muted);
+      font-size:20px;
+      padding:4px 8px;
+      border-radius:999px;
+      cursor:pointer;
+    }
+    .homeMenuBtn:active{
+      background:#111820;
+      transform:scale(0.96);
+    }
+</style>
 </head>
 <body>
 <div class="wrap">
-  <div class="top">
-    <div class="brand"><b>OneTapDay — AI Księgowy</b> <span class="pill">MVP</span></div>
+<div id="homeScreen" class="homeScreen">
+  <div class="homeHeader">
+    <div class="homeLogo">OneTapDay</div>
+    <button class="homeMenuBtn" type="button" onclick="appGoSection('ustawienia')">⋯</button>
+  </div>
+  <div class="homeSub">Premium AI-CFO для владельцев, которые не хотят тонуть в таблицах.</div>
+
+  <div class="trendCard">
+    <div class="trendHeader">
+      <span>Движение за месяц</span>
+      <span id="trendChange" class="trendChip">—</span>
+    </div>
+    <div id="trendChart" class="trendChart">
+      <div class="muted small">Мало данных, чтобы показать движение.</div>
+    </div>
+  </div>
+
+<div class="homeGrid">
+    <button class="homeTile" type="button" onclick="appGoSection('docs')">
+      <div class="homeTileIcon">📤</div>
+      <div class="homeTileTitle">Документы</div>
+      <div class="homeTileDesc">Загрузи выписки, фактуры и чеки (CSV, скрин, фото).</div>
+    </button>
+    <button class="homeTile" type="button" onclick="appGoSection('pulpit')">
+      <div class="homeTileIcon">💸</div>
+      <div class="homeTileTitle">Деньги и платежи</div>
+      <div class="homeTileDesc">Увидеть, куда ушли деньги и что нужно заплатить.</div>
+    </button>
+    <button class="homeTile" type="button" onclick="appGoSection('aiAssist')">
+      <div class="homeTileIcon">🧠</div>
+      <div class="homeTileTitle">AI-бухгалтер</div>
+      <div class="homeTileDesc">Поможет с экономией, масштабированием и штрафами.</div>
+    </button>
+    <button class="homeTile" type="button" onclick="appGoSection('kasa')">
+      <div class="homeTileIcon">💰</div>
+      <div class="homeTileTitle">Касса</div>
+      <div class="homeTileDesc">Наличка: голосом или вручную, закрытие дня.</div>
+    </button>
+    <button class="homeTile" type="button" onclick="appGoSection('konta')">
+      <div class="homeTileIcon">💳</div>
+      <div class="homeTileTitle">Счета и карты</div>
+      <div class="homeTileDesc">Какие счета подключены и что учитывать в расчётах.</div>
+    </button>
+    <button class="homeTile" type="button" onclick="appGoSection('reports')">
+      <div class="homeTileIcon">📊</div>
+      <div class="homeTileTitle">Отчёты и экспорт</div>
+      <div class="homeTileDesc">Выгрузка CSV и отчёты для бухгалтера и инвестора.</div>
+    </button>
+  </div>
+</div>
+
+  <div class="top hidden">
+    <div class="brand">
+      <button type="button" id="backHomeBtn" class="iconBtn" aria-label="Powrót">←</button>
+      <div><b>OneTapDay — AI Księgowy</b> <span class="pill">MVP</span></div>
+      <button type="button" id="settingsBtn" class="iconBtn">⋯</button>
+    </div>
     <div class="tabs" id="tabs">
       <div class="tab active" data-sec="pulpit" data-i="tab_dashboard">Panel</div>
       <div class="tab" data-sec="wyciag" data-i="tab_statement">Wyciąg</div>
@@ -81,12 +411,7 @@
       <div class="tab" data-sec="konta" data-i="tab_accounts">Konta</div>
       <div class="tab" data-sec="kasa" data-i="tab_cash">Kasa</div>
       <div class="tab" data-sec="ustawienia" data-i="tab_settings">Ustawienia</div>
-      <div class="lang" id="langBarMain">
-        <button data-lang="pl" class="on">PL</button>
-        <button data-lang="ru">RU</button>
-        <button data-lang="en">EN</button>
-        <button data-lang="uk">UK</button>
-      </div>
+      
     </div>
   </div>
 
@@ -102,91 +427,198 @@
   </div>
 
   <!-- DASHBOARD -->
-  <div id="pulpit" class="section active">
-    <div class="cards">
-      <div class="card"><div class="muted" data-i="kpi_due_today">Do zapłaty dziś</div><div id="kpiDue" class="kpi">0</div></div>
-      <div class="card"><div class="muted" data-i="kpi_unmatched">Niesparowane transakcje</div><div id="kpiUnmatch" class="kpi">0</div></div>
-      <div class="card"><div class="muted" data-i="kpi_banks">Bilans banków</div><div id="kpiBank" class="kpi">0</div></div>
-      <div class="card"><div class="muted" data-i="kpi_cash">Kasa (PLN)</div><div id="kpiCash" class="kpi">0</div></div>
-      <div class="card"><div class="muted" data-i="kpi_total">Dostępnie razem</div><div id="kpiAvail" class="kpi">0</div></div>
-      <div class="card"><div class="muted" data-i="kpi_gap_today">Brak środków dziś</div><div id="kpiGap" class="kpi">0</div></div>
-    </div>
+  <div id="pulpit" class="section">
 
-    <div class="row" style="margin:10px 0">
-      <button id="syncNow" class="btn" data-i="btn_sync">Synchronizuj</button>
-      <button id="runAI" class="btn secondary" data-i="btn_ai_match">Dopasowanie AI</button>
-      <button id="acceptSafe" class="btn secondary" data-i="btn_accept_safe">Akceptuj bezpieczne pary</button>
-      <button id="exportBook" class="btn secondary">Eksport księgi (CSV)</button>
-      <span id="lastSync" class="pill" data-i="sync_ts">Synchronizacja: —</span>
-      <span class="right pill" id="modeCash">Mode: auto</span>
-    </div>
+    <div class="card" style="margin:10px 0">
+      <div style="font-weight:700">OneTapDay • Twój dzień</div>
+      <div class="muted small" data-i="pulpit_intro">
+        Jeden ekran, który mówi Ci, czy dziś jest spokojnie z pieniędzmi.
+      </div>
 
-    <div class="grid2">
-      <div class="card">
-        <div style="font-weight:700" data-i="minpay_title">Minimalna płatność (kara-stop)</div>
-        <div id="minPayBox" class="muted">—</div>
-        <div class="row" style="margin-top:6px">
-          <button id="applyMinPay" class="btn secondary" data-i="btn_apply_minpay">Oznacz jako opłacone</button>
+      <div style="margin-top:10px; display:flex; flex-wrap:wrap; gap:16px; align-items:flex-end">
+        <div style="flex:1; min-width:120px">
+          <div class="muted small" data-i="hero_today_label">Wynik dnia (PLN)</div>
+          <div style="font-size:26px; font-weight:700; margin-top:4px">
+            <span id="todayNet">—</span>
+          </div>
+        </div>
+        <div style="flex:1; min-width:140px">
+          <div class="muted small" data-i="hero_buffer_label">Bufor bezpieczeństwa</div>
+          <div style="margin-top:4px">
+            <span id="daysSafe" class="pill">Dni bezpieczeństwa: —</span>
+          </div>
         </div>
       </div>
-      <div class="card">
-        <div style="font-weight:700" data-i="forecast_7d">Prognoza 7 dni</div>
-        <div class="muted" data-i="forecast7d_note">Liczy PLN-konta z wyciągu (włączone) + kasa.</div>
-        <div id="forecastBars" class="barwrap"></div>
-        <div id="forecastMeta" class="muted" style="margin-top:6px">—</div>
-      </div>
-    </div>
 
-    <div class="grid2">
-      <div class="card">
-        <div style="font-weight:700" data-i="forecast_30d">Prognoza 30 dni</div>
-        <div class="muted" data-i="forecast30_note">Autoprognoza z wyciągów + kasa na 30 dni.</div>
-        <div id="forecast30Table" class="muted">—</div>
-      </div>
-      <div class="card">
-        <div style="font-weight:700" data-i="month_summary_title">Podsumowanie miesiąca</div>
-        <div id="monthSummary" class="muted">—</div>
-      </div>
-    </div>
-
-    <div class="card" style="margin-top:14px">
-      <div class="row">
-        <div style="font-weight:700" data-i="plan_title">Plan płatności pod kasę</div>
-        <div class="right">
-          <span data-i="filter_label">Filtr:</span>
-          <select id="planFilter">
-            <option value="today" data-i="filter_today">Dziś</option>
-            <option value="7d" data-i="filter_7d" selected>7 dni</option>
-            <option value="all" data-i="filter_all">Wszystko</option>
-          </select>
+      <div style="margin-top:10px; display:flex; flex-wrap:wrap; gap:16px">
+        <div style="flex:1; min-width:120px">
+          <div class="muted small" data-i="hero_7d_label">Do zapłaty w 7 dni</div>
+          <div style="margin-top:4px">
+            <span id="oblig7" class="pill">—</span>
+          </div>
         </div>
-        <label style="margin-left:10px">
-          <input type="checkbox" id="excludeBlacklist"/> <span data-i="exclude_blacklist">Wyklucz blacklistę</span>
-        </label>
+        <div style="flex:1; min-width:120px">
+          <div class="muted small" data-i="hero_30d_label">Do zapłaty w 30 dni</div>
+          <div style="margin-top:4px">
+            <span id="oblig30" class="pill">—</span>
+          </div>
+        </div>
       </div>
-      <div class="row" style="margin:8px 0">
-        <button id="makePlan" class="btn secondary" data-i="btn_make_plan">Utwórz plan</button>
-        <button id="applyPlan" class="btn secondary" data-i="btn_apply_plan">Zastosuj plan</button>
-        <span id="planMeta" class="pill">—</span>
+    </div>
+
+    <div class="card">
+      <div style="font-weight:700" data-i="ritual_title">Dzisiejszy rytuał</div>
+      <div class="muted small" data-i="ritual_note">AI-CFO odświeża dane i dopasowuje płatności. Ty tylko zatwierdzasz.</div>
+      <div class="row" style="margin-top:10px; flex-wrap:wrap; gap:8px">
+        <button id="runDayAI" class="btn" style="flex:1; min-width:180px" data-i="btn_run_day_ai">Zrób dzień z AI-CFO</button>
+        <button id="openAIQuestions" class="btn secondary" style="min-width:160px" data-i="btn_ai_questions">Pytania AI-CFO</button>
+        <button id="closeDay" class="btn secondary" style="min-width:140px" data-i="btn_close_day">Zamknij dzień</button>
       </div>
-      <table id="planTable">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th data-i="plan_th_invoice">Faktura</th>
-            <th data-i="plan_th_supplier">Dostawca</th>
-            <th data-i="plan_th_due">Termin</th>
-            <th data-i="plan_th_amount">Kwota</th>
-            <th data-i="plan_th_reason">Powód</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+    </div>
+
+    <div id="aiQuestionsCard" class="card" style="margin-top:10px; display:none">
+      <div style="font-weight:700" data-i="aiq_title">Pytania AI-CFO</div>
+      <div id="aiQuestionsText" class="muted small">
+        AI-CFO pokaże tu pytania, gdy coś będzie wymagało Twojej decyzji.
+      </div>
+    </div>
+
+    <div class="card owner-hidden" style="margin-top:10px; display:none">
+      <div style="font-weight:700" data-i="forecast_7d">Prognoza 7 dni</div>
+      <div class="muted" data-i="forecast7d_note">Liczy PLN-konta z wyciągu (włączone) + kasa.</div>
+      <div id="forecastBars" class="barwrap"></div>
+      <div id="forecastMeta" class="muted" style="margin-top:6px">—</div>
+    </div>
+
+    <div class="card owner-hidden" style="margin-top:10px; display:none">
+      <div style="font-weight:700" data-i="month_summary_title">Podsumowanie miesiąca</div>
+      <div id="monthSummary" class="muted">—</div>
+    </div>
+
+    
+    <div class="card" id="spendingCard" style="margin-top:10px">
+      <div style="font-weight:700">Расходы по категориям</div>
+      <div class="muted small">
+        Видно, куда чаще всего уходят деньги (Żabka, Biedronka, топливо и т.д.).
+      </div>
+
+      <div id="spendingFilters" class="spFilters"></div>
+
+      <button type="button" id="addSpCatBtn" class="linkBtn small">
+        + Своя категория
+      </button>
+
+      <div id="spendingStats" class="spStats muted small" style="margin-top:6px">
+        Пока нет данных для разбора.
+      </div>
+    </div>
+
+<!-- Modals -->
+    <div id="addTodayModal" class="modal-overlay">
+      <div class="modal-card">
+        <h3 data-i="add_today_title">Dodaj dzisiejsze ruchy</h3>
+        <div class="muted small" data-i="add_today_note">Szybko dodaj brakujące ruchy, jeśli czegoś nie ma w wyciągu.</div>
+        <div class="modal-row">
+          <button id="addBankBtn" class="btn secondary" style="width:100%;margin-bottom:6px" data-i="add_today_bank">Ruchy banku</button>
+        </div>
+        <div class="modal-row">
+          <button id="addCashBtn" class="btn secondary" style="width:100%;margin-bottom:6px" data-i="add_today_cash">Ruchy kasy</button>
+        </div>
+        <div class="modal-row">
+          <button id="addBillsBtn" class="btn secondary" style="width:100%" data-i="add_today_bills">Faktury</button>
+        </div>
+        <div class="modal-actions">
+          <button class="btn secondary" id="addTodayCancel" data-i="add_today_cancel">Zamknij</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="closeDayModal" class="modal-overlay">
+      <div class="modal-card">
+        <h3 data-i="close_day_title">Podsumowanie dnia</h3>
+        <div class="modal-row" id="cd_today">Dziś: —</div>
+        <div class="modal-row" id="cd_oblig">Płatności: —</div>
+        <div class="modal-row" id="cd_risk">Status: —</div>
+        <div class="modal-row" id="cd_target">Cel na jutro: —</div>
+        <div class="modal-actions">
+          <button class="btn secondary" id="closeDayCancel" data-i="close_day_cancel">Zamknij</button>
+        </div>
+      </div>
+    </div>
+    <div id="addSpCatModal" class="modal-overlay">
+      <div class="modal-card">
+        <h3>Новая категория расходов</h3>
+        <div class="muted small" style="margin-bottom:8px">
+          Дай ей название и выбери эмодзи.
+        </div>
+
+        <label class="muted small">Название</label>
+        <input id="spCatName" type="text" class="input" placeholder="Например, Подписки" />
+
+        <div class="muted small" style="margin-top:8px">Эмодзи</div>
+        <div id="spCatEmojiList" class="emojiList">
+          <button type="button">🍞</button>
+          <button type="button">☕</button>
+          <button type="button">🚗</button>
+          <button type="button">🏠</button>
+          <button type="button">💊</button>
+          <button type="button">🎮</button>
+          <button type="button">💳</button>
+        </div>
+
+        <div class="modal-row" style="margin-top:12px">
+          <button id="spCatSave" class="btn" style="flex:1">Сохранить</button>
+          <button id="spCatCancel" class="btn secondary" style="flex:1">Отмена</button>
+        </div>
+      </div>
+    </div>
+
+
+
+  </div>
+
+<!-- STATEMENT -->
+  <div id="docs" class="section">
+    <div class="card">
+      <div style="font-weight:700">Документы</div>
+      <div class="muted small">
+        Здесь ты кидаешь всё сырьё: выписки, фактуры и чеки. OneTapDay разложит по полкам.
+      </div>
+      <div class="homeSub" style="margin:10px 0 0;font-size:12px;padding:0">Что добавить?</div>
+      <div class="homeGrid" style="margin-top:10px">
+        <div class="homeTile" style="padding:12px 10px;border-radius:14px">
+          <div class="homeTileTitle">Выписки</div>
+          <div class="homeTileDesc">Банк: движения по счёту.</div>
+          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+            <button class="btn secondary" id="docTxCsvBtn">CSV</button>
+            <button class="btn secondary" id="docTxImgBtn">Скрин / фото</button>
+            <button class="btn ghost small" type="button" onclick="appGoSection('wyciag')">Открыть выписки</button>
+          </div>
+        </div>
+        <div class="homeTile" style="padding:12px 10px;border-radius:14px">
+          <div class="homeTileTitle">Фактуры</div>
+          <div class="homeTileDesc">Счета от клиентов и поставщиков.</div>
+          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+            <button class="btn secondary" id="docBillCsvBtn">CSV</button>
+            <button class="btn secondary" id="docBillImgBtn">Скрин / фото</button>
+            <button class="btn ghost small" type="button" onclick="appGoSection('faktury')">Открыть фактуры</button>
+          </div>
+        </div>
+        <div class="homeTile" style="padding:12px 10px;border-radius:14px">
+          <div class="homeTileTitle">Чеки / расходы</div>
+          <div class="homeTileDesc">Наличка и мелкие траты.</div>
+          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+            <button class="btn secondary" id="docCashImgBtn">Фото / скан</button>
+            <button class="btn ghost small" type="button" onclick="appGoSection('kasa')">Открыть кассу</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- STATEMENT -->
+
   <div id="wyciag" class="section">
+    <div class="muted small" style="margin:6px 0 10px 0" data-i="hint_wyciag">Krok 1: załaduj wyciąg z banku w CSV lub jako zdjęcie. Krok 2: sprawdź, czy operacje się zgadzają.</div>
     <div class="row">
       <label class="btn ghost">
         <input id="txFile" type="file" accept=".csv" style="display:none"/>
@@ -200,11 +632,10 @@
 
       <img id="txLastThumb" class="thumb" style="display:none"/>
 
-      <input id="txUrl" type="text" placeholder="" data-i-ph="placeholder_csv_url"/>
-      <button id="saveTxUrl" class="btn secondary" data-i="save_url">Zapisz URL</button>
       <span class="muted" data-i="statement_columns_note">
         Kolumny: Data księgowania, ID transakcji, ID konta (lub IBAN), Kontrahent, Tytuł/Opis, Kwota(±), Waluta, Status, Saldo?
       </span>
+      <button id="exportTxCSV" class="btn secondary" style="margin-left:12px" data-i="btn_export_tx_csv">Eksport wyciągu (CSV)</button>
     </div>
     <table id="txTable">
       <thead>
@@ -227,6 +658,7 @@
 
   <!-- INVOICES -->
   <div id="faktury" class="section">
+    <div class="muted small" style="margin:6px 0 10px 0" data-i="hint_faktury">Tu widzisz faktury do zapłaty i opłacone. Po dopasowaniu płatności status zmieni się automatycznie.</div>
     <div class="row" style="align-items:center;margin-bottom:8px">
       <label class="btn ghost">
         <input id="billFile" type="file" accept=".csv" style="display:none"/>
@@ -237,6 +669,7 @@
         <span data-i="upload_invoice_images">Załaduj zdjęcia faktur</span>
       </label>
       <span class="muted" style="margin-left:12px" data-i="invoices_note">Tu wykrywamy numer faktury, kwotę i datę.</span>
+      <button id="exportBillsCSV" class="btn secondary" style="margin-left:12px" data-i="btn_export_bills_csv">Eksport faktur (CSV)</button>
     </div>
     <table id="billTable">
       <thead>
@@ -261,7 +694,8 @@
     <div class="card">
       <div style="font-weight:700" data-i="auto_accounts_title">Konta z wyciągu (auto)</div>
       <div class="muted" data-i="auto_accounts_desc">Edycja waluty, salda początkowego i uwzględnienia w planie.</div>
-      <table id="autoAcc">
+      <div class="tableScroll">
+        <table id="autoAcc">
         <thead>
           <tr>
             <th data-i="acc_th_account">Konto</th>
@@ -274,11 +708,13 @@
         </thead>
         <tbody></tbody>
       </table>
+      </div>
     </div>
   </div>
 
   <!-- CASH -->
   <div id="kasa" class="section">
+    <div class="muted small" style="margin:6px 0 10px 0" data-i="hint_kasa">Tu zapisujesz ruchy gotówki: przyjęcia i wydania. One trafią do podsumowań i księgi.</div>
     <div class="card">
       <div style="font-weight:700" data-i="cash_title">Kasa — szybkie operacje</div>
       <div class="muted" data-i="cash_note">Głosowa kasa + szybkie przyciski</div>
@@ -314,6 +750,8 @@
         <span class="muted" data-i="cash_photo_note">Zdjęcie paragonu/wyciągu — wykryj kwotę i opis.</span>
       </div>
 
+      <button id="exportCashCSV" class="btn secondary" style="margin-top:8px" data-i="btn_export_cash_csv">Eksport kasy (CSV)</button>
+
       <table id="kasaTable" style="margin-top:12px">
         <thead>
           <tr>
@@ -334,6 +772,20 @@
   <!-- SETTINGS -->
   <div id="ustawienia" class="section">
     <div class="card">
+      <div style="font-weight:700">Язык интерфейса</div>
+      <div class="muted small" style="margin-top:4px">
+        Выбери язык, на котором тебе удобнее работать. Можно менять в любой момент.
+      </div>
+            <div class="lang" id="langBarMain">
+              <button data-lang="pl" class="on">PL</button>
+              <button data-lang="ru">RU</button>
+              <button data-lang="en">EN</button>
+              <button data-lang="uk">UK</button>
+            </div>
+    </div>
+
+
+    <div class="card">
       <div style="font-weight:700" data-i="parameters">Parametry</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px">
         <div>
@@ -351,10 +803,15 @@
           <label><input id="autoCash" type="checkbox"/> <span data-i="auto_mode_label">Auto: z kont wyciągu (włączone) + kasa</span></label>
         </div>
       </div>
+      <div class="row" style="margin-top:10px">
+        <label style="margin-right:8px" data-i="theme_label">Motyw:</label>
+        <select id="themeSelect">
+          <option value="dark" data-i="theme_dark">Ciemny</option>
+          <option value="light" data-i="theme_light">Jasny</option>
+        </select>
+      </div>
       <div style="margin-top:10px" class="row">
         <button id="applySettings" class="btn secondary" data-i="btn_save_settings">Zapisz</button>
-        <button id="exportCfg" class="btn ghost" data-i="btn_export_settings">Eksport ustawień</button>
-        <label class="btn ghost"><span data-i="btn_import_settings">Import ustawień</span> <input id="importCfg" type="file" style="display:none"/></label>
         <button id="clearAll" class="btn ghost" data-i="btn_clear_all">Wyczyść historię (lokalnie)</button>
       </div>
     </div>
@@ -363,1472 +820,100 @@
       <div style="font-weight:700" data-i="sub_title">Subskrypcja / Demo</div>
       <div class="muted" id="subStatus">—</div>
       <div class="row" style="margin-top:8px">
-        <button id="startDemo" class="btn secondary" data-i="btn_start_demo">Uruchom demo (24h)</button>
         <button id="payNow" class="btn" data-i="btn_pay_sub">Opłać subskrypcję</button>
-        <button id="endDemo" class="btn ghost" data-i="btn_end_demo">Zakończ demo</button>
       </div>
       <div class="hint" style="margin-top:6px" data-i="sub_hint">
         Opłata dostępna tylko tutaj. Jeśli masz link Stripe — ustaw <code>localStorage.stripe_link</code>.
       </div>
     </div>
   </div>
+
+<div 
+  <div id="aiAssist" class="section">
+    <div class="card">
+      <div style="font-weight:700">AI-бухгалтер</div>
+      <div class="muted small">
+        Сначала расскажи пару вещей о себе и бизнесе, чтобы советы были точнее.
+      </div>
+      <div style="margin-top:10px" id="aiProfileBlock">
+        <div class="muted small" style="margin-bottom:4px">Кто ты?</div>
+        <select id="aiProfileType">
+          <option value="solo">Фриланс / частное лицо</option>
+          <option value="owner">Предприниматель без команды</option>
+          <option value="team">Фирма с командой</option>
+        </select>
+        <div class="muted small" style="margin-top:8px;margin-bottom:4px">Ниша / чем занимаешься?</div>
+        <input id="aiProfileNiche" type="text" placeholder="Например: барбершоп, маркетинг, IT-услуги"/>
+        <div class="muted small" style="margin-top:8px;margin-bottom:4px">Что главное сейчас?</div>
+        <select id="aiProfileGoal">
+          <option value="survive">Выжить и не влететь в долги</option>
+          <option value="stable">Стабильно держаться на плаву</option>
+          <option value="grow">Расти и масштабироваться</option>
+        </select>
+        <button class="btn" id="aiProfileSave" style="margin-top:10px">Сохранить профиль</button>
+        <div class="muted small" id="aiProfileSaved" style="margin-top:6px;display:none">Профиль сохранён. AI-бухгалтер будет опираться на эти данные.</div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:10px">
+      <div style="font-weight:700">Задай вопрос AI-бухгалтеру</div>
+      
+      <div class="muted small">
+        Спроси, почему не хватает на аренду, где сэкономить или как не получить штраф.
+      </div>
+      <div class="aiQuickRow" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">
+        <button type="button" class="btn secondary small" id="aiQRent">Почему не хватает на квартиру?</button>
+        <button type="button" class="btn secondary small" id="aiQSpending">Где я трачу лишнее?</button>
+        <button type="button" class="btn secondary small" id="aiQWithdraw">Сколько можно безопасно вывести?</button>
+        <button type="button" class="btn secondary small" id="aiQMonth">Хватит ли денег до конца месяца?</button>
+      </div>
+      <div style="margin-top:8px">
+        <textarea id="aiChatInput" rows="3" placeholder="Например: «Почему не хватает на квартиру?» или «Где я трачу лишнее?»" style="width:100%;resize:vertical;border-radius:10px;border:1px solid #20262b;background:#0f1214;color:#e6edf3;padding:8px;font-size:13px"></textarea>
+        <button class="btn" id="aiChatSend" style="margin-top:8px">Спросить</button>
+      </div>
+      <div id="aiChatLog" class="muted small" style="margin-top:8px;max-height:200px;overflow:auto;border-top:1px solid #20262b;padding-top:6px">
+        Здесь позже будет живой диалог с AI-бухгалтером. Сейчас это прототип интерфейса.
+      </div>
+</div>
+    </div>
+  </div>
+
+  <div id="reports" class="section">
+    <div class="card">
+      <div style="font-weight:700">Отчёты и экспорт</div>
+      <div class="muted small">Скачать CSV и отчёты для бухгалтера или инвестора.</div>
+      <div class="row" style="margin-top:10px;flex-wrap:wrap;gap:8px">
+        <button class="btn secondary" id="reportsTx">Экспортировать выписки (CSV)</button>
+        <button class="btn secondary" id="reportsBills">Экспортировать фактуры (CSV)</button>
+        <button class="btn secondary" id="reportsBook">Книга / отчёт месяца (CSV)</button>
+      </div>
+    </div>
+  </div>
+
+<div id="helperFab">?</div>
+<div id="helperPanel">
+  <div id="helperPanelHeader">
+    <span data-i="helper_title">AI-pomoc dla właściciela</span>
+    <button id="helperClose" class="btn ghost" style="padding:2px 6px;font-size:11px">×</button>
+  </div>
+  <input id="helperSearch" type="text" placeholder="Zadaj pytanie (np. ZUS, synchronizacja)"/>
+  <div id="helperTopics">
+    <div class="helper-chip" data-topic="ritual">Jak używać OneTapDay na co dzień?</div>
+    <div class="helper-chip" data-topic="sync">Co to znaczy „Synchronizacja”?</div>
+    <div class="helper-chip" data-topic="match">Co to są „dopasowania płatności”?</div>
+    <div class="helper-chip" data-topic="close_day">Po co „Zamknij dzień”?</div>
+    <div class="helper-chip" data-topic="risk">Co oznacza kolor ryzyka i dni bezpieczeństwa?</div>
+    <div class="helper-chip" data-topic="export">Po co eksport CSV / księgi?</div>
+    <div class="helper-chip" data-topic="cash">Jak pracować z kasą (gotówką)?</div>
+  </div>
+  <div id="helperAnswer">
+    <div data-i="helper_intro">Zadaj pytanie lub wybierz temat powyżej. Odpowiemy prostym językiem.</div>
+  </div>
+</div>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<script>
-/* ==== CONFIG / API ==== */
-const API_BASE = '/api';
-const SUB_KEY    = 'otd_sub_active';
-const SUB_FROM   = 'otd_sub_from';
-const SUB_TO     = 'otd_sub_to';
-const DEMO_START = 'otd_demo_started_at';
-const DEMO_USED  = 'otd_demo_used'; // флаг: демо уже один раз запускали
-const USER_KEY = 'otd_user'; // email
-let REMOTE_OK = localStorage.getItem('remote_disabled')==='1' ? false : true;
-
-/* ==== I18N ==== */
-const M = {
-  ru:{ /* ——— RU ——— */
-    tab_dashboard:"Пульт", tab_statement:"Выписка", tab_invoices:"Фактуры", tab_accounts:"Счета", tab_cash:"Касса", tab_settings:"Настройки",
-    gate_locked_title:"Доступ заблокирован",
-    gate_locked_desc:"Демо истекло или нет активной подписки. Перейдите в Настройки, чтобы запустить демо (24 ч) или оплатить доступ.",
-    gate_open_settings:"Открыть Настройки",
-    kpi_due_today:"К оплате сегодня", kpi_unmatched:"Несвязанные транзакции", kpi_banks:"Банки в расчёте", kpi_cash:"Касса (нал)", kpi_total:"Доступно всего", kpi_gap_today:"Разрыв кассы сегодня",
-    btn_sync:"Синхронизация", btn_ai_match:"ИИ-сверка", btn_accept_safe:"Принять безопасные пары", btn_pdf:"PDF отчёт", sync_ts:"Синхронизация: —",
-    minpay_title:"Минимальный платёж (штраф-стоп)", btn_apply_minpay:"Отметить как оплачено",
-    forecast_7d:"Прогноз 7 дней", forecast7d_note:"Считает PLN-счета (включённые) + кассу.",
-    forecast_30d:"Прогноз 30 дней", forecast30_note:"Автопрогноз по выпискам + кассе на 30 дней.",
-    month_summary_title:"Итоги месяца",
-    plan_title:"План платежей под кассу", filter_label:"Фильтр:", filter_today:"Сегодня", filter_7d:"7 дней", filter_all:"Все", exclude_blacklist:"Исключать blacklist",
-    btn_make_plan:"Сформировать", btn_apply_plan:"Применить",
-    plan_th_invoice:"Фактура", plan_th_supplier:"Поставщик", plan_th_due:"Срок", plan_th_amount:"Сумма", plan_th_reason:"Причина",
-    upload_statement:"Загрузить выписку (CSV)", upload_statement_image:"Загрузить скрин выписки (галерея)",
-    placeholder_csv_url:"URL CSV выписки", save_url:"Сохранить URL",
-    statement_columns_note:"Колонки: дата, id транзакции, id счёта/IBAN, контрагент, описание, сумма(±), валюта, статус, saldo?",
-    th_date:"Дата", th_account:"Счёт", th_counterparty:"Контрагент", th_desc:"Описание", th_amount:"Сумма", th_currency:"Валюта", th_status:"Статус", th_actions:"Действия",
-    upload_invoices:"Загрузить счета (CSV)", upload_invoice_images:"Загрузить фото фактуры", invoices_note:"Распознаются № фактуры, суммы и даты.",
-    inv_th_due:"Срок", inv_th_number:"№", inv_th_supplier:"Поставщик", inv_th_amount:"Сумма", inv_th_currency:"Валюта", inv_th_status:"Статус", inv_th_candidate:"Кандидат", inv_th_score:"Score", inv_th_action:"Действие",
-    auto_accounts_title:"Счета из выписки (авто)", auto_accounts_desc:"Редактируй валюту, стартовый баланс и включение в план.",
-    acc_th_account:"Счёт", acc_th_type:"Тип", acc_th_currency:"Валюта", acc_th_balance_calc:"Баланс (расчёт)", acc_th_start_balance:"Стартовый баланс", acc_th_include:"В расчёт",
-    cash_title:"Касса — быстрые операции", cash_note:"Голосовая касса + быстрые кнопки",
-    btn_add_in:"+ Приём", btn_add_out:"− Выдача", btn_close_shift:"Закрыть смену",
-    speech_lang_label:"Язык распознавания:", cash_photo_note:"Фото чека/выписки — распознать сумму и описание.",
-    cash_th_date:"Дата", cash_th_type:"Тип", cash_th_amount:"Сумма", cash_th_source:"Источник", cash_th_comment:"Комментарий",
-    parameters:"Параметры", param_cash_label:"Доступная касса сегодня (PLN):", param_penalty_label:"Пеня, %/день:", param_interval_label:"Интервал синха, мин:",
-    rateEUR_label:"rateEUR:", rateUSD_label:"rateUSD:", blacklist_label:"Blacklist (через запятую):", auto_mode_label:"Авто: из счетов (включённые) + касса",
-    btn_save_settings:"Сохранить", btn_export_settings:"Экспорт настроек", btn_import_settings:"Импорт настроек",
-    btn_clear_all:"Очистить историю (локально)",
-    sub_title:"Подписка / Демо", btn_start_demo:"Запустить демо (24 ч)", btn_pay_sub:"Оплатить подписку", btn_end_demo:"Закончить демо",
-    sub_hint:"Оплата только в Настройках. Если есть ссылka Stripe — положи в localStorage.stripe_link.",
-    ph_amount:"Сумма", ph_comment:"Комментарий"
-  },
-  en:{ /* ——— EN ——— */
-    tab_dashboard:"Dashboard", tab_statement:"Statement", tab_invoices:"Invoices", tab_accounts:"Accounts", tab_cash:"Cash", tab_settings:"Settings",
-    gate_locked_title:"Access locked",
-    gate_locked_desc:"Demo ended or subscription inactive. Go to Settings to start a 24h demo or pay.",
-    gate_open_settings:"Open Settings",
-    kpi_due_today:"Due today", kpi_unmatched:"Unmatched transactions", kpi_banks:"Bank balances", kpi_cash:"Cash (PLN)", kpi_total:"Available total", kpi_gap_today:"Cash gap today",
-    btn_sync:"Sync", btn_ai_match:"AI match", btn_accept_safe:"Accept safe matches", btn_pdf:"PDF report", sync_ts:"Sync: —",
-    minpay_title:"Minimum payment (penalty-stop)", btn_apply_minpay:"Mark as paid",
-    forecast_7d:"7-day forecast", forecast7d_note:"Calculates included PLN accounts + cash.",
-    forecast_30d:"30-day forecast", forecast30_note:"Auto-forecast from statements + cash.",
-    month_summary_title:"Month summary",
-    plan_title:"Payment plan for cash", filter_label:"Filter:", filter_today:"Today", filter_7d:"7 days", filter_all:"All", exclude_blacklist:"Exclude blacklist",
-    btn_make_plan:"Build plan", btn_apply_plan:"Apply plan",
-    plan_th_invoice:"Invoice", plan_th_supplier:"Supplier", plan_th_due:"Due", plan_th_amount:"Amount", plan_th_reason:"Reason",
-    upload_statement:"Upload statement (CSV)", upload_statement_image:"Upload statement screenshot (gallery)",
-    placeholder_csv_url:"CSV statement URL", save_url:"Save URL",
-    statement_columns_note:"Columns: booking date, tx id, account id/IBAN, counterparty, title/description, amount(±), currency, status, balance?",
-    th_date:"Date", th_account:"Account", th_counterparty:"Counterparty", th_desc:"Description", th_amount:"Amount", th_currency:"Currency", th_status:"Status", th_actions:"Actions",
-    upload_invoices:"Upload invoices (CSV)", upload_invoice_images:"Upload invoice photos", invoices_note:"We detect invoice numbers, amounts and dates.",
-    inv_th_due:"Due", inv_th_number:"No", inv_th_supplier:"Supplier", inv_th_amount:"Amount", inv_th_currency:"Currency", inv_th_status:"Status", inv_th_candidate:"Candidate", inv_th_score:"Score", inv_th_action:"Action",
-    auto_accounts_title:"Accounts from statement (auto)", auto_accounts_desc:"Edit currency, start balance and include-in-plan.",
-    acc_th_account:"Account", acc_th_type:"Type", acc_th_currency:"Currency", acc_th_balance_calc:"Balance (calc)", acc_th_start_balance:"Start", acc_th_include:"Include",
-    cash_title:"Cash — quick ops", cash_note:"Voice cash + quick buttons",
-    btn_add_in:"+ In", btn_add_out:"− Out", btn_close_shift:"Close shift",
-    speech_lang_label:"Recognition language:", cash_photo_note:"Receipt/statement photo — detect amount and description.",
-    cash_th_date:"Date", cash_th_type:"Type", cash_th_amount:"Amount", cash_th_source:"Source", cash_th_comment:"Comment",
-    parameters:"Parameters", param_cash_label:"Manual available cash today (PLN):", param_penalty_label:"Penalty, %/day:", param_interval_label:"Sync interval, min:",
-    rateEUR_label:"rateEUR:", rateUSD_label:"rateUSD:", blacklist_label:"Blacklist (comma):", auto_mode_label:"Auto: from included statement accounts + cash",
-    btn_save_settings:"Save", btn_export_settings:"Export settings", btn_import_settings:"Import settings",
-    btn_clear_all:"Clear history (local)",
-    sub_title:"Subscription / Demo", btn_start_demo:"Start demo (24h)", btn_pay_sub:"Pay subscription", btn_end_demo:"End demo",
-    sub_hint:"Payment only in Settings. If you have a Stripe link, put it in localStorage.stripe_link.",
-    ph_amount:"Amount", ph_comment:"Comment"
-  },
-  pl:{ /* ——— PL ——— */
-    tab_dashboard:"Panel", tab_statement:"Wyciąg", tab_invoices:"Faktury", tab_accounts:"Konta", tab_cash:"Kasa", tab_settings:"Ustawienia",
-    gate_locked_title:"Dostęp zablokowany",
-    gate_locked_desc:"Demo zakończone lub brak subskrypcji. Przejdź do Ustawień, aby uruchomić demo (24h) lub opłacić.",
-    gate_open_settings:"Otwórz Ustawienia",
-    kpi_due_today:"Do zapłaty dziś", kpi_unmatched:"Niesparowane transakcje", kpi_banks:"Bilans banków", kpi_cash:"Kasa (PLN)", kpi_total:"Dostępnie razem", kpi_gap_today:"Brak środków dziś",
-    btn_sync:"Synchronizuj", btn_ai_match:"Dopasowanie AI", btn_accept_safe:"Akceptuj bezpieczne pary", btn_pdf:"Raport PDF", sync_ts:"Synchronizacja: —",
-    minpay_title:"Minimalna płatność (kara-stop)", btn_apply_minpay:"Oznacz jako opłacone",
-    forecast_7d:"Prognoza 7 dni", forecast7d_note:"Liczy włączone konta PLN + kasa.",
-    forecast_30d:"Prognoza 30 dni", forecast30_note:"Autoprognoza z wyciągów + kasa на 30 dni.",
-    month_summary_title:"Podsumowanie miesiąca",
-    plan_title:"Plan płatności pod kasę", filter_label:"Filtr:", filter_today:"Dziś", filter_7d:"7 dni", filter_all:"Wszystko", exclude_blacklist:"Wyklucz blacklistę",
-    btn_make_plan:"Utwórz plan", btn_apply_plan:"Zastosuj plan",
-    plan_th_invoice:"Faktura", plan_th_supplier:"Dostawca", plan_th_due:"Termin", plan_th_amount:"Kwota", plan_th_reason:"Powód",
-    upload_statement:"Załaduj wyciąg (CSV)", upload_statement_image:"Załaduj zrzut wyciągu (galeria)",
-    placeholder_csv_url:"URL CSV wyciągu", save_url:"Zapisz URL",
-    statement_columns_note:"Kolumny: Data księgowania, ID transakcji, ID konta/IBAN, Kontrahent, Tytuł/Opis, Kwota(±), Waluta, Status, Saldo?",
-    th_date:"Data", th_account:"Konto", th_counterparty:"Kontrahent", th_desc:"Opis", th_amount:"Kwota", th_currency:"Waluta", th_status:"Status", th_actions:"Działania",
-    upload_invoices:"Załaduj faktury (CSV)", upload_invoice_images:"Załaduj zdjęcia faktur", invoices_note:"Wykrywamy nr faktury, kwotę i datę.",
-    inv_th_due:"Termin", inv_th_number:"Nr", inv_th_supplier:"Dostawca", inv_th_amount:"Kwota", inv_th_currency:"Waluta", inv_th_status:"Status", inv_th_candidate:"Kandydat", inv_th_score:"Score", inv_th_action:"Akcja",
-    auto_accounts_title:"Konta z wyciągu (auto)", auto_accounts_desc:"Edycja waluty, salda początkowego i uwzględnienia w planie.",
-    acc_th_account:"Konto", acc_th_type:"Typ", acc_th_currency:"Waluta", acc_th_balance_calc:"Saldo (oblicz)", acc_th_start_balance:"Start", acc_th_include:"Uwzględnij",
-    cash_title:"Kasa — szybkie operacje", cash_note:"Głosowa kasa + szybkie przyciski",
-    btn_add_in:"+ Przyjęcie", btn_add_out:"− Wydanie", btn_close_shift:"Zamknij zmianę",
-    speech_lang_label:"Język rozpoznawania:", cash_photo_note:"Zdjęcie paragonu/wyciągu — wykryj kwotę i opis.",
-    cash_th_date:"Data", cash_th_type:"Typ", cash_th_amount:"Kwota", cash_th_source:"Źródło", cash_th_comment:"Komentarz",
-    parameters:"Parametry", param_cash_label:"Ręczna dostępna kasa dziś (PLN):", param_penalty_label:"Kara, %/dzień:", param_interval_label:"Interwał synchronizacji, min:",
-    rateEUR_label:"rateEUR:", rateUSD_label:"rateUSD:", blacklist_label:"Czarna lista (przecinki):", auto_mode_label:"Auto: z kont wyciągu (włączone) + kasa",
-    btn_save_settings:"Zapisz", btn_export_settings:"Eksport ustawień", btn_import_settings:"Import ustawień",
-    btn_clear_all:"Wyczyść historię (lokalnie)",
-    sub_title:"Subskrypcja / Demo", btn_start_demo:"Uruchom demo (24h)", btn_pay_sub:"Opłać subskrypcję", btn_end_demo:"Zakończ demo",
-    sub_hint:"Płatność tylko в Ustawieniach. Jeśli masz link Stripe — ustaw w localStorage.stripe_link.",
-    ph_amount:"Kwota", ph_comment:"Komentarz"
-  },
-  uk:{ /* ——— UK ——— */
-    tab_dashboard:"Пульт", tab_statement:"Виписка", tab_invoices:"Рахунки", tab_accounts:"Рахунки", tab_cash:"Каса", tab_settings:"Налаштування",
-    gate_locked_title:"Доступ заблоковано",
-    gate_locked_desc:"Демо завершено або немає підписки. Перейдіть у Налаштування, щоб запустити демо (24 год) або оплатити доступ.",
-    gate_open_settings:"Відкрити Налаштування",
-    kpi_due_today:"До сплати сьогодні", kpi_unmatched:"Неповʼязані транзакції", kpi_banks:"Баланс банків", kpi_cash:"Каса (PLN)", kpi_total:"Доступно всього", kpi_gap_today:"Розрив каси сьогодні",
-    btn_sync:"Синхронізація", btn_ai_match:"AI-звірка", btn_accept_safe:"Прийняти безпечні пари", btn_pdf:"Звіт PDF", sync_ts:"Синхр.: —",
-    minpay_title:"Мінімальний платіж (штраф-стоп)", btn_apply_minpay:"Позначити як сплачено",
-    forecast_7d:"Прогноз 7 днів", forecast7d_note:"Рахує увімкнені PLN-рахунки + касу.",
-    forecast_30d:"Прогноз 30 днів", forecast30_note:"Автопрогноз з виписок + каси.",
-    month_summary_title:"Підсумки місяця",
-    plan_title:"План платежів під касу", filter_label:"Фільтр:", filter_today:"Сьогодні", filter_7d:"7 днів", filter_all:"Всі", exclude_blacklist:"Виключати blacklist",
-    btn_make_plan:"Сформувати", btn_apply_plan:"Застосувати",
-    plan_th_invoice:"Рахунок", plan_th_supplier:"Постачальник", plan_th_due:"Термін", plan_th_amount:"Сума", plan_th_reason:"Причина",
-    upload_statement:"Завантажити виписку (CSV)", upload_statement_image:"Завантажити скрин виписки (галерея)",
-    placeholder_csv_url:"URL CSV виписки", save_url:"Зберегти URL",
-    statement_columns_note:"Колонки: дата, id транзакції, id рахунку/IBAN, контрагент, опис, сума(±), валюта, статус, баланс?",
-    th_date:"Дата", th_account:"Рахунок", th_counterparty:"Контрагент", th_desc:"Опис", th_amount:"Сума", th_currency:"Валюта", th_status:"Статус", th_actions:"Дії",
-    upload_invoices:"Завантажити рахунки (CSV)", upload_invoice_images:"Завантажити фото рахунків", invoices_note:"Виявляємо № рахунку, суму і дату.",
-    inv_th_due:"Термін", inv_th_number:"№", inv_th_supplier:"Постачальник", inv_th_amount:"Сума", inv_th_currency:"Валюта", inv_th_status:"Статус", inv_th_candidate:"Кандидат", inv_th_score:"Score", inv_th_action:"Дія",
-    auto_accounts_title:"Рахунки з виписки (авто)", auto_accounts_desc:"Редагуйте валюту, початковий баланс і включення до плану.",
-    acc_th_account:"Рахунок", acc_th_type:"Тип", acc_th_currency:"Валюта", acc_th_balance_calc:"Баланс (обр.)", acc_th_start_balance:"Старт", acc_th_include:"Включити",
-    cash_title:"Каса — швидкі операції", cash_note:"Голосова каса + швидкі кнопки",
-    btn_add_in:"+ Прихід", btn_add_out:"− Видаток", btn_close_shift:"Закрити зміну",
-    speech_lang_label:"Мова розпізнавання:", cash_photo_note:"Фото чеку/виписки — розпізнати суму та опис.",
-    cash_th_date:"Дата", cash_th_type:"Тип", cash_th_amount:"Сума", cash_th_source:"Джерело", cash_th_comment:"Коментар",
-    parameters:"Параметри", param_cash_label:"Ручна доступна каса сьогодні (PLN):", param_penalty_label:"Пеня, %/день:", param_interval_label:"Інтервал синхр., хв:",
-    rateEUR_label:"rateEUR:", rateUSD_label:"rateUSD:", blacklist_label:"Чорний список (через кому):", auto_mode_label:"Авто: з рахунків (включені) + каса",
-    btn_save_settings:"Зберегти", btn_export_settings:"Експорт налаштувань", btn_import_settings:"Імпорт налаштувань",
-    btn_clear_all:"Очистити історію (локально)",
-    sub_title:"Підписка / Демо", btn_start_demo:"Запустити демо (24 год)", btn_pay_sub:"Оплатити підписку", btn_end_demo:"Завершити демо",
-    sub_hint:"Оплата лише в Налаштуваннях. Якщо є посилання Stripe — покладіть у localStorage.stripe_link.",
-    ph_amount:"Сума", ph_comment:"Коментар"
-  }
-};
-
-/* PLACEHOLDER APPLIER */
-function applyPlaceholders(lang){
-  const dict = M[lang]||M.pl;
-  document.querySelectorAll('[data-i-ph]').forEach(el=>{
-    const k = el.getAttribute('data-i-ph');
-    if (dict[k]) el.setAttribute('placeholder', dict[k]);
-  });
-}
-
-/* LANGUAGE APPLY */
-function applyLang(lang){
-  const dict = M[lang]||M.pl;
-  document.querySelectorAll('[data-i]').forEach(el=>{
-    const k = el.getAttribute('data-i'); if (dict[k]) el.textContent = dict[k];
-  });
-  document.querySelectorAll('#langBarMain button').forEach(btn=>btn.classList.toggle('on', btn.dataset.lang===lang));
-  localStorage.setItem('otd_lang', lang);
-  applyPlaceholders(lang);
-  if (typeof renderCashExamples==='function') renderCashExamples(lang);
-}
-
-/* ==== HELPERS ==== */
-const $id = id => document.getElementById(id);
-const today = () => new Date().toISOString().slice(0,10);
-const asNum = v=>{
-  if(v==null) return 0; let s=String(v).trim(); if(!s) return 0;
-  s=s.replace(/\u00A0/g,' ');
-  if(/^(\(|−|-).*\)$/.test(s)) s='-'+s.replace(/^\(|−|-|\)$/g,'');
-  if(/^−/.test(s)) s='-'+s.replace(/^−/,'');
-  const hasComma=/,/.test(s), hasDot=/\./.test(s);
-  s=s.replace(/\b(PLN|zł|zl|zlot|EUR|USD|GBP)\b/ig,'');
-  if(hasComma && !hasDot) s=s.replace(/\s/g,'').replace(/,/g,'.'); else s=s.replace(/[\s\u00A0]/g,'').replace(/,/g,'');
-  s=s.replace(/[^\d\.\-]/g,'');
-  const n=Number(s); return isNaN(n)?0:n;
-};
-function detectCurrency(s){
-  s=(s||'').toUpperCase();
-  if(/PLN|ZŁ|ZL/.test(s)) return 'PLN';
-  if(/EUR/.test(s)) return 'EUR';
-  if(/USD|\$/.test(s)) return 'USD';
-  return 'PLN';
-}
-function toISO(d){
-  if(!d) return ""; const s=String(d).trim();
-  let m=s.match(/^(\d{4})-(\d{2})-(\d{2})/); if(m) return m[0];
-  m=s.match(/^(\d{1,2})[.\-/](\d{1,2})[.\-/](\d{2,4})$/);
-  if(m){const dd=m[1].padStart(2,'0'),mm=m[2].padStart(2,'0'),yy=m[3].length===2?('20'+m[3]):m[3]; return yy+'-'+mm+'-'+dd;}
-  const months = {
-    'stycznia':'01','lutego':'02','marca':'03','kwietnia':'04','maja':'05','czerwca':'06','lipca':'07','sierpnia':'08','września':'09','pazdziernika':'10','października':'10','listopada':'11','grudnia':'12',
-    'января':'01','февраля':'02','марта':'03','апреля':'04','мая':'05','июня':'06','июля':'07','августа':'08','сентября':'09','октября':'10','ноября':'11','декабря':'12'
-  };
-  let md = s.match(/(\d{1,2})\s+([A-Za-zА-Яа-яęóąśłżźćńё]+)\s+(\d{4})/);
-  if(md){ const dd=md[1].padStart(2,'0'); const mm=months[(md[2]||'').toLowerCase()]||'01'; return md[3]+'-'+mm+'-'+dd; }
-  const p=Date.parse(s); if(!isNaN(p)) return new Date(p).toISOString().slice(0,10);
-  return "";
-}
-function fmtAmountRaw(raw){
-  const n=asNum(raw); if(!Number.isFinite(n)) return '<span>—</span>';
-  const sign=n<0?'-':'+', cls=n<0?'amt-neg':'amt-pos';
-  const abs=Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g," ");
-  return `<span class="${cls}">${sign} ${abs}</span>`;
-}
-function smartSplit(line,del){
-  let out=[],cur="",q=false;
-  for(let i=0;i<line.length;i++){const ch=line[i]; if(ch==='"'){q=!q;continue} if(ch===del && !q){out.push(cur);cur="";} else cur+=ch;}
-  out.push(cur); return out;
-}
-function parseCSV(text){
-  if(!text) return []; text=text.replace(/^\uFEFF/,'').replace(/\r/g,"");
-  const lines=text.split("\n").filter(l=>l.trim()); if(!lines.length) return [];
-  const sep=(lines[0].split(";").length>lines[0].split(",").length)?";":",";
-  const head=smartSplit(lines.shift(),sep).map(h=>h.trim());
-  return lines.map(line=>{
-    const cells=smartSplit(line,sep); const obj={};
-    head.forEach((h,i)=>{let v=(cells[i]||"").trim(); v=v.replace(/\u00A0/g,' ').trim(); obj[h]=v;}); return obj;
-  });
-}
-function getVal(obj,keys){
-  if(!obj) return ""; for(const k of keys){ if(k in obj && String(obj[k]).trim()!=="") return obj[k]; }
-  const low=Object.keys(obj).reduce((m,x)=>(m[x.toLowerCase()]=obj[x],m),{});
-  for(const k of keys){const kk=k.toLowerCase(); if(kk in low && String(low[kk]).trim()!="") return low[kk];}
-  return "";
-}
-
-/* ==== STATE ==== */
-let tx    = [];
-let bills = [];
-let kasa  = [];
-let accMeta = {};
-
-const stateKeys = [
-  'tx_manual_import',
-  'bills_manual_import',
-  'kasa',
-  'accMeta',
-  'cashPLN',
-  'penaltyPct',
-  'intervalMin',
-  'rateEUR',
-  'rateUSD',
-  'blacklist',
-  'autoCash',
-  SUB_KEY,
-  SUB_FROM,
-  SUB_TO,
-  DEMO_START,
-  DEMO_USED,
-  'txUrl',
-  'billUrl',
-  'otd_lang',
-  'speechLang'
-];
-
-function ensureTxIds(){
-  if(!Array.isArray(tx)) tx = [];
-  tx.forEach((r, idx) => {
-    if(!r || r.id) return;
-
-    // пытаемся взять уже существующий ID
-    let id = getVal(r, ["ID transakcji","ID","id"]);
-    if(!id){
-      // генерим стабильный id, если его не было
-      const baseDate = r["Data księgowania"] || today();
-      id = `tx-${baseDate}-${idx}-${Math.random().toString(36).slice(2,8)}`;
-    }
-
-    r.id = String(id);
-
-    // чтобы всё было консистентно по полям
-    if(!r["ID transakcji"]) {
-      r["ID transakcji"] = r.id;
-    }
-  });
-}
-
-  
-/* ==== CLOUD SYNC (Firebase, общий стейт для всех устройств) ==== */
-function getCloudEmail(){
-  return localStorage.getItem(USER_KEY) || '';
-}
-
-function buildCloudState(){
-  const settings = stateKeys.reduce((m,k)=>{
-    m[k] = localStorage.getItem(k);
-    return m;
-  }, {});
-  return {
-    tx,
-    bills,
-    kasa,
-    accMeta,
-    settings
-  };
-}
-
-async function pushCloudState(){
-  if (!window.FirebaseSync) return;           // /sync-cloud.js ещё не загрузился
-  const email = getCloudEmail();
-  if (!email) return;                         // нет email → не знаем куда писать
-
-  try{
-    await window.FirebaseSync.saveUserState(email, buildCloudState());
-    console.log('[cloud] saved to Firebase');
-  }catch(e){
-    console.warn('[cloud] save error', e);
-  }
-}
-
-function applyCloudState(remote){
-  if (!remote || typeof remote !== 'object') return;
-
-  try{
-    if (Array.isArray(remote.tx)){
-      tx = remote.tx;
-      localStorage.setItem('tx_manual_import', JSON.stringify(tx));
-    }
-    if (Array.isArray(remote.bills)){
-      bills = remote.bills;
-      localStorage.setItem('bills_manual_import', JSON.stringify(bills));
-    }
-    if (Array.isArray(remote.kasa)){
-      kasa = remote.kasa;
-      localStorage.setItem('kasa', JSON.stringify(kasa));
-    }
-    if (remote.accMeta && typeof remote.accMeta === 'object'){
-      accMeta = remote.accMeta;
-      localStorage.setItem('accMeta', JSON.stringify(accMeta));
-    }
-    if (remote.settings && typeof remote.settings === 'object'){
-      Object.entries(remote.settings).forEach(([k,v])=>{
-        if (typeof v === 'string') localStorage.setItem(k, v);
-      });
-    }
-
-    // пересчитать и перерисовать UI
-    inferAccounts();
-    render();
-  }catch(e){
-    console.warn('[cloud] apply error', e);
-  }
-}
-
-function startCloudSync(){
-  const email = getCloudEmail();
-  if (!email){
-    console.warn('[cloud] no email in localStorage.' + USER_KEY);
-    return;
-  }
-
-  function tryInit(){
-    if (!window.FirebaseSync){
-      console.log('[cloud] wait FirebaseSync…');
-      setTimeout(tryInit, 500);  // ждём, пока загрузится /sync-cloud.js
-      return;
-    }
-
-    console.log('[cloud] start for', email);
-    try {
-      window.FirebaseSync.subscribeUserState(email, applyCloudState);
-      // сразу же заливаем локальный стейт в облако
-      pushCloudState();
-    } catch (e) {
-      console.warn('[cloud] subscribe error', e);
-    }
-  }
-
-  tryInit();
-}
-
-
-/* ==== REMOTE SYNC (optional) ==== */
-async function pullState(){
-  if (!REMOTE_OK) return null;
-  try {
-    const res = await fetch('/app-state', {
-      credentials: 'include'
-    });
-    if (!res.ok) return null;
-    const json = await res.json();
-    const st = json && json.state ? json.state : {};
-
-    // ВАЖНО:
-    // 1) НЕ затираем локальные выписки пустым state с сервера
-    // 2) Обновляем только если реально есть данные
-
-    // Выписки (tx)
-    if (Array.isArray(st.transactions) && st.transactions.length) {
-      localStorage.setItem('tx_manual_import', JSON.stringify(st.transactions));
-    }
-
-    // Фактуры
-    if (Array.isArray(st.bills) && st.bills.length) {
-      localStorage.setItem('bills_manual_import', JSON.stringify(st.bills));
-    }
-
-    // Касса
-    if (Array.isArray(st.cash) && st.cash.length) {
-      localStorage.setItem('kasa', JSON.stringify(st.cash));
-    }
-
-    // Метаданные аккаунтов
-    if (st.meta && typeof st.meta === 'object') {
-      localStorage.setItem('accMeta', JSON.stringify(st.meta));
-    }
-
-    loadLocal();
-    inferAccounts();
-    render();
-    return st;
-  } catch (e) {
-    console.warn('pullState error', e);
-    return null;
-  }
-}
-
-
-
-const pushState = (function(){
-  let timer = null;
-  let inflight = false;
-  return function(){
-    if(!REMOTE_OK) return;
-    clearTimeout(timer);
-    timer = setTimeout(async () => {
-      if(inflight) return;
-      inflight = true;
-      try{
-        // гарантируем id перед пушем
-        ensureTxIds();
-
-        const state = {
-          transactions: tx,
-          bills,
-          cash: kasa,
-          meta: accMeta
-        };
-
-        await fetch('/app-state/merge', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ state })
-        });
-      } catch (e) {
-        console.warn('pushState error', e);
-      } finally {
-        inflight = false;
-      }
-    }, 600);
-  };
-})();
-
-
-
-/* ==== MONEY / RATES ==== */
-function rate(cur){
-  cur=String(cur||"PLN").toUpperCase();
-  if(cur==='PLN') return 1;
-  if(cur==='EUR') return asNum(localStorage.getItem('rateEUR')||4.3);
-  if(cur==='USD') return asNum(localStorage.getItem('rateUSD')||3.95);
-  return 1;
-}
-function computeAccountBalance(accId){
-  const rows=tx.filter(r=> (getVal(r,["ID konta","IBAN","account","ID"])||"UNKNOWN")===accId);
-  const withSaldo = rows.filter(r=> getVal(r,["Saldo po operacji","Saldo","saldo"]));
-  if(withSaldo.length){ const last=withSaldo[withSaldo.length-1]; return asNum(getVal(last,["Saldo po operacji","Saldo","saldo"])); }
-  const start=Number((accMeta[accId]||{}).start||0);
-  const sum=rows.reduce((s,r)=> s+asNum(getVal(r,["Kwota","Kwота","amount","Kwota_raw"])) ,0);
-  return start+sum;
-}
-function bankAvailablePLN(){
-  let sum=0;
-  Object.values(accMeta).filter(a=>a.include).forEach(a=>{
-    sum+=computeAccountBalance(a.id)*rate(a.currency);
-  });
-  return sum;
-}
-function kasaBalance(){
-  let bal=0;
-  kasa.forEach(k=>{
-    if(k.type==='przyjęcie') bal+=k.amount;
-    if(k.type==='wydanie') bal-=k.amount;
-    if(k.type==='zamknięcie') bal = k.amount;
-  });
-  return bal;
-}
-function availableTotal(){
-  const auto = localStorage.getItem('autoCash')==='1';
-  const manual = asNum(localStorage.getItem('cashPLN')||0);
-  const kas = kasaBalance();
-  return auto ? (bankAvailablePLN()+kas) : (manual+kas);
-}
-
-/* ==== AI MATCH (unchanged core scoring) ==== */
-function normName(s){s=(s||"").toString().toLowerCase().replace(/[.,]/g," ").replace(/\s+/g," ").trim();["sp z oo","sp. z o.o.","spolka","spółka","sa","s.a","ooo"].forEach(t=>s=s.replace(t,""));return s}
-function nameSimilar(a,b){a=normName(a);b=normName(b);if(!a||!b) return 0;if(a===b) return 1;if(a.includes(b)||b.includes(a)) return 0.8;return 0}
-function scoreMatch(bill,tr){
-  let score=0;
-  const bAmt=asNum(getVal(bill,["Kwota do zapłaty","Kwота do заплаты","Kwota","amount"]));
-  const tAmt=Math.abs(asNum(getVal(tr,["Kwota","Kwота","amount","Kwota_raw"])));
-  const bCur=(getVal(bill,["Waluta","currency"])||"").toUpperCase();
-  const tCur=(getVal(tr,["Waluta","currency"])||"").toUpperCase();
-  if(bAmt>0 && tAmt>0 && Math.abs(bAmt-tAmt)<0.01 && (bCur===tCur || !bCur || !tCur)) score+=60;
-  const inv=String(getVal(bill,["Numer faktury","Numer фактуры","Invoice number"])||"").toLowerCase();
-  const desc=String(getVal(tr,["Tytuł/Opis","Opis","Title","description"])||"").toLowerCase();
-  if(inv && desc.includes(inv)) score+=25;
-  if(nameSimilar(getVal(bill,["Dostawca","Supplier"]), getVal(tr,["Kontrahent","Counterparty"]))>=0.8) score+=10;
-  if(asNum(getVal(tr,["Kwota","amount"]))<0) score+=5;
-  return {score:Math.min(100,score)};
-}
-function runAI(){
-  bills.forEach(b=>{
-    const status=String(getVal(b,["Status faktury","Status фактуры","Status"])||"").toLowerCase();
-    if(status.includes("opłacone")||status.includes("paid")||status.includes("оплачено")) return;
-    let best=null;
-    tx.forEach(t=>{
-      if(String(getVal(t,["Status transakcji","status"])||"").toLowerCase()==="sparowane") return;
-      if(asNum(getVal(t,["Kwota","amount"]))>=0) return;
-      const s=scoreMatch(b,t);
-      if(!best || s.score>best.s) best={t,s:s.score};
-    });
-    if(best && best.s>=85){
-      best.t["Status transakcji"]="Sparowane";
-      best.t["Powiązana faktura (ID)"]=getVal(b,["Numer faktury","Numer фактуры"]);
-      b["Status faktury"]="Opłacone"; b["Data płatności"]=today();
-    }else if(best && best.s>=55){
-      b["Kandydat (AI)"]=getVal(best.t,["ID transakcji"]);
-      b["AI score"]=best.s;
-    }else{ b["Kandydat (AI)"]=""; b["AI score"]=""; }
-  });
-  render(); saveLocal(); pushState();
-}
-function acceptSafe(){
-  bills.filter(b=> Number(getVal(b,["AI score"])||0)>=85).forEach(b=>{
-    const t=tx.find(t=> getVal(t,["ID transakcji"])===getVal(b,["Kandydat (AI)"]));
-    if(!t) return;
-    t["Status transakcji"]="Sparowane";
-    t["Powiązana faktura (ID)"]=getVal(b,["Numer faktury","Numer фактуры"]);
-    b["Status faktury"]="Opłacone"; b["Data płatności"]=today(); b["Kandydat (AI)"]=b["AI score"]="";
-  });
-  render(); saveLocal(); pushState();
-}
-
-/* ==== OCR IMPORT (images) ==== */
-async function recognizeImage(file){
-  const { data:{ text } } = await Tesseract.recognize(file, 'pol+eng+rus', { logger:()=>{} });
-  return text.replace(/\u00A0/g,' ').replace(/\r/g,'').replace(/\t/g,' ').replace(/ +/g,' ').trim();
-}
-async function ocrBankFiles(files){
-  for(const f of files){
-    try{
-      thumb($id('txLastThumb'), f);
-      const text = await recognizeImage(f);
-      const rows = parseBankOCR(text);
-      if(rows.length){
-        tx = tx.concat(rows);
-      }
-    }catch(e){ console.warn('OCR bank error', e); }
-  }
-  ensureTxIds();
-  inferAccounts();
-  render();
-  saveLocal();
-  pushState();
-}
-
-function parseBankOCR(text){
-  const lines = text.split(/\n+/).map(s=>s.trim()).filter(Boolean);
-  const out = [];
-  let curDate = today();
-  for(let i=0;i<lines.length;i++){
-    const L = lines[i];
-    // Dates like "19 октября 2025", "19 października 2025", "2025-10-19"
-    const d1=L.match(/(\d{1,2}\s+[A-Za-zĄąĆćĘęŁłŃńÓóŚśŹźŻżА-Яа-яё]+\s+\d{4})/);
-    const d2=L.match(/(\d{4}-\d{2}-\d{2})/);
-    if(d1||d2){ curDate = toISO((d1?d1[1]:d2[1])); continue; }
-
-    // Amount + sign rules
-    const amtM = L.match(/([()−\-+]*\s*\d{1,3}(?:[\s ]\d{3})*(?:[.,]\d{2})?)/);
-    if(amtM){
-      const raw = amtM[1];
-      const cur = detectCurrency(L);
-      const n = asNum(raw);
-      if(n!==0){
-        const negHints = /(−|-|\(|obciąż|debet|wypłat|withdraw|charge)/i.test(L);
-        const posHints = /(\+|uznanie|wpływ|przych|credit)/i.test(L);
-        let sign = 0;
-        if(negHints && !posHints) sign = -1;
-        else if(posHints && !negHints) sign = +1;
-        else if(/[()]/.test(raw) || /−|-/.test(raw)) sign = -1;
-        else if(/\+/.test(raw)) sign = +1;
-        else sign = +1; // если нет минуса — считаем как приход
-        const amt = sign * Math.abs(n);
-        const counterparty = (lines[i-1] && !/(PLN|EUR|USD|zł|zl)/i.test(lines[i-1]) ? lines[i-1] : L.replace(raw,'')).toString().trim();
-        out.push({
-          "Data księgowania": curDate || today(),
-          "ID transakcji": 'ocr-'+Date.now()+'-'+out.length,
-          "ID konta": 'UNKNOWN',
-          "Kontrahent": counterparty.replace(/[•·]/g,'').slice(0,120),
-          "Tytuł/Opis": L.slice(0,220),
-          "Kwota": amt.toFixed(2),
-          "Waluta": cur,
-          "Status transakcji":""
-        });
-      }
-    }
-  }
-  return out;
-}
-function parseInvoiceOCR(text){
-  const norm = text.replace(/\n+/g,'\n');
-  const get = (re)=>{ const m=norm.match(re); return m?m[1].trim():''; };
-  // invoice number: классика + общий шаблон вида 147/CS-FR/2025
-  const invClassic = get(/\bFaktura(?:\s*VAT)?\s*(?:numer|nr)?[:\s]*([A-Za-z0-9\-\/\.]+)/i) || get(/\bInvoice\s*(?:No|Number)[:\s]*([A-Za-z0-9\-\/\.]+)/i);
-  const invPattern = (norm.match(/(\d{1,6}\/[A-Z0-9][A-Z0-9\-]*\/\d{4})/)||[])[1] || '';
-  const inv = (invClassic || invPattern || '').replace(/[^\w\/\-\.]/g,'');
-  // supplier (продавец/виставивший)
-  let supplier = get(/Sprzedawca[:\s\n]+([^\n]+)(?:\n|$)/i) || get(/Dostawca[:\s\n]+([^\n]+)(?:\n|$)/i) || get(/Issuer|Seller[:\s\n]+([^\n]+)(?:\n|$)/i);
-  if(!supplier){
-    supplier = norm.split('\n').find(x=>/[A-ZĄĆĘŁŃÓŚŹŻ]{3,}/.test(x))||'';
-  }
-  // due / issue dates
-  const due = toISO(get(/Termin\s*(?:płatności|zapłaty)[:\s]+([^\n]+)/i)) || toISO(get(/Payment\s*(?:due|date)[:\s]+([^\n]+)/i));
-  const issue = toISO(get(/Data\s*wystawienia[:\s]+([^\n]+)/i)) || toISO(get(/Issue\s*date[:\s]+([^\n]+)/i));
-  // total
-  let totalTxt = get(/Do\s*zapłaty[:\s]+([^\n]+)/i) || get(/Razem\s*do\s*zapłaty[:\s]+([^\n]+)/i);
-  if(!totalTxt){
-    const bruttoLine = norm.match(/(?:Wartość|Razem)\s*brutto[^\n]*?(\d{1,3}(?:[\s ]\d{3})*(?:[.,]\d{2}))/i);
-    if(bruttoLine) totalTxt = bruttoLine[1];
-  }
-  const currency = detectCurrency(totalTxt||norm);
-  const total = Math.abs(asNum(totalTxt));
-  return [{
-    "Termin płatności": (due || issue || today()),
-    "Numer faktury": (inv || ('INV-'+Date.now())),
-    "Dostawca": supplier.slice(0,120),
-    "Kwota do zapłaty": total ? total.toFixed(2) : '0.00',
-    "Waluta": currency,
-    "Status faktury": "do zapłaty"
-  }];
-}
-
-/* ==== PERSIST LOCAL ==== */
-function loadLocal(){
-  try{ kasa = JSON.parse(localStorage.getItem('kasa')||'[]'); }catch(e){kasa=[]}
-  try{ tx = JSON.parse(localStorage.getItem('tx_manual_import')||'[]'); }catch(e){tx=[]}
-  try{ bills = JSON.parse(localStorage.getItem('bills_manual_import')||'[]'); }catch(e){bills=[]}
-  try{ accMeta = JSON.parse(localStorage.getItem('accMeta')||'{}'); }catch(e){accMeta={}}
-  ensureTxIds();
-}
-
-function saveLocal(){
-  try{ localStorage.setItem('kasa', JSON.stringify(kasa)); }catch(e){}
-  try{ localStorage.setItem('tx_manual_import', JSON.stringify(tx)); }catch(e){}
-  try{ localStorage.setItem('bills_manual_import', JSON.stringify(bills)); }catch(e){}
-  try{ localStorage.setItem('accMeta', JSON.stringify(accMeta)); }catch(e){}
-
-  // NEW: обновляем облако
-  pushCloudState();
-}
-
-
-/* ==== ACCOUNTS ==== */
-function inferAccounts(){
-  const map={};
-  tx.forEach(r=>{
-    const id=getVal(r,["ID konta","IBAN","account","ID"])||"UNKNOWN";
-    const cur=(getVal(r,["Waluta","currency"])||"PLN").toUpperCase();
-    if(!map[id]) map[id]={id,name:String(id).slice(0,12),currency:cur,include:true,type:"Biznes",start:0};
-  });
-  try{ const saved=JSON.parse(localStorage.getItem('accMeta')||'{}'); Object.keys(map).forEach(id=>{ if(saved[id]) map[id]=Object.assign(map[id], saved[id]); }); }catch(e){}
-  accMeta=map; renderAccounts();
-}
-
-/* ==== GATE: DEMO / SUB ==== */
-function isSubActive(){
-  const a = localStorage.getItem(SUB_KEY) === '1';
-  if (!a) return false;
-  const to = localStorage.getItem(SUB_TO) || '';
-  if (!to) return a;
-  return new Date(to) >= new Date();
-}
-
-function demoLeftMs(){
-  const t = localStorage.getItem(DEMO_START);
-  if (!t) return 0;
-  const start = new Date(t).getTime();
-  const left  = (start + 24*3600*1000) - Date.now();
-  return left;
-}
-
-function isDemoActive(){ 
-  return demoLeftMs() > 0; 
-}
-
-function gateAccess(){
-  const ok   = isSubActive() || isDemoActive();
-  const gate = $id('gate');
-  const tabs = document.querySelectorAll('.tabs .tab');
-  if (!gate) return;
-
-  gate.classList.toggle('hidden', ok);
-  tabs.forEach(t=>{
-    if (t.dataset.sec === 'ustawienia') t.classList.remove('disabled');
-    else t.classList.toggle('disabled', !ok);
-  });
-
-  if (!ok){
-    document.querySelector('[data-sec=ustawienia]')?.click();
-  }
-}
-
-function updateSubUI(){
-  const el = $id('subStatus');
-  if (!el) return;
-
-  const demoUsed = localStorage.getItem(DEMO_USED) === '1';
-  let s = '—';
-
-  if (isSubActive()){
-    s = `✅ Sub aktywna: ${localStorage.getItem(SUB_FROM)||'—'} → ${localStorage.getItem(SUB_TO)||'—'}`;
-  } else if (isDemoActive()){
-    const left = demoLeftMs();
-    const h = Math.floor(left/3600000);
-    const m = Math.floor((left%3600000)/60000);
-    s = `🧪 Demo aktywne: ~${h}h ${m}m`;
-  } else if (demoUsed) {
-    // демо уже было, больше не даём
-    s = '⛔ Demo zakończone. Dostęp tylko z subskrypcją.';
-  } else {
-    s = '⛔ Brak dostępu: włącz demo (24h) lub opłać.';
-  }
-
-  el.textContent = s;
-}
-
-/* ==== AUTOSYNC ==== */
-let syncTimer=null, syncing=false;
-async function fetchSources(){
-  if(syncing) return; syncing=true;
-  try{
-    const u1=localStorage.getItem('txUrl')||$id('txUrl')?.value||"";
-    const u2=localStorage.getItem('billUrl')||$id('billUrl')?.value||"";
-  if(u1){const r = await fetch(u1,{cache:'no-store'});tx = parseCSV(await r.text());
-  ensureTxIds();
-}
-
-    if(u2){ const r2=await fetch(u2,{cache:'no-store'}); bills = parseCSV(await r2.text()); }
-    inferAccounts(); render();
-    const last=$id('lastSync'); if(last) last.textContent = (M[localStorage.getItem('otd_lang')||'pl'].sync_ts||"Synchronizacja: —").replace('—', new Date().toLocaleString());
-    saveLocal(); pushState();
-  }catch(e){
-    const last=$id('lastSync'); if(last) last.textContent = 'Error: '+(e?.message||e);
-  }finally{ syncing=false; }
-}
-function scheduleAutosync(){
-  clearInterval(syncTimer); const m = parseInt(localStorage.getItem('intervalMin')||'0',10);
-  if(m>0 && (localStorage.getItem('txUrl')||localStorage.getItem('billUrl'))){
-    syncTimer = setInterval(fetchSources, Math.max(1,m)*60*1000);
-  }
-}
-
-/* ==== CASH QUICK EXAMPLES ==== */
-const cashQuickExamples={pl:["Przyjąć 250 na produkty","Wypłacić 50 na dostawę","Przyjąć 1000 depozyt","Przyjąć 50 na napoje"],
-ru:["Принять 250 на продукты","Выдать 50 на доставку","Принять 1000 депозит","Принять 50 на напитки"],
-en:["Accept 250 for groceries","Pay out 50 for delivery","Accept 1000 deposit","Accept 50 for drinks"],
-uk:["Прийняти 250 на продукти","Видати 50 на доставку","Прийняти 1000 депозит","Прийняти 50 на напої"]};
-function renderCashExamples(lang){
-  const holder=$id('kasaQuickHolder'); if(!holder) return; holder.innerHTML='';
-  const arr=cashQuickExamples[lang]||cashQuickExamples.pl;
-  arr.forEach(txt=>{
-    const btn=document.createElement('button'); btn.type='button'; btn.textContent=txt;
-    btn.addEventListener('click',()=>{
-      const numMatch=txt.match(/(-?\d+[.,]?\d*)/); const num=numMatch?asNum(numMatch[1]):0;
-      const outRe=/(wyda|wypłac|pay out|видат|выда)/i; const isOut=outRe.test(txt);
-      const note=txt.replace(/(-?\d+[.,]?\d*\s*(zł|pln|PLN|USD|EUR)?)/i,"").trim();
-      addKasa(isOut?'wydanie':'przyjęcie', num, note||txt, 'quick');
-    });
-    holder.appendChild(btn);
-  });
-}
-
-/* ==== UNIFIED BOOK ==== */
-function bookRows(){
-  const rows=[];
-  (tx||[]).forEach(r=>{
-    rows.push({
-      date: toISO(getVal(r,["Data księgowania","date","Дата"]))||today(),
-      source: 'bank',
-      account: getVal(r,["ID konta","IBAN","account"])||'UNKNOWN',
-      counterparty: getVal(r,["Kontrahent","Counterparty"])||'',
-      desc: getVal(r,["Tytuł/Opis","Opis","title"])||'',
-      amount: asNum(getVal(r,["Kwota","Kwота","amount","Kwota_raw"]))||0,
-      currency: (getVal(r,["Waluta","currency"])||'PLN').toUpperCase(),
-      type:'', no:'', doc_date:'', due:'', status: getVal(r,["Status transakcji","status"])||''
-    });
-  });
-  (bills||[]).forEach(b=>{
-    const amt = -Math.abs(asNum(getVal(b,["Kwota do zapłaty","Kwota","Kwота"]))||0);
-    rows.push({
-      date: toISO(getVal(b,["Data wystawienia","IssueDate"]))||toISO(getVal(b,["Termin płatności","Termin"]))||today(),
-      source:'invoice',
-      account:'',
-      counterparty: getVal(b,["Dostawca","Supplier"])||'',
-      desc: 'INVOICE',
-      amount: amt,
-      currency: (getVal(b,["Waluta","currency"])||'PLN').toUpperCase(),
-      type:'INVOICE', no:getVal(b,["Numer faktury","Invoice number"])||'',
-      doc_date: toISO(getVal(b,["Data wystawienia","IssueDate"]))||'',
-      due: toISO(getVal(b,["Termin płatności","Termin"]))||'',
-      status: getVal(b,["Status faktury","Status"])||''
-    });
-  });
-  (kasa||[]).forEach(k=>{
-    rows.push({
-      date: k.date||today(), source:'cash', account:'KASA', counterparty:'', desc:k.comment||k.source||'',
-      amount: (k.type==='wydanie'?-1:1)*Math.abs(k.amount||0), currency:'PLN', type:'CASH', no:'', doc_date:'', due:'', status:''
-    });
-  });
-  return rows.sort((a,b)=> (a.date<b.date?-1: a.date>b.date?1:0));
-}
-function renderBook(){
-  const tb=document.querySelector('#bookTable tbody'); if(!tb) return; // таблицы нет — тихий выход
-  const rows=bookRows();
-  rows.forEach(r=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML = `<td>${r.date}</td><td>${r.source}</td><td>${r.account||'—'}</td><td>${r.counterparty||''}</td><td>${r.desc||''}</td><td>${fmtAmountRaw(r.amount)}</td><td>${r.currency}</td><td>${r.type||''}</td><td>${r.no||''}</td><td>${r.doc_date||''}</td><td>${r.due||''}</td><td>${r.status||''}</td>`;
-    tb.appendChild(tr);
-  });
-}
-function exportBookCSV(){
-  const rows=bookRows();
-  const head=['date','source','account','counterparty','description','amount','currency','doc_type','doc_no','doc_date','due_date','status'];
-  const csv=[head.join(',')].concat(rows.map(r=>[
-    r.date,r.source,r.account,(r.counterparty||'').replace(/,/g,' '),(r.desc||'').replace(/,/g,' '),
-    (r.amount||0).toFixed(2),r.currency,r.type||'',r.no||'',r.doc_date||'',r.due||'',(r.status||'').replace(/,/g,' ')
-  ].join(','))).join('\n');
-  const blob=new Blob([csv],{type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='otd_book.csv'; a.click();
-}
-
-/* ==== RENDER ==== */
-function renderKasa(){
-  const tb=document.querySelector('#kasaTable tbody'); if(!tb) return; tb.innerHTML='';
-    const kasaRows = (kasa||[]).slice().sort((a,b)=> String(b.date||"").localeCompare(String(a.date||"")));
-  kasaRows.forEach((k,i)=>{
-
-    const tr=document.createElement('tr');
-    tr.innerHTML = `<td>${i+1}</td><td>${k.date}</td><td>${k.type}</td><td>${k.amount.toFixed(2)}</td><td>${k.source||""}</td><td>${k.comment||""}</td>
-                    <td class="actions">
-                      <button data-act="edit" data-kind="kasa" data-id="${k.id}">✎</button>
-                      <button data-act="del" data-kind="kasa" data-id="${k.id}">🗑</button>
-                    </td>`;
-    tb.appendChild(tr);
-  });
-}
-function renderAccounts(){
-  const tb=document.querySelector('#autoAcc tbody'); if(!tb) return; tb.innerHTML='';
-  Object.values(accMeta).forEach(a=>{
-    const bal=computeAccountBalance(a.id);
-    const tr=document.createElement('tr');
-    tr.innerHTML = `<td>${a.id}</td>
-      <td><select data-id="${a.id}" class="acc-type">
-            <option ${a.type==="Biznes"?"selected":""}>Biznes</option>
-            <option ${a.type==="Osobisty"?"selected":""}>Osobisty</option>
-          </select></td>
-      <td><select data-id="${a.id}" class="acc-cur">
-            <option ${a.currency==="PLN"?"selected":""}>PLN</option>
-            <option ${a.currency==="EUR"?"selected":""}>EUR</option>
-            <option ${a.currency==="USD"?"selected":""}>USD</option>
-          </select></td>
-      <td>${bal.toFixed(2)}</td>
-      <td><input type="number" step="0.01" value="${a.start||0}" class="acc-start" data-id="${a.id}"/></td>
-      <td><input type="checkbox" class="acc-include" data-id="${a.id}" ${a.include?"checked":""}/></td>`;
-    tb.appendChild(tr);
-  });
-  tb.querySelectorAll(".acc-type").forEach(el=>el.addEventListener("change",e=>{accMeta[e.target.dataset.id].type=e.target.value;saveLocal();render();pushState();}));
-  tb.querySelectorAll(".acc-cur").forEach(el=>el.addEventListener("change",e=>{accMeta[e.target.dataset.id].currency=e.target.value;saveLocal();render();pushState();}));
-  tb.querySelectorAll(".acc-start").forEach(el=>el.addEventListener("change",e=>{accMeta[e.target.dataset.id].start=asNum(e.target.value);saveLocal();render();pushState();}));
-  tb.querySelectorAll(".acc-include").forEach(el=>el.addEventListener("change",e=>{accMeta[e.target.dataset.id].include=e.target.checked;saveLocal();render();pushState();}));
-}
-function render(){
-  // KPIs
-  const dueToday=(bills||[]).filter(r=>{
-    const s=String(getVal(r,["Status faktury","Status фактуры","Status"])||"").toLowerCase();
-    return ["do zapłaty","przeterminowane","к оплате","просрочено","to pay"].includes(s) &&
-           toISO(getVal(r,["Termin płatności","Termin","Termin платності"]))===today();
-  }).length;
-  const unmatch=(tx||[]).filter(r=> String(getVal(r,["Status transakcji","status"])||"").toLowerCase()!=="sparowane").length;
-  $id('kpiDue')&&( $id('kpiDue').textContent = dueToday );
-  $id('kpiUnmatch')&&( $id('kpiUnmatch').textContent = unmatch );
-  const bankPLN=bankAvailablePLN(); $id('kpiBank')&&( $id('kpiBank').textContent = bankPLN.toFixed(2) );
-  const kas=kasaBalance(); $id('kpiCash')&&( $id('kpiCash').textContent = kas.toFixed(2) );
-  const avail=availableTotal(); $id('kpiAvail')&&( $id('kpiAvail').textContent = avail.toFixed(2) );
-  const sumDue=(bills||[]).filter(r=>
-    String((getVal(r,["Waluta","Waluta "])||"").toUpperCase())==="PLN" &&
-    toISO(getVal(r,["Termin płatności","Termin","Termin платності"]))<=today() &&
-    ["do zapłaty","przeterminowane","к оплате","просрочено"].includes(String(getVal(r,["Status faktury","Status"])||"").toLowerCase())
-  ).reduce((s,r)=> s+asNum(getVal(r,["Kwota do zapłaty","Kwota","Kwота"])||0),0);
-  $id('kpiGap')&&( $id('kpiGap').textContent = Math.max(0,sumDue-avail).toFixed(2) );
-
-  // TX table
-  const txBody=document.querySelector('#txTable tbody'); if(txBody){
-    txBody.innerHTML='';
-        const txRows = (tx||[]).slice().sort((a,b)=>{
-      const da = toISO(getVal(a,["Data księgowania","date","Дата"]))||"";
-      const db = toISO(getVal(b,["Data księgowania","date","Дата"]))||"";
-      return db.localeCompare(da); // новые сверху
-    });
-    txRows.forEach(r=>{
-
-      const id=getVal(r,["ID transakcji","ID","id"])||("noid-"+Math.random());
-      const curStr = getVal(r,["Waluta","currency"])||''; const cur = detectCurrency(curStr);
-      const tr=document.createElement('tr');
-      tr.innerHTML = `<td>${toISO(getVal(r,["Data księgowania","date","Дата"]))}</td>
-        <td>${getVal(r,["ID konta","IBAN","account"])||"—"}</td>
-        <td>${getVal(r,["Kontrahent","Counterparty"])||""}</td>
-        <td>${getVal(r,["Tytuł/Opis","Opis","title"])||""}</td>
-        <td>${fmtAmountRaw(getVal(r,["Kwota","Kwота","amount","Kwota_raw"]))}</td>
-        <td>${cur}</td>
-        <td>${getVal(r,["Status transakcji","status"])||""}</td>
-        <td class="actions">
-          <button data-act="edit" data-kind="tx" data-id="${id}">✎</button>
-          <button data-act="del" data-kind="tx" data-id="${id}">🗑</button>
-        </td>`;
-      txBody.appendChild(tr);
-    });
-  }
-
-  // Bills
-  const billBody=document.querySelector('#billTable tbody'); if(billBody){
-    billBody.innerHTML='';
-        const billRows = (bills||[]).slice().sort((a,b)=>{
-      const da = toISO(getVal(a,["Termin płatności","Termin","Termin платності"])||"");
-      const db = toISO(getVal(b,["Termin płatności","Termin","Termin платności"])||"");
-      return db.localeCompare(da); // более свежие сроки/создания сверху
-    });
-    billRows.forEach(r=>{
-
-      const s=String(getVal(r,["Status faktury","Status фактуры","Status"])||"").toLowerCase();
-      const cls=(s.includes('przetermin')||s.includes('проср'))?'overdue':'due';
-      const cand=getVal(r,["Kandydat (AI)"])||"";
-      const score=getVal(r,["AI score"])||"";
-      const id=getVal(r,["Numer faktury","Numer фактуры","Invoice number"])||("noinv-"+Math.random());
-      const cur = detectCurrency(getVal(r,["Waluta","currency"])||'');
-      const tr=document.createElement('tr');
-      tr.innerHTML = `<td>${toISO(getVal(r,["Termin płatności","Termin","Termin платності"])||"")}</td>
-        <td>${getVal(r,["Numer faktury","Numer фактуры","Invoice number"])||""}</td>
-        <td>${getVal(r,["Dostawca","Supplier"])||""}</td>
-        <td>${getVal(r,["Kwota do zapłaty","Kwota","Kwota"])||""}</td>
-        <td>${cur}</td>
-        <td><span class="badge ${cls}">${getVal(r,["Status faktury","Status фактуры","Status"])||""}</span></td>
-        <td>${cand?('<span class="badge cand">'+cand+'</span>'):'—'}</td>
-        <td>${score?('<span class="badge ai">'+score+'</span>'):'—'}</td>
-        <td class="actions">
-          ${cand?('<button class="btn secondary btn-accept" data-invid="'+id+'">OK</button>'):''}
-          <button data-act="edit" data-kind="bill" data-id="${id}">✎</button>
-          <button data-act="del" data-kind="bill" data-id="${id}">🗑</button>
-        </td>`;
-      billBody.appendChild(tr);
-    });
-    document.querySelectorAll(".btn-accept").forEach(b=> b.addEventListener('click',()=>acceptOne(b.getAttribute('data-invid'))));
-  }
-
-    renderMinPay(); 
-  renderForecast(); 
-  renderMonthSummary();
-  renderAccounts(); 
-  renderKasa(); 
-  renderBook(); 
-  updateSubUI(); 
-  gateAccess();
-}
-
-
-/* ==== PLAN / FORECAST / MINPAY (kept) ==== */
-function toDueList(mode){
-  const t=today(); const excl=$id('excludeBlacklist')?.checked||false;
-  return bills.filter(r=>{
-    const s=String(getVal(r,["Status faktury","Status фактуры","Status"])||"").toLowerCase();
-    if(!["do zapłaty","przeterminowane","к оплате","просрочено","to pay"].includes(s)) return false;
-    const d=toISO(getVal(r,["Termin płatności","Termin","Termin платності"])); if(!d) return false;
-    if(mode==='today') return d===t;
-    if(mode==='7d'){ const dd=new Date(d), tt=new Date(t); return (dd-tt)/86400000 <= 7; }
-    return true;
-  }).filter(r=>{
-    if(String((getVal(r,["Waluta"])||"").toUpperCase())!=="PLN") return false;
-    if(excl){
-      const bl=(localStorage.getItem('blacklist')||"").toLowerCase();
-      const nm=(getVal(r,["Dostawca","Supplier"])||"").toLowerCase();
-      if(bl && bl.split(",").some(x=> nm.includes(x.trim()))) return false;
-    }
-    return true;
-  });
-}
-function buildPlan(){
-  const mode=$id('planFilter')?.value||'7d';
-  const cand=toDueList(mode).sort((a,b)=>{
-    const da=new Date(toISO(getVal(a,["Termin płatności","Termin","Termin платності"])||today()));
-    const db=new Date(toISO(getVal(b,["Termin płatności","Termin","Termin платності"])||today()));
-    const lateA=da<new Date(today()), lateB=db<new Date(today());
-    if(lateA!==lateB) return lateB-lateA;
-    return asNum(getVal(b,["Kwota do zapłaty","Kwota"])) - asNum(getVal(a,["Kwota do zapłaty","Kwota"]));
-  });
-  let left=availableTotal(); const plan=[];
-  for(const r of cand){
-    const amt=asNum(getVal(r,["Kwota do zapłaty","Kwota"])||0);
-    if(amt<=left){ plan.push({r,amt,reason:(toISO(getVal(r,["Termin płatności","Termin"])||today())<today()?"просрочка":"срок")}); left-=amt; }
-  }
-  return {plan,left,avail:availableTotal()};
-}
-function renderPlan(){
-  const p=buildPlan(); const tb=document.querySelector('#planTable tbody'); if(!tb) return; tb.innerHTML='';
-  p.plan.forEach((x,i)=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML = `<td>${i+1}</td><td>${getVal(x.r,["Numer faktury","Numer фактуры"])||""}</td><td>${getVal(x.r,["Dostawca","Supplier"])||""}</td><td>${toISO(getVal(x.r,["Termin płatności","Termin"])||"")}</td><td>${x.amt.toFixed(2)}</td><td>${x.reason}</td>`;
-    tb.appendChild(tr);
-  });
-  const pm=$id('planMeta'); if(pm) pm.textContent = p.plan.length?`Wydamy ${(p.avail-p.left).toFixed(2)} z ${p.avail.toFixed(2)} PLN. Zostanie ${p.left.toFixed(2)} PLN.`:"Plan pusty lub brak środków.";
-}
-function computeMinPay(){
-  const t=today(); const pct=asNum(localStorage.getItem('penaltyPct')||0.05)/100.0;
-  const cand=bills.filter(r=>
-    String((getVal(r,["Waluta"])||"").toUpperCase())==="PLN" &&
-    toISO(getVal(r,["Termin płatności","Termin"])||"")<=t &&
-    ["do zapłaty","przeterminowane","к оплате","просрочено"].includes(String(getVal(r,["Status faktury","Status"])||"").toLowerCase())
-  ).map(r=>({r,amt:asNum(getVal(r,["Kwota do zapłaty","Kwota"])||0),risk:asNum(getVal(r,["Kwota do zapłaty","Kwota"])||0)*pct}))
-   .sort((a,b)=> b.risk-a.risk || b.amt-a.amt);
-  return cand[0]||null;
-}
-function renderMinPay(){
-  const m=computeMinPay(); const el=$id('minPayBox'); if(!el) return;
-  if(!m){ el.textContent='—'; return; }
-  el.textContent = `Оплатить ${getVal(m.r,["Numer faktury","Numer фактуры"])} (${getVal(m.r,["Dostawca","Supplier"])} ) на ${m.amt.toFixed(2)} PLN. Штраф/день ~ ${m.risk.toFixed(2)} PLN.`;
-}
-function renderForecast(){
-  const t=new Date(today());
-  const list=toDueList("7d").map(r=>({date:new Date(toISO(getVal(r,["Termin płatności","Termin"]))), amt:asNum(getVal(r,["Kwota do zapłaty","Kwota"])||0)}));
-  const days=[...Array(7)].map((_,i)=> new Date(t.getTime()+i*86400000));
-  let left=availableTotal(); const out=days.map(d=>({d,due:0,after:0}));
-  list.forEach(x=>{ const idx=Math.min(6, Math.max(0, Math.floor((x.date - t)/86400000))); out[idx].due += x.amt; });
-  out.forEach(o=>{ left-=o.due; o.after=left; });
-  const wrap=$id('forecastBars'); if(!wrap) return; wrap.innerHTML='';
-  out.forEach(o=>{
-    const div=document.createElement('div'); div.className='bar'+(o.after<0?' neg':'');
-    const h=document.createElement('div'); h.className='h'; h.style.height=(Math.min(120,Math.abs(o.after)/100)*0.8+18)+'px';
-    div.innerHTML=`<small>${o.d.toISOString().slice(5,10)}</small>`; div.appendChild(h);
-    const v=document.createElement('div'); v.textContent = (o.after<0?'-':'')+Math.abs(o.after).toFixed(0)+' PLN'; div.appendChild(v);
-    wrap.appendChild(div);
-  });
-  const firstNeg=out.find(x=>x.after<0); const meta=$id('forecastMeta');
-  if(meta) meta.textContent = firstNeg?`Гэп через ${out.indexOf(firstNeg)+1} дн.: не хватает ${Math.abs(firstNeg.after).toFixed(2)} PLN.`:"На 7 дней хватает кассы.";
-}
-
-function renderMonthSummary(){
-  const el = $id('monthSummary');
-  if(!el) return;
-
-  const todayStr = today();
-  const now = new Date(todayStr);
-  if (isNaN(now)) { 
-    el.textContent = '—'; 
-    return; 
-  }
-
-  const year = now.getFullYear();
-  const month = now.getMonth();
-  // последний день текущего месяца
-  const last = new Date(year, month + 1, 0);
-  const lastISO = last.toISOString().slice(0,10);
-
-  // берём только PLN-фактуры со статусом "к оплате / просрочено" в этом месяце
-  const dueBills = (bills || []).filter(r => {
-    const status = String(
-      getVal(r,["Status faktury","Status фактуры","Status"]) || ""
-    ).toLowerCase();
-    if (!["do zapłaty","przeterminowane","к оплате","просрочено","to pay"].includes(status)) return false;
-
-    const cur = String((getVal(r,["Waluta","Waluta "]) || "")).toUpperCase();
-    if (cur !== "PLN") return false;
-
-    const d = toISO(getVal(r,["Termin płatności","Termin","Termin платності"]) || "");
-    if (!d) return false;
-
-    return d >= todayStr && d <= lastISO;
-  });
-
-  const totalDue = dueBills.reduce(
-    (sum,r) => sum + asNum(getVal(r,["Kwota do zapłaty","Kwota","Kwота"]) || 0),
-    0
-  );
-
-  const avail = availableTotal(); // банки + касса по твоим правилам
-  const needTotal = Math.max(0, totalDue - avail);
-
-  const daysLeftRaw = (last - now) / 86400000;
-  const daysLeft = Math.max(1, Math.floor(daysLeftRaw) + 1); // включаем сегодняшний день
-
-  if (needTotal <= 0) {
-    el.textContent = 'На этот месяц обязательные платежи уже покрыты текущей кассой.';
-  } else {
-    const perDay = needTotal / daysLeft;
-    el.textContent = `До конца месяца нужно ещё ${needTotal.toFixed(2)} PLN, это около ${perDay.toFixed(2)} PLN в день.`;
-  }
-}
-
-  
-/* ==== ACCEPT ONE ==== */
-function acceptOne(id){
-  const b=(bills||[]).find(x=> (getVal(x,["Numer faktury","Numer фактуры","Invoice number"])||"")===id);
-  if(!b) return;
-  const t=(tx||[]).find(x=> (getVal(x,["ID transakcji","ID","id"])||"")=== (getVal(b,["Kandydat (AI)"])||""));
-  if(!t) return;
-  t["Status transakcji"]="Sparowane"; t["Powiązana faktura (ID)"]=getVal(b,["Numer faktury","Numer фактуры"]);
-  b["Status faktury"]="Opłacone"; b["Data płatności"]=today(); b["Kandydat (AI)"]=b["AI score"]="";
-  render(); saveLocal(); pushState();
-}
-
-/* ==== KASA CRUD ==== */
-function loadKasa(){ try{kasa=JSON.parse(localStorage.getItem('kasa')||'[]');}catch(e){kasa=[]} }
-function addKasa(type,amount,comment,source){
-  if(amount==null||isNaN(amount)) return alert("Сумма некорректна");
-  kasa.push({id:Date.now(),date:today(),type,amount:Number(amount),comment:comment||"",source:source||"ручной"});
-  saveLocal(); render(); pushState();
-}
-function editRow(kind,id){
-  if(kind==='kasa'){
-    const idx=kasa.findIndex(x=> String(x.id)===String(id)); if(idx<0) return;
-    const k=kasa[idx];
-    const n=prompt("Сумма:", k.amount); if(n===null) return;
-    const c=prompt("Комментарий:", k.comment||""); if(c===null) return;
-    kasa[idx].amount=asNum(n); kasa[idx].comment=c; saveLocal(); render(); pushState(); return;
-  }
-  if(kind==='tx'){
-    const idx=tx.findIndex(x=> (getVal(x,["ID transakcji","ID","id"])||"")===String(id)); if(idx<0) return;
-    const r=tx[idx];
-    const d=prompt("Дата (YYYY-MM-DD):", toISO(getVal(r,["Data księgowania"])||today())); if(d===null) return;
-    const a=prompt("Сумма:", getVal(r,["Kwota","Kwota_raw","amount"])||""); if(a===null) return;
-    r["Data księgowania"]=toISO(d)||today(); r["Kwota"]=asNum(a).toFixed(2); r["Waluta"]= detectCurrency(getVal(r,["Waluta"])||''); saveLocal(); render(); pushState(); return;
-  }
-  if(kind==='bill'){
-    const idx=bills.findIndex(x=> (getVal(x,["Numer faktury","Numer фактуры","Invoice number"])||"")===String(id)); if(idx<0) return;
-    const r=bills[idx];
-    const due=prompt("Срок (YYYY-MM-DD):", toISO(getVal(r,["Termin płatności","Termin"])||today())); if(due===null) return;
-    const amt=prompt("Сумма к оплате:", getVal(r,["Kwota do zapłaty","Kwota"])||""); if(amt===null) return;
-    r["Termin płatności"]=toISO(due)||today(); r["Kwota do zapłaty"]=asNum(amt).toFixed(2); r["Waluta"]= detectCurrency(getVal(r,["Waluta"])||''); saveLocal(); render(); pushState(); return;
-  }
-}
-function delRow(kind,id){
-  if(kind==='kasa'){ kasa = kasa.filter(x=> String(x.id)!==String(id)); saveLocal(); render(); pushState(); return; }
-  if(kind==='tx'){ tx = tx.filter(x=> (getVal(x,["ID transakcji","ID","id"])||"")!==String(id)); saveLocal(); render(); pushState(); return; }
-  if(kind==='bill'){ bills = bills.filter(x=> (getVal(x,["Numer faktury","Numer фактуры","Invoice number"])||"")!==String(id)); saveLocal(); render(); pushState(); return; }
-}
-
-/* ==== EVENTS ==== */
-document.addEventListener('click',(e)=>{
-  const btn=e.target.closest('button'); if(!btn) return;
-  const act=btn.getAttribute('data-act'); if(!act) return;
-  const kind=btn.getAttribute('data-kind'), id=btn.getAttribute('data-id');
-  if(act==='edit') editRow(kind,id);
-  if(act==='del') delRow(kind,id);
-});
-
-function thumb(el,file){ const img=el; if(!img) return; img.src=URL.createObjectURL(file); img.style.display='inline-block'; }
-
-async function ocrBankFiles(files){
-  for(const f of files){
-    try{
-      thumb($id('txLastThumb'), f);
-      const text = await recognizeImage(f);
-      const rows = parseBankOCR(text);
-      if(rows.length){ tx = tx.concat(rows); }
-    }catch(e){ console.warn('OCR bank error', e); }
-  }
-  inferAccounts(); render(); saveLocal(); pushState();
-}
-async function ocrInvoiceFiles(files){
-  for(const f of files){
-    try{
-      const text = await recognizeImage(f);
-      const rows = parseInvoiceOCR(text);
-      if(rows.length){ bills = bills.concat(rows); }
-    }catch(e){ console.warn('OCR invoice error', e); }
-  }
-  render(); saveLocal(); pushState();
-}
-
-/* ==== DOM READY ==== */
-document.addEventListener('DOMContentLoaded', async ()=>{
-  // Lang bar
-  document.querySelectorAll('#langBarMain button').forEach(b=>{
-    b.addEventListener('click',()=> applyLang(b.dataset.lang));
-  });
-  applyLang(localStorage.getItem('otd_lang')||'pl');
-
-  // Tabs (with gate)
-  document.querySelectorAll('.tabs .tab').forEach(t=>{
-    t.addEventListener('click', ()=>{
-      if(t.classList.contains('disabled')) { document.querySelector('[data-sec=ustawienia]')?.click(); return; }
-      document.querySelectorAll('.tabs .tab').forEach(x=>x.classList.remove('active'));
-      document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-      t.classList.add('active'); const sec=t.dataset.sec; if(sec) $id(sec)?.classList.add('active');
-      render();
-    });
-  });
-
-  // Buttons
-  $id('runAI')?.addEventListener('click', runAI);
-  $id('acceptSafe')?.addEventListener('click', acceptSafe);
-  $id('makePlan')?.addEventListener('click', renderPlan);
-  $id('applyPlan')?.addEventListener('click', renderPlan);
-  $id('applyMinPay')?.addEventListener('click', ()=>{ const m=computeMinPay(); if(!m) return alert('Нет кандидатов'); m.r["Status faktury"]="Opłacone"; m.r["Data płatności"]=today(); render(); saveLocal(); pushState(); });
-  $id('syncNow')?.addEventListener('click', fetchSources);
-  $id('exportBook')?.addEventListener('click', exportBookCSV);
-
-  // File/url
- $id('txFile')?.addEventListener('change', async e=>{const f=e.target.files[0]; if(!f) return;
-  tx = parseCSV(await f.text());
-  ensureTxIds();
-  inferAccounts();
-  render();
-  saveLocal();
-  pushState();
-});
-
-  $id('txImage')?.addEventListener('change', async e=>{ const files=[...e.target.files]; if(!files.length) return; await ocrBankFiles(files); });
-  $id('billFile')?.addEventListener('change', async e=>{ const f=e.target.files[0]; if(!f) return; bills=parseCSV(await f.text()); render(); saveLocal(); pushState(); });
-  $id('billImage')?.addEventListener('change', async e=>{ const files=[...e.target.files]; if(!files.length) return; await ocrInvoiceFiles(files); });
-  $id('saveTxUrl')?.addEventListener('click',()=>{ const v=$id('txUrl')?.value.trim()||""; localStorage.setItem('txUrl',v); alert('Zapisano URL wyciągu'); scheduleAutosync(); });
-
-  // Cash quick & ops
-  $id('addIn')?.addEventListener('click',()=> addKasa('przyjęcie', asNum($id('quickAmt')?.value||0), $id('quickNote')?.value, 'manual'));
-  $id('addOut')?.addEventListener('click',()=> addKasa('wydanie', asNum($id('quickAmt')?.value||0), $id('quickNote')?.value, 'manual'));
-  $id('cashClose')?.addEventListener('click',()=>{ const a=prompt('Итог в кассе (PLN):', kasaBalance().toFixed(2)); if(a===null) return; addKasa('zamknięcie', asNum(a), 'close', 'manual'); });
-  $id('q50')?.addEventListener('click',()=>{ const el=$id('quickAmt'); if(el) el.value=(Number(el.value||0)+50).toFixed(2); });
-  $id('q100')?.addEventListener('click',()=>{ const el=$id('quickAmt'); if(el) el.value=(Number(el.value||0)+100).toFixed(2); });
-  $id('q200')?.addEventListener('click',()=>{ const el=$id('quickAmt'); if(el) el.value=(Number(el.value||0)+200).toFixed(2); });
-
-  // Speech
-  const micBtn = $id('micBtn');
-  if (micBtn && (window.SpeechRecognition || window.webkitSpeechRecognition)) {
-    const SR  = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const rec = new SR();
-
-    rec.continuous     = false;
-    rec.interimResults = false;
-    rec.maxAlternatives = 1;
-    rec.lang = localStorage.getItem('speechLang') || 'pl-PL';
-
-    // Слова для ПРИХОДА (IN)
-    const CMD_IN = [
-      // PL
-      'przyjęcie','przyjecie','wpłata','wplata','depozyt','depozit',
-      // EN
-      'plus','income','cash in','received','receive','deposit',
-      // RU / UKR
-      'плюс','принять','пополнить','пополнил','приход','зачислить'
-    ];
-
-    // Слова для РАСХОДА (OUT)
-    const CMD_OUT = [
-      // PL
-      'wyda','wydat','wypłat','wyplata','koszt',
-      // EN
-      'minus','pay out','payout','expense','cash out','payment',
-      // RU / UKR
-      'выда','выдать','выдал','расход','списать','минус','выточка'
-    ];
-
-    function detectType(text) {
-      const t = text.toLowerCase();
-
-      // 1) Явный знак перед числом: "+200", "-150", "−300"
-      const signMatch = t.match(/([+\-−])\s*\d+[.,]?\d*/);
-      if (signMatch) {
-        const sign = signMatch[1];
-        if (sign === '-' || sign === '−') return 'wydanie';   // расход
-        if (sign === '+')               return 'przyjęcie';   // приход
-      }
-
-      // 2) Ключевые слова
-      if (CMD_OUT.some(w => t.includes(w))) return 'wydanie';
-      if (CMD_IN.some(w  => t.includes(w))) return 'przyjęcie';
-
-      // 3) По умолчанию считаем приход
-      return 'przyjęcie';
-    }
-
-    rec.onstart = () => {
-      micBtn.classList.add('on');
-      if ($id('micStatus')) {
-        $id('micStatus').textContent = `🎙️ ... (${rec.lang})`;
-      }
-    };
-
-    rec.onend = () => {
-      micBtn.classList.remove('on');
-    };
-
-    rec.onresult = (e) => {
-      const text = (e.results[0][0].transcript || "").toLowerCase();
-      if ($id('micStatus')) {
-        $id('micStatus').textContent = '🎙️ ' + text;
-      }
-
-      // Число: "200", "200,50", "200.50" и т.п.
-      const numMatch = text.match(/(\d+[.,]?\d*)\s*(zł|pln|eur|usd)?/i);
-      const num = numMatch ? numMatch[1] : null;
-
-      // Определяем тип: приход / расход
-      const type = detectType(text);
-
-      // Комментарий = текст без числа и валюты
-      const note = text.replace(/(\d+[.,]?\d*\s*(zł|pln|eur|usd)?)/i, "").trim();
-
-      if (!num) {
-        if ($id('micStatus')) {
-          $id('micStatus').textContent = '🎙️ сумма не найдена';
-        }
-        return;
-      }
-
-      addKasa(type, asNum(num), note || 'voice', 'voice');
-    };
-
-    $id('speechLang')?.addEventListener('change', (e) => {
-      rec.lang = e.target.value;
-      localStorage.setItem('speechLang', rec.lang);
-    });
-
-    micBtn.addEventListener('click', () => {
-      try {
-        rec.start();
-      } catch (e) {
-        if ($id('micStatus')) {
-          $id('micStatus').textContent = '🎙️ не смог запустить: ' + e.message;
-        }
-      }
-    });
-  }
-
-
-  // Settings
-  $id('applySettings')?.addEventListener('click',()=>{
-    localStorage.setItem('cashPLN',$id('cashPLN')?.value||"0");
-    localStorage.setItem('penaltyPct',$id('penaltyPct')?.value||"0.05");
-    localStorage.setItem('intervalMin',$id('intervalMin')?.value||"10");
-    localStorage.setItem('rateEUR',$id('rateEUR')?.value||"4.30");
-    localStorage.setItem('rateUSD',$id('rateUSD')?.value||"3.95");
-    localStorage.setItem('blacklist',$id('blacklist')?.value||"");
-    localStorage.setItem('autoCash', ($id('autoCash')?.checked?"1":"0"));
-    $id('modeCash')&&( $id('modeCash').textContent = (localStorage.getItem('otd_lang')||'pl')==='ru' ? ("Режим: "+($id('autoCash')?.checked?"авто":"ручной")) : ("Mode: "+($id('autoCash')?.checked?"auto":"manual")) );
-    render(); saveLocal(); scheduleAutosync(); pushState();
-  });
-  $id('exportCfg')?.addEventListener('click',()=>{
-    const cfg=stateKeys.reduce((m,k)=> (m[k]=localStorage.getItem(k),m),{});
-    const blob=new Blob([JSON.stringify(cfg,null,2)],{type:"application/json"});
-    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='onetapday_settings.json'; a.click();
-  });
-  $id('importCfg')?.addEventListener('change',async e=>{
-    const f=e.target.files[0]; if(!f) return; const cfg=JSON.parse(await f.text());
-    Object.entries(cfg).forEach(([k,v])=> localStorage.setItem(k, v));
-    location.reload();
-  });
-  $id('clearAll')?.addEventListener('click',()=>{
-    if(!confirm('Очистить локальную историю и настройки?')) return;
-    ['kasa','tx_manual_import','bills_manual_import','accMeta'].forEach(k=> localStorage.removeItem(k));
-    loadLocal(); inferAccounts(); render(); pushState();
-  });
-
-  // Demo/Sub controls
-  $id('startDemo')?.addEventListener('click', ()=>{
-    if (localStorage.getItem(DEMO_USED) === '1') {
-      alert('Demo уже было использовано. Доступ только по подписке.');
-      return;
-    }
-    localStorage.setItem(DEMO_START, new Date().toISOString());
-    localStorage.setItem(DEMO_USED, '1');
-    updateSubUI();
-    gateAccess();
-    // saveLocal триггерит sync в Firebase через saveLocal/pushState
-  });
-
-  $id('endDemo')?.addEventListener('click', ()=>{
-    localStorage.removeItem(DEMO_START);
-    // DEMO_USED не трогаем: демо уже использовано
-    updateSubUI();
-    gateAccess();
-  });
-
-  $id('payNow')?.addEventListener('click', async ()=>{
-    try{
-      const r = await fetch('/create-checkout-session', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        credentials:'include',
-        body:JSON.stringify({ demo:true })
-      });
-      const j = await r.json();
-      if(j?.url) { location.href=j.url; return; }
-      alert('No Stripe URL from backend');
-    }catch(e){ 
-      alert('Stripe error: '+(e?.message||e)); 
-    }
-  });
-
-
-
-  // INIT
-  loadLocal(); loadKasa();
-  $id('txUrl')&&( $id('txUrl').value = localStorage.getItem('txUrl')||"" );
-  ['cashPLN','penaltyPct','intervalMin','rateEUR','rateUSD','blacklist'].forEach(k=>{ if($id(k)) $id(k).value = localStorage.getItem(k)|| $id(k).value || ""; });
-  if($id('autoCash')) $id('autoCash').checked = localStorage.getItem('autoCash')==='1';
-  if($id('speechLang') && localStorage.getItem('speechLang')) $id('speechLang').value = localStorage.getItem('speechLang');
-
-  inferAccounts();
-  applyLang(localStorage.getItem('otd_lang')||'pl');
-  render();
-  scheduleAutosync();
-
-  // Remote pull once, then push snapshot
-  await pullState(); loadLocal(); inferAccounts(); render();
-  pushState(); startCloudSync();
-
-  // Save on unload (sendBeacon fallback)
-  window.addEventListener('beforeunload', ()=>{
-    if(!REMOTE_OK) return;
-    try{
-      const email=localStorage.getItem(USER_KEY)||"";
-      if(!email) return;
-      const body={
-        email,
-        tx: JSON.parse(localStorage.getItem('tx_manual_import')||'[]'),
-        bills: JSON.parse(localStorage.getItem('bills_manual_import')||'[]'),
-        kasa: JSON.parse(localStorage.getItem('kasa')||'[]'),
-        accMeta: JSON.parse(localStorage.getItem('accMeta')||'{}'),
-        settings: stateKeys.reduce((m,k)=> (m[k]=localStorage.getItem(k), m), {})
-      };
-      const blob=new Blob([JSON.stringify(body)],{type:'application/json'});
-      navigator.sendBeacon && navigator.sendBeacon(`${API_BASE}/state/save`, blob);
-    }catch(e){}
-  });
-});
-</script>
+<script src="js/app-main.js"></script>
   <script type="module">
   // Import the functions you need from the SDKs you need
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
@@ -1856,5 +941,16 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   <script type="module" src="/sync-cloud.js"></script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
 
 
