@@ -1,0 +1,40 @@
+{
+  "app": {
+    "title": "OneTapDay",
+    "subtitle": "Premium AI-CFO dla właścicieli, którzy nie chcą tonąć w tabelach.",
+    "dashboard": {
+      "movement_month": "Ruch w tym miesiącu",
+      "no_data": "Za mało danych, aby pokazać ruch.",
+      "documents": "Dokumenty",
+      "documents_desc": "Wgraj wyciągi, faktury i paragony (CSV, zdjęcia).",
+      "money": "Pieniądze i płatności",
+      "money_desc": "Zobacz, dokąd poszły pieniądze i co trzeba zapłacić.",
+      "ai": "AI-Księgowy",
+      "ai_desc": "Pomoże z oszczędzaniem, skalowaniem i unikaniem kar.",
+      "cash": "Kasa",
+      "cash_desc": "Gotówka: głosem lub ręcznie, zamknięcie dnia.",
+      "accounts": "Konta i karty",
+      "accounts_desc": "Które konta są podłączone i co liczyć w raportach.",
+      "reports": "Raporty i eksport",
+      "reports_desc": "Eksport CSV i raporty dla księgowego i inwestora."
+    }
+  },
+  "nav": {
+    "home": "Pulpit",
+    "transactions": "Wyciąg",
+    "bills": "Faktury",
+    "cash": "Kasa",
+    "ai": "AI"
+  },
+  "ai": {
+    "prototype_note": "To jest prototyp interfejsu. Pełne wskazówki AI-Księgowego pojawią się później.",
+    "questions": {
+      "overspend": "W których miejscach wydaję za dużo?",
+      "scale": "Jak mogę skalować mój biznes?",
+      "goal_income": "Ile muszę zarabiać, aby osiągnąć mój cel?"
+    },
+    "placeholders": {
+      "goal_input": "Wpisz swój cel, np. '20 000 PLN miesięcznie'"
+    }
+  }
+}

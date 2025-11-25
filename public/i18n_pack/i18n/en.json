@@ -1,0 +1,40 @@
+{
+  "app": {
+    "title": "OneTapDay",
+    "subtitle": "Premium AI-CFO for owners who don’t want to drown in spreadsheets.",
+    "dashboard": {
+      "movement_month": "Movement this month",
+      "no_data": "Not enough data to show movement.",
+      "documents": "Documents",
+      "documents_desc": "Upload statements, invoices and receipts (CSV, photo).",
+      "money": "Money & Payments",
+      "money_desc": "See where money went and what needs to be paid.",
+      "ai": "AI-Accountant",
+      "ai_desc": "Helps with saving, scaling and avoiding penalties.",
+      "cash": "Cash",
+      "cash_desc": "Cash: voice or manual input, close the day.",
+      "accounts": "Accounts & Cards",
+      "accounts_desc": "Which accounts are connected and included in the reports.",
+      "reports": "Reports & Export",
+      "reports_desc": "CSV export and reports for accountant and investor."
+    }
+  },
+  "nav": {
+    "home": "Dashboard",
+    "transactions": "Statements",
+    "bills": "Invoices",
+    "cash": "Cash",
+    "ai": "AI"
+  },
+  "ai": {
+    "prototype_note": "This is a prototype. Full AI-Accountant insights will appear later.",
+    "questions": {
+      "overspend": "Where am I overspending?",
+      "scale": "How can I scale my business?",
+      "goal_income": "How much do I need to earn to reach my goal?"
+    },
+    "placeholders": {
+      "goal_input": "Enter your goal, e.g. '20,000 PLN per month'"
+    }
+  }
+}
