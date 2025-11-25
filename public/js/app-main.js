@@ -2443,22 +2443,50 @@ window.appShowHome = function(){
 };
 
 window.appGoSection = function(secId){
+  const homeEl = document.getElementById('homeScreen');
+  const topBar = document.querySelector('.top');
+
   try{
-    const homeEl = document.getElementById('homeScreen');
-    const topBar = document.querySelector('.top');
-    if(homeEl) homeEl.style.display='none';
-    if(topBar) topBar.classList.remove('hidden');
-    document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
     const sec = document.getElementById(secId);
-    if(sec) sec.classList.add('active');
+
+    // Если секции нет — не прячем дом и не ломаем всё к чертям
+    if(!sec){
+      console.warn('appGoSection: section not found:', secId);
+      if(homeEl) homeEl.style.display = 'block';
+      if(topBar) topBar.classList.add('hidden');
+      return;
+    }
+
+    // Прячем домашний и показываем верхнюю панель
+    if(homeEl) homeEl.style.display = 'none';
+    if(topBar) topBar.classList.remove('hidden');
+
+    // Снимаем active со всех секций и ставим на нужную
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    sec.classList.add('active');
+
+    // Подсветка вкладки
     const tab = document.querySelector('.tabs .tab[data-sec="'+secId+'"]');
     if(tab){
-      document.querySelectorAll('.tabs .tab').forEach(x=>x.classList.remove('active'));
+      document.querySelectorAll('.tabs .tab').forEach(x => x.classList.remove('active'));
       tab.classList.add('active');
     }
-    try{ render(); }catch(e){}
-  }catch(e){ console.warn('appGoSection error', e); }
+
+    try{
+      // На всякий пожарный, если render что-то ломает — не убиваем видимость
+      render();
+    }catch(e){
+      console.warn('render() error:', e);
+    }
+
+  }catch(e){
+    console.warn('appGoSection fatal error:', e);
+    // Fallback: возвращаемся на домашний экран, чтобы не оставаться с пустым фоном
+    if(homeEl) homeEl.style.display = 'block';
+    if(topBar) topBar.classList.add('hidden');
+  }
 };
+
 
 document.addEventListener('DOMContentLoaded', async ()=>{
   // Lang bar
