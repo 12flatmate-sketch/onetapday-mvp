@@ -38,3 +38,72 @@
     }
   }
 }
+{
+  "app": {
+    "dashboard": {
+      "documents": "Documents",
+      "documents_desc": "Upload statements, invoices and receipts.",
+      "money": "Money & Payments",
+      "money_desc": "See where money goes and what must be paid.",
+      "ai": "AI-Accountant",
+      "ai_desc": "Insights and suggestions based on your data.",
+      "cash": "Cash",
+      "cash_desc": "Quick cash operations and daily closing.",
+      "accounts": "Accounts & Cards",
+      "accounts_desc": "Bank accounts included in calculations.",
+      "reports": "Reports & Export",
+      "reports_desc": "CSV export and reports for accountant or investor."
+    }
+  },
+  "documents": {
+    "title": "Documents",
+    "desc": "Upload statements, invoices and receipts.",
+    "statements": "Statements",
+    "statements_desc": "Bank account movements.",
+    "invoices": "Invoices",
+    "invoices_desc": "Bills from clients and suppliers.",
+    "receipts": "Receipts",
+    "receipts_desc": "Cash and small expenses."
+  },
+  "ai": {
+    "top_title": "AI Accountant",
+    "top_desc": "Tell a few things about yourself for better accuracy.",
+    "profile_who": "Who are you?",
+    "profile_niche": "Niche / business type",
+    "profile_goal": "What is most important now?",
+    "profile_save": "Save profile",
+    "profile_saved": "Profile saved. AI will use this data.",
+    "questions": {
+      "overspend": "Where am I overspending?",
+      "scale": "How can I scale?",
+      "goal_income": "How much should I earn to reach my goal?"
+    },
+    "placeholders": {
+      "goal_input": "What is your goal? For example: “20 000 PLN/month”."
+    }
+  },
+  "faq": {
+    "ritual": "How to use OneTapDay daily?",
+    "sync": "What does synchronisation mean?",
+    "match": "What are payment matches?",
+    "close_day": "Why close the day?",
+    "risk": "Where does the risk color come from?",
+    "export": "Why export CSV?",
+    "cash": "How to use cash module?"
+  },
+  "reports": {
+    "title": "Reports & Export",
+    "desc": "CSV and monthly summaries.",
+    "export_statements": "Export statements (CSV)",
+    "export_invoices": "Export invoices (CSV)",
+    "export_month": "Book / monthly report (CSV)"
+  },
+  "cash": {
+    "new_category": "New category",
+    "name": "Name",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "ph_amount": "Amount",
+  "ph_comment": "Comment"
+}
