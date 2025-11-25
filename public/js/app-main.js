@@ -17,6 +17,32 @@ let REMOTE_OK = localStorage.getItem('remote_disabled')==='1' ? false : true;
 /* ==== I18N ==== */
 const M = {
   ru:{ /* ——— RU ——— */
+        // Документы
+    'documents.title':"Документы",
+    'documents.desc':"Здесь ты кидаешь всё сырьё: выписки, фактуры и чеки. OneTapDay разложит по полкам.",
+    'documents.statements':"Выписки",
+    'documents.statements_desc':"Банк: движения по счёту.",
+    'documents.invoices':"Фактуры",
+    'documents.invoices_desc':"Счета от клиентов и поставщиков.",
+    'documents.receipts':"Чеки / расходы",
+    'documents.receipts_desc':"Наличка и мелкие траты.",
+
+    // Отчёты и экспорт
+    'reports.title':"Отчёты и экспорт",
+    'reports.desc':"Скачать CSV и отчёты для бухгалтера или инвестора.",
+    'reports.export_statements':"Экспортировать выписки (CSV)",
+    'reports.export_invoices':"Экспортировать фактуры (CSV)",
+    'reports.export_month':"Книга / отчёт месяца (CSV)",
+
+    // AI-бухгалтер: профиль
+    'ai.top_title':"AI-бухгалтер",
+    'ai.top_desc':"Сначала расскажи пару вещей о себе и бизнесе, чтобы советы были точнее.",
+    'ai.profile_who':"Кто ты?",
+    'ai.profile_niche':"Ниша / чем занимаешься?",
+    'ai.profile_goal':"Что главное сейчас?",
+    'ai.profile_save':"Сохранить профиль",
+    'ai.profile_saved':"Профиль сохранён. AI-бухгалтер будет опираться на эти данные.",
+    'ai.placeholders.goal_input':"Например: «Почему не хватает на квартиру?» или «Где я трачу лишнее?»",
     tab_dashboard:"Пульт", tab_statement:"Выписка", tab_invoices:"Фактуры", tab_accounts:"Счета", tab_cash:"Касса", tab_settings:"Настройки",
     gate_locked_title:"Доступ заблокирован",
     gate_locked_desc:"Демо истекло или нет активной подписки. Перейдите в Настройки, чтобы запустить демо (24 ч) или оплатить доступ.",
@@ -51,6 +77,33 @@ const M = {
     ph_amount:"Сумма", ph_comment:"Комментарий"
   },
   en:{ /* ——— EN ——— */
+        // Documents
+    'documents.title':"Documents",
+    'documents.desc':"This is where you drop all the raw data: statements, invoices and receipts. OneTapDay will sort it for you.",
+    'documents.statements':"Statements",
+    'documents.statements_desc':"Bank: account movements.",
+    'documents.invoices':"Invoices",
+    'documents.invoices_desc':"Bills from customers and suppliers.",
+    'documents.receipts':"Receipts / expenses",
+    'documents.receipts_desc':"Cash and small daily spending.",
+
+    // Reports & export
+    'reports.title':"Reports & export",
+    'reports.desc':"Download CSV files and reports for your accountant or investor.",
+    'reports.export_statements':"Export statements (CSV)",
+    'reports.export_invoices':"Export invoices (CSV)",
+    'reports.export_month':"Monthly book / report (CSV)",
+
+    // AI accountant
+    'ai.top_title':"AI accountant",
+    'ai.top_desc':"First tell a few things about you and the business so the advice is more accurate.",
+    'ai.profile_who':"Who are you?",
+    'ai.profile_niche':"Niche / what do you do?",
+    'ai.profile_goal':"What is the main goal now?",
+    'ai.profile_save':"Save profile",
+    'ai.profile_saved':"Profile saved. The AI accountant will use this data.",
+    'ai.placeholders.goal_input':"For example: “Why is there not enough for rent?” or “Where am I overspending?”",
+
     tab_dashboard:"Dashboard", tab_statement:"Statement", tab_invoices:"Invoices", tab_accounts:"Accounts", tab_cash:"Cash", tab_settings:"Settings",
     gate_locked_title:"Access locked",
     gate_locked_desc:"Demo ended or subscription inactive. Go to Settings to start a 24h demo or pay.",
@@ -85,6 +138,33 @@ const M = {
     ph_amount:"Amount", ph_comment:"Comment"
   },
   pl:{ /* ——— PL ——— */
+        // Dokumenty
+    'documents.title':"Dokumenty",
+    'documents.desc':"Tutaj wrzucasz całe surowe dane: wyciągi, faktury i paragony. OneTapDay poukłada je na półkach.",
+    'documents.statements':"Wyciągi",
+    'documents.statements_desc':"Ruchy na koncie bankowym.",
+    'documents.invoices':"Faktury",
+    'documents.invoices_desc':"Dokumenty od klientów i dostawców.",
+    'documents.receipts':"Paragony / wydatki",
+    'documents.receipts_desc':"Gotówka i drobne koszty.",
+
+    // Raporty i eksport
+    'reports.title':"Raporty i eksport",
+    'reports.desc':"Pobierz pliki CSV i raporty dla księgowego lub inwestora.",
+    'reports.export_statements':"Eksport wyciągów (CSV)",
+    'reports.export_invoices':"Eksport faktur (CSV)",
+    'reports.export_month':"Księga / raport miesiąca (CSV)",
+
+    // AI-księgowy
+    'ai.top_title':"AI-księgowy",
+    'ai.top_desc':"Najpierw powiedz kilka rzeczy o sobie i biznesie, żeby wskazówki były dokładniejsze.",
+    'ai.profile_who':"Kim jesteś?",
+    'ai.profile_niche':"Branża / czym się zajmujesz?",
+    'ai.profile_goal':"Co jest teraz najważniejsze?",
+    'ai.profile_save':"Zapisz profil",
+    'ai.profile_saved':"Profil zapisany. AI-księgowy będzie opierał się na tych danych.",
+    'ai.placeholders.goal_input':"Na przykład: „Dlaczego nie starcza na mieszkanie?” albo „Gdzie wydaję za dużo?”",
+
     tab_dashboard:"Panel", tab_statement:"Wyciąg", tab_invoices:"Faktury", tab_accounts:"Konta", tab_cash:"Kasa", tab_settings:"Ustawienia",
     gate_locked_title:"Dostęp zablokowany",
     gate_locked_desc:"Demo zakończone lub brak subskrypcji. Przejdź do Ustawień, aby uruchomić demo (24h) lub opłacić.",
@@ -119,6 +199,33 @@ const M = {
     ph_amount:"Kwota", ph_comment:"Komentarz"
   },
   uk:{ /* ——— UK ——— */
+        // Документи
+    'documents.title':"Документи",
+    'documents.desc':"Тут ти скидаєш всі сирі дані: виписки, рахунки і чеки. OneTapDay розкладе все по поличках.",
+    'documents.statements':"Виписки",
+    'documents.statements_desc':"Банк: рухи по рахунку.",
+    'documents.invoices':"Рахунки / інвойси",
+    'documents.invoices_desc':"Рахунки від клієнтів та постачальників.",
+    'documents.receipts':"Чеки / витрати",
+    'documents.receipts_desc':"Готівка та дрібні витрати.",
+
+    // Звіти та експорт
+    'reports.title':"Звіти та експорт",
+    'reports.desc':"Завантажуй CSV і звіти для бухгалтера або інвестора.",
+    'reports.export_statements':"Експортувати виписки (CSV)",
+    'reports.export_invoices':"Експортувати рахунки (CSV)",
+    'reports.export_month':"Книга / звіт місяця (CSV)",
+
+    // AI-бухгалтер
+    'ai.top_title':"AI-бухгалтер",
+    'ai.top_desc':"Спочатку розкажи кілька речей про себе та бізнес, щоб поради були точнішими.",
+    'ai.profile_who':"Хто ти?",
+    'ai.profile_niche':"Ніша / чим займаєшся?",
+    'ai.profile_goal':"Що зараз головне?",
+    'ai.profile_save':"Зберегти профіль",
+    'ai.profile_saved':"Профіль збережено. AI-бухгалтер буде спиратися на ці дані.",
+    'ai.placeholders.goal_input':"Наприклад: «Чому не вистачає на квартиру?» або «Де я витрачаю зайве?»",
+
     tab_dashboard:"Пульт", tab_statement:"Виписка", tab_invoices:"Рахунки", tab_accounts:"Рахунки", tab_cash:"Каса", tab_settings:"Налаштування",
     gate_locked_title:"Доступ заблоковано",
     gate_locked_desc:"Демо завершено або немає підписки. Перейдіть у Налаштування, щоб запустити демо (24 год) або оплатити доступ.",
