@@ -2433,23 +2433,31 @@ async function ocrInvoiceFiles(files){
 
 /* ==== DOM READY ==== */
 // ===== Навигация между home и разделами =====
-window.appShowHome = function(){
+appShowHome = function(){
   try{
     const homeEl = document.getElementById('homeScreen');
     const topBar = document.querySelector('.top');
 
-    // выключаем все разделы
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    // выключаем все разделы и реально их скрываем
+    document.querySelectorAll('.section').forEach(s => {
+      s.classList.remove('active');
+      s.style.display = 'none';
+    });
 
-    // показываем домашний
-    if (homeEl) homeEl.style.display = 'block';
+    // показываем домашний экран
+    if (homeEl) {
+      homeEl.style.display = 'block';
+    }
 
-    // прячем верхнюю панель
-    if (topBar) topBar.classList.add('hidden');
+    // верхняя панель прячется
+    if (topBar) {
+      topBar.classList.add('hidden');
+    }
   }catch(e){
     console.warn('appShowHome error', e);
   }
 };
+
 
 window.appGoSection = function(secId){
   const homeEl = document.getElementById('homeScreen');
@@ -2470,11 +2478,17 @@ window.appGoSection = function(secId){
     if (homeEl) homeEl.style.display = 'none';
     if (topBar) topBar.classList.remove('hidden');
 
-    // переключаем активный раздел
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    sec.classList.add('active');
+    // гасим все разделы и реально убираем их с глаз
+    document.querySelectorAll('.section').forEach(s => {
+      s.classList.remove('active');
+      s.style.display = 'none';
+    });
 
-    // табы трогать не обязательно, но пусть себе живут
+    // целевой раздел включаем
+    sec.classList.add('active');
+    sec.style.display = 'block';
+
+    // табы (если вдруг кто-то их включит)
     const tab = document.querySelector('.tabs .tab[data-sec="' + secId + '"]');
     if (tab){
       document.querySelectorAll('.tabs .tab').forEach(x => x.classList.remove('active'));
@@ -2487,6 +2501,7 @@ window.appGoSection = function(secId){
     if (topBar) topBar.classList.add('hidden');
   }
 };
+
    
 
 
