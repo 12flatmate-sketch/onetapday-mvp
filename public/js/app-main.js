@@ -2690,7 +2690,17 @@ quickPairs.forEach(([id,key])=>{
   $id('runAIAll')?.addEventListener('click', runAIAll);
   $id('makePlan')?.addEventListener('click', renderPlan);
   $id('applyPlan')?.addEventListener('click', renderPlan);
-  $id('applyMinPay')?.addEventListener('click', ()=>{ const m=computeMinPay(); if(!m) return alert('Нет кандидатов'); m.r["Status faktury"]="Opłacone"; m.r["Data płatności"]=today(); render(); saveLocal(); pushState(); });
+   $id('applyMinPay')?.addEventListener('click', () => {
+    try {
+      // Заглушка: просто пересчитать план и сохранить
+      render();
+      saveLocal();
+      pushState();
+    } catch (e) {
+      console.warn('applyMinPay error', e);
+    }
+  });
+
   $id('syncNow')?.addEventListener('click', fetchSources);
   $id('closeDay')?.addEventListener('click', openCloseDayModal);
   $id('closeDayCancel')?.addEventListener('click', closeCloseDayModal);
