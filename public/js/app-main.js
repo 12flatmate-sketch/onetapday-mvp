@@ -2432,49 +2432,24 @@ async function ocrInvoiceFiles(files){
 }
 
 /* ==== DOM READY ==== */
-window.appGoSection = function(secId){
-  const homeEl = document.getElementById('homeScreen');
-  const topBar = document.querySelector('.top');
-  const tabsWrap = document.querySelector('.tabs');
-
+// ===== Навигация между home и разделами =====
+window.appShowHome = function(){
   try{
-    const sec = document.getElementById(secId);
+    const homeEl = document.getElementById('homeScreen');
+    const topBar = document.querySelector('.top');
 
-    if(!sec){
-      console.warn('appGoSection: section not found:', secId);
-      if(homeEl) homeEl.style.display = 'block';
-      if(topBar) topBar.classList.add('hidden');
-      if(tabsWrap) tabsWrap.style.display = 'none';
-      return;
-    }
-
-    if(homeEl) homeEl.style.display = 'none';
-    if(topBar) topBar.classList.remove('hidden');
-    if(tabsWrap) tabsWrap.style.display = 'flex';   // ← показываем вкладки при входе в любую секцию
-
+    // выключаем все разделы
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    sec.classList.add('active');
 
-    const tab = document.querySelector('.tabs .tab[data-sec="'+secId+'"]');
-    if(tab){
-      document.querySelectorAll('.tabs .tab').forEach(x => x.classList.remove('active'));
-      tab.classList.add('active');
-    }
+    // показываем домашний
+    if (homeEl) homeEl.style.display = 'block';
 
-    try{
-      render();
-    }catch(e){
-      console.warn('render() error:', e);
-    }
-
+    // прячем верхнюю панель
+    if (topBar) topBar.classList.add('hidden');
   }catch(e){
-    console.warn('appGoSection fatal error:', e);
-    if(homeEl) homeEl.style.display = 'block';
-    if(topBar) topBar.classList.add('hidden');
-    if(tabsWrap) tabsWrap.style.display = 'none';
+    console.warn('appShowHome error', e);
   }
 };
-
 
 window.appGoSection = function(secId){
   const homeEl = document.getElementById('homeScreen');
@@ -2483,43 +2458,36 @@ window.appGoSection = function(secId){
   try{
     const sec = document.getElementById(secId);
 
-    // Если секции нет — не прячем дом и не ломаем всё к чертям
-    if(!sec){
+    // если раздел не нашли — не ломаем экран
+    if (!sec){
       console.warn('appGoSection: section not found:', secId);
-      if(homeEl) homeEl.style.display = 'block';
-      if(topBar) topBar.classList.add('hidden');
+      if (homeEl) homeEl.style.display = 'block';
+      if (topBar) topBar.classList.add('hidden');
       return;
     }
 
-    // Прячем домашний и показываем верхнюю панель
-    if(homeEl) homeEl.style.display = 'none';
-    if(topBar) topBar.classList.remove('hidden');
+    // прячем домашний, показываем верхнюю панель
+    if (homeEl) homeEl.style.display = 'none';
+    if (topBar) topBar.classList.remove('hidden');
 
-    // Снимаем active со всех секций и ставим на нужную
+    // переключаем активный раздел
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     sec.classList.add('active');
 
-    // Подсветка вкладки
-    const tab = document.querySelector('.tabs .tab[data-sec="'+secId+'"]');
-    if(tab){
+    // табы трогать не обязательно, но пусть себе живут
+    const tab = document.querySelector('.tabs .tab[data-sec="' + secId + '"]');
+    if (tab){
       document.querySelectorAll('.tabs .tab').forEach(x => x.classList.remove('active'));
       tab.classList.add('active');
     }
 
-    try{
-      // На всякий пожарный, если render что-то ломает — не убиваем видимость
-      render();
-    }catch(e){
-      console.warn('render() error:', e);
-    }
-
   }catch(e){
-    console.warn('appGoSection fatal error:', e);
-    // Fallback: возвращаемся на домашний экран, чтобы не оставаться с пустым фоном
-    if(homeEl) homeEl.style.display = 'block';
-    if(topBar) topBar.classList.add('hidden');
+    console.warn('appGoSection fatal error', e);
+    if (homeEl) homeEl.style.display = 'block';
+    if (topBar) topBar.classList.add('hidden');
   }
 };
+   
 
 
 document.addEventListener('DOMContentLoaded', async ()=>{
