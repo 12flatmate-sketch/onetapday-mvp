@@ -2432,70 +2432,76 @@ async function ocrInvoiceFiles(files){
 }
 
 /* ==== DOM READY ==== */
-// ===== Навигация между home и разделами =====
-appShowHome = function(){
-  try{
+// Переход на домашний экран
+window.appShowHome = function () {
+  try {
     const homeEl = document.getElementById('homeScreen');
     const topBar = document.querySelector('.top');
 
-    // выключаем все разделы и реально их скрываем
-    document.querySelectorAll('.section').forEach(s => {
-      s.classList.remove('active');
-      s.style.display = 'none';
+    // Скрываем все разделы
+    document.querySelectorAll('.section').forEach(sec => {
+      sec.classList.remove('active');
+      sec.style.display = 'none';
     });
 
-    // показываем домашний экран
+    // Показываем home
     if (homeEl) {
       homeEl.style.display = 'block';
     }
 
-    // верхняя панель прячется
+    // Верхняя панель прячется
     if (topBar) {
       topBar.classList.add('hidden');
     }
-  }catch(e){
+  } catch (e) {
     console.warn('appShowHome error', e);
   }
 };
 
 
-window.appGoSection = function(secId){
+// Переход к конкретному разделу
+window.appGoSection = function (secId) {
   const homeEl = document.getElementById('homeScreen');
   const topBar = document.querySelector('.top');
 
-  try{
+  try {
     const sec = document.getElementById(secId);
 
-    // если раздел не нашли — не ломаем экран
-    if (!sec){
+    // Если раздела нет — не ломаем всё
+    if (!sec) {
       console.warn('appGoSection: section not found:', secId);
       if (homeEl) homeEl.style.display = 'block';
       if (topBar) topBar.classList.add('hidden');
       return;
     }
 
-    // прячем домашний, показываем верхнюю панель
-    if (homeEl) homeEl.style.display = 'none';
-    if (topBar) topBar.classList.remove('hidden');
+    // Прячем домашку
+    if (homeEl) {
+      homeEl.style.display = 'none';
+    }
 
-    // гасим все разделы и реально убираем их с глаз
+    // Показываем верхнюю панель
+    if (topBar) {
+      topBar.classList.remove('hidden');
+    }
+
+    // Скрываем все разделы
     document.querySelectorAll('.section').forEach(s => {
       s.classList.remove('active');
       s.style.display = 'none';
     });
 
-    // целевой раздел включаем
+    // Включаем нужный
     sec.classList.add('active');
     sec.style.display = 'block';
 
-    // табы (если вдруг кто-то их включит)
+    // Если есть таб под этот раздел — подсветим его, если нет — просто игнорим
     const tab = document.querySelector('.tabs .tab[data-sec="' + secId + '"]');
-    if (tab){
+    if (tab) {
       document.querySelectorAll('.tabs .tab').forEach(x => x.classList.remove('active'));
       tab.classList.add('active');
     }
-
-  }catch(e){
+  } catch (e) {
     console.warn('appGoSection fatal error', e);
     if (homeEl) homeEl.style.display = 'block';
     if (topBar) topBar.classList.add('hidden');
