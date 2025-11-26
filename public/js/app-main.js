@@ -2532,6 +2532,51 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   initHelper();
   initSpendingUI();
   initTrendInteractions();
+    // --- Фикс поломанной вёрстки: выносим секции из homeScreen ---
+  try {
+    const home = document.getElementById('homeScreen');
+    const host = document.querySelector('.wrap') || document.body;
+
+    if (home && host) {
+      // верхняя панель
+      const topBar = document.querySelector('.top');
+      if (topBar && home.contains(topBar)) {
+        host.appendChild(topBar);
+      }
+
+      // основные секции
+      const moveIds = [
+        'gate',
+        'pulpit',
+        'docs',
+        'wyciag',
+        'faktury',
+        'konta',
+        'kasa',
+        'ustawienia',
+        'aiAssist',
+        'reports'
+      ];
+
+      moveIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && home.contains(el)) {
+          host.appendChild(el);
+        }
+      });
+
+      // helper-виджеты
+      ['helperFab', 'helperPanel'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && home.contains(el)) {
+          host.appendChild(el);
+        }
+      });
+    }
+  } catch (e) {
+    console.warn('layout fix failed', e);
+  }
+
 
 
   // Home screen and premium tiles
