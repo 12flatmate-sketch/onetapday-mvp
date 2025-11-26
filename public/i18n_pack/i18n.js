@@ -1,20 +1,23 @@
-window.i18n={lang:"pl",data:{},async load(e){this.lang=e,localStorage.setItem("lang",e);const t=await fetch(`/public/i18n/${e}.json`);this.data=await t.json(),this.apply()},apply(){document.querySelectorAll("[data-i18n]").forEach(e=>{const t=e.getAttribute("data-i18n");const n=t.split(".").reduce((o,i)=>o?.[i],this.data);if(n!==undefined&&n!==null)e.innerHTML=n;})}};document.addEventListener("DOMContentLoaded",()=>{const e=localStorage.getItem("lang")||"pl";i18n.load(e)});
-// fallback: если язык не подтянулся из старого движка
-document.addEventListener('DOMContentLoaded', () => {
-  const lang = localStorage.getItem('otd_lang') || 'pl';
-  const dictPath = `/public/i18n_pack/${lang}.json`;
+window.i18n = {
+  lang: "pl",
+  data: {},
+  async load(l) {
+    this.lang = l;
+    localStorage.setItem("lang", l);
+    const res = await fetch(`/public/i18n/${l}.json`);
+    this.data = await res.json();
+    this.apply();
+  },
+  apply() {
+    document.querySelectorAll("[data-i18n]").forEach(el => {
+      const key = el.getAttribute("data-i18n");
+      const value = key.split(".").reduce((o, i) => o?.[i], this.data);
+      if (value !== undefined && value !== null) el.innerHTML = value;
+    });
+  }
+};
 
-  fetch(dictPath)
-    .then(r => r.json())
-    .then(dict => {
-      document.querySelectorAll('[data-i]').forEach(el => {
-        const key = el.getAttribute('data-i');
-        if (dict[key]) el.textContent = dict[key];
-      });
-      document.querySelectorAll('[data-i-ph]').forEach(el => {
-        const key = el.getAttribute('data-i-ph');
-        if (dict[key]) el.placeholder = dict[key];
-      });
-    })
-    .catch(err => console.warn('i18n fallback error', err));
+document.addEventListener("DOMContentLoaded", () => {
+  const lang = localStorage.getItem("lang") || "pl";
+  i18n.load(lang);
 });
