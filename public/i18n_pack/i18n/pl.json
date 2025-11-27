@@ -1,109 +1,242 @@
 {
   "app": {
     "title": "OneTapDay",
-    "subtitle": "Premium AI-CFO dla właścicieli, którzy nie chcą tonąć w tabelach.",
-    "dashboard": {
-      "movement_month": "Ruch w tym miesiącu",
-      "no_data": "Za mało danych, aby pokazać ruch.",
-      "documents": "Dokumenty",
-      "documents_desc": "Wgraj wyciągi, faktury i paragony (CSV, zdjęcia).",
-      "money": "Pieniądze i płatności",
-      "money_desc": "Zobacz, dokąd poszły pieniądze i co trzeba zapłacić.",
-      "ai": "AI-Księgowy",
-      "ai_desc": "Pomoże z oszczędzaniem, skalowaniem i unikaniem kar.",
-      "cash": "Kasa",
-      "cash_desc": "Gotówka: głosem lub ręcznie, zamknięcie dnia.",
-      "accounts": "Konta i karty",
-      "accounts_desc": "Które konta są podłączone i co liczyć w raportach.",
-      "reports": "Raporty i eksport",
-      "reports_desc": "Eksport CSV i raporty dla księgowego i inwestora."
-    }
+    "subtitle": "Premium AI-CFO dla właścicieli, którzy nie chcą tonąć w tabelach."
   },
+
   "nav": {
-    "home": "Pulpit",
-    "transactions": "Wyciąg",
+    "home": "Strona główna",
+    "transactions": "Wyciągi",
     "bills": "Faktury",
     "cash": "Kasa",
-    "ai": "AI"
+    "ai": "AI",
+    "accounts": "Konta",
+    "reports": "Raporty",
+    "settings": "Ustawienia"
   },
-  "ai": {
-    "prototype_note": "To jest prototyp interfejsu. Pełne wskazówki AI-Księgowego pojawią się później.",
-    "questions": {
-      "overspend": "W których miejscach wydaję za dużo?",
-      "scale": "Jak mogę skalować mój biznes?",
-      "goal_income": "Ile muszę zarabiać, aby osiągnąć mój cel?"
-    },
-    "placeholders": {
-      "goal_input": "Wpisz swój cel, np. '20 000 PLN miesięcznie'"
-    }
-  }
-}
-{
-  "app": {
-    "dashboard": {
-      "documents": "Dokumenty",
-      "documents_desc": "Wrzuć wyciągi, faktury i paragony. OneTapDay uporządkuje to automatycznie.",
-      "money": "Pieniądze i płatności",
-      "money_desc": "Zobacz, gdzie wypływają pieniądze i co musisz zapłacić.",
-      "ai": "AI-Księgowy",
-      "ai_desc": "Podpowiedzi oparte na Twoich danych i codziennych płatnościach.",
-      "cash": "Kasa",
-      "cash_desc": "Szybkie operacje gotówkowe, głos i zamknięcie dnia.",
-      "accounts": "Konta i karty",
-      "accounts_desc": "Twoje konta bankowe uwzględnione w analizie.",
-      "reports": "Raporty i eksport",
-      "reports_desc": "Eksport CSV i zestawienia dla księgowego lub inwestora."
-    }
+
+  "home": {
+    "tagline": "Premium AI-CFO dla właścicieli, którzy nie chcą tonąć w tabelach.",
+    "trend_title": "Ruch za miesiąc",
+    "trend_empty": "Za mało danych, aby pokazać ruch.",
+    "tile_docs_title": "Dokumenty",
+    "tile_docs_desc": "Wyciągi, faktury i paragony (CSV, zdjęcia).",
+    "tile_money_title": "Pieniądze i płatności",
+    "tile_money_desc": "Zobacz, dokąd poszły pieniądze i co trzeba opłacić.",
+    "tile_ai_title": "AI-księgowy",
+    "tile_ai_desc": "Podpowie, gdzie oszczędzić i jak uniknąć kar.",
+    "tile_cash_title": "Kasa",
+    "tile_cash_desc": "Gotówka: głosowo lub ręcznie, zamknięcie dnia.",
+    "tile_accounts_title": "Konta i karty",
+    "tile_accounts_desc": "Jakie konta są podłączone do raportów.",
+    "tile_reports_title": "Raporty i eksport",
+    "tile_reports_desc": "CSV dla księgowego i inwestora."
   },
+
   "documents": {
     "title": "Dokumenty",
-    "desc": "Wrzuć tu wyciągi, faktury, paragony. My je rozłożymy i dopasujemy.",
+    "desc": "Tu wrzucasz wyciągi, faktury i paragony.",
+    "add_what": "Co chcesz dodać?",
+    "btn_screenshot": "Zrzut / zdjęcie",
+    "btn_open_statements": "Otwórz wyciągi",
+    "btn_open_invoices": "Otwórz faktury",
+    "btn_photo_scan": "Zdjęcie / skan",
+    "btn_open_cash": "Otwórz kasę",
     "statements": "Wyciągi",
-    "statements_desc": "Ruchy na koncie bankowym.",
+    "statements_desc": "Ruch na koncie.",
     "invoices": "Faktury",
-    "invoices_desc": "Rachunki od klientów i dostawców.",
+    "invoices_desc": "Dokumenty od klientów i dostawców.",
     "receipts": "Paragony / wydatki",
-    "receipts_desc": "Gotówka i drobne koszty."
+    "receipts_desc": "Gotówka i małe wydatki."
   },
+
+  "money": {
+    "title": "Pieniądze i płatności",
+    "desc": "Status, ruch i zobowiązania."
+  },
+
   "ai": {
-    "top_title": "AI-Księgowy",
-    "top_desc": "Powiedz kilka rzeczy o sobie, aby podpowiedzi były bardziej trafne.",
+    "prototype_note": "To prototyp. Pełne porady pojawią się później.",
+    "ask_title": "Zadaj pytanie AI-księgowemu",
+    "ask_desc": "Zapytaj, czemu brakuje na czynsz albo gdzie uciekają pieniądze.",
+    "q_rent": "Dlaczego brakuje na mieszkanie?",
+    "q_spending": "Na co wydaję za dużo?",
+    "q_withdraw": "Ile mogę bezpiecznie wypłacić?",
+    "q_month": "Czy starczy mi do końca miesiąca?",
+    "ask_btn": "Zapytaj",
+    "chat_intro": "Tu później pojawi się rozmowa z AI-księgowym.",
+
+    "top_title": "AI-księgowy",
+    "top_desc": "Powiedz kilka rzeczy o sobie, aby zwiększyć dokładność podpowiedzi.",
     "profile_who": "Kim jesteś?",
-    "profile_niche": "Branża / czym się zajmujesz?",
-    "profile_goal": "Co jest najważniejsze teraz?",
+    "profile_who_solo": "Freelancer / osoba prywatna",
+    "profile_who_owner": "Właściciel firmy",
+    "profile_who_team": "Firma z zespołem",
+    "profile_who_partner": "Wspólnik",
+    "profile_niche": "Czym się zajmujesz?",
+    "profile_niche_ph": "Np. barber, marketing, IT-usługi",
+    "profile_goal": "Co jest teraz najważniejsze?",
+    "profile_goal_survive": "Przetrwać i nie wpaść w długi",
+    "profile_goal_stable": "Utrzymać stabilność",
+    "profile_goal_grow": "Rosnąć i skalować",
     "profile_save": "Zapisz profil",
-    "profile_saved": "Profil zapisany. AI-Księgowy dostosuje odpowiedzi.",
-    "questions": {
-      "overspend": "Gdzie wydaję za dużo?",
-      "scale": "Jak mogę się skalować?",
-      "goal_income": "Ile muszę zarabiać, aby osiągnąć mój cel?"
-    },
+    "profile_saved": "Profil zapisany.",
+
     "placeholders": {
-      "goal_input": "Jaki masz cel finansowy? Na przykład: „20 000 PLN/mies.”"
+      "goal_input": "Np. „20 000 PLN miesięcznie\"."
     }
   },
-  "faq": {
-    "ritual": "Jak używać OneTapDay na co dzień?",
-    "sync": "Co oznacza „Synchronizacja”?",
-    "match": "Co to są dopasowania płatności?",
-    "close_day": "Po co zamykać dzień?",
-    "risk": "Skąd bierze się kolor ryzyka?",
-    "export": "Po co eksport CSV?",
-    "cash": "Jak pracować z gotówką?"
-  },
+
   "reports": {
     "title": "Raporty i eksport",
-    "desc": "Pobierz CSV i zestawienia dla księgowego lub inwestora.",
+    "desc": "Pobierz CSV i raporty.",
     "export_statements": "Eksport wyciągów (CSV)",
     "export_invoices": "Eksport faktur (CSV)",
-    "export_month": "Księga / raport miesiąca (CSV)"
+    "export_month": "Raport miesiąca (CSV)"
   },
+
   "cash": {
-    "new_category": "Nowa kategoria wydatku",
+    "title": "Kasa — szybkie operacje",
+    "note": "Kasa głosowa i szybkie przyciski.",
+    "btn_add_in": "+ Przyjęcie",
+    "btn_add_out": "– Wydanie",
+    "btn_close_shift": "Zamknij zmianę",
+    "new_category": "Nowa kategoria wydatków",
     "name": "Nazwa",
+    "save": "Zapisz",
+    "cancel": "Anuluj",
+    "photo_note": "Zdjęcie paragonu — rozpoznamy kwotę.",
+    "speech_lang_label": "Język rozpoznawania:",
+    "th_date": "Data",
+    "th_type": "Typ",
+    "th_amount": "Kwota",
+    "th_source": "Źródło",
+    "th_comment": "Komentarz"
+  },
+
+  "accounts": {
+    "title": "Konta",
+    "desc": "Konta wykryte podczas importu wyciągów.",
+    "auto_title": "Konta z wyciągu (auto)",
+    "auto_desc": "Edytuj walutę, saldo początkowe i uwzględnianie.",
+    "th_account": "Konto",
+    "th_type": "Typ",
+    "th_currency": "Waluta",
+    "th_balance_calc": "Saldo (obliczane)",
+    "th_start_balance": "Saldo początkowe",
+    "th_include": "Uwzględniać"
+  },
+
+  "kpi": {
+    "due_today": "Do zapłaty dziś",
+    "unmatched": "Niesparowane transakcje",
+    "banks": "Banki",
+    "cash": "Kasa",
+    "total": "Razem dostępne",
+    "gap_today": "Luka kasowa dziś"
+  },
+
+  "plan": {
+    "title": "Plan płatności",
+    "filter_label": "Filtr:",
+    "filter_today": "Dzisiaj",
+    "filter_7d": "7 dni",
+    "filter_all": "Wszystko",
+    "exclude_blacklist": "Wyklucz blacklist",
+    "btn_make": "Utwórz",
+    "btn_apply": "Zastosuj",
+    "th_invoice": "Faktura",
+    "th_supplier": "Dostawca",
+    "th_due": "Termin",
+    "th_amount": "Kwota",
+    "th_reason": "Powód"
+  },
+
+  "spending": {
+    "title": "Wydatki wg kategorii",
+    "desc": "Dokąd najczęściej idą pieniądze.",
+    "add_custom": "+ Własna kategoria",
+    "empty": "Brak danych."
+  },
+
+  "spcat": {
+    "title": "Nowa kategoria wydatków",
+    "desc": "Podaj nazwę i wybierz emoji.",
+    "name_label": "Nazwa",
+    "name_ph": "Np. Subskrypcje",
+    "emoji_label": "Emoji",
     "save": "Zapisz",
     "cancel": "Anuluj"
   },
-  "ph_amount": "Kwota",
-  "ph_comment": "Komentarz"
+
+  "tables": {
+    "th_date": "Data",
+    "th_account": "Konto",
+    "th_counterparty": "Kontrahent",
+    "th_desc": "Opis",
+    "th_amount": "Kwota",
+    "th_currency": "Waluta",
+    "th_status": "Status",
+    "th_actions": "Akcje",
+    "inv_th_due": "Termin",
+    "inv_th_number": "Nr",
+    "inv_th_supplier": "Dostawca",
+    "inv_th_amount": "Kwota",
+    "inv_th_currency": "Waluta",
+    "inv_th_status": "Status",
+    "inv_th_candidate": "Kandydat",
+    "inv_th_score": "Score",
+    "inv_th_action": "Akcja"
+  },
+
+  "settings": {
+    "title": "Ustawienia",
+    "lang_title": "Język",
+    "lang_desc": "Możesz zmienić w każdej chwili.",
+    "parameters": "Parametry",
+    "param_cash_label": "Dostępna kasa dziś (PLN):",
+    "param_penalty_label": "Kara %/dzień:",
+    "param_interval_label": "Interwał synchronizacji (minuty):",
+    "rateEUR_label": "Kurs EUR:",
+    "rateUSD_label": "Kurs USD:",
+    "blacklist_label": "Blacklist (po przecinku):",
+    "auto_mode_label": "Auto: konta + kasa",
+    "btn_save_settings": "Zapisz",
+    "btn_export_settings": "Eksport",
+    "btn_import_settings": "Import",
+    "btn_clear_all": "Wyczyść historię",
+    "sub_title": "Subskrypcja / demo",
+    "btn_start_demo": "Uruchom demo (24h)",
+    "btn_pay_sub": "Opłać subskrypcję",
+    "btn_end_demo": "Zakończ demo",
+    "sub_hint": "Płatności tylko przez ustawienia. Stripe-link wkładasz do localStorage."
+  },
+
+  "buttons": {
+    "sync": "Synchronizacja",
+    "ai_match": "AI-dopasowanie",
+    "accept_safe": "Akceptuj bezpieczne pary",
+    "pdf": "Raport PDF",
+    "apply_minpay": "Oznacz jako opłacone",
+    "make_plan": "Utwórz",
+    "apply_plan": "Zastosuj"
+  },
+
+  "placeholders": {
+    "amount": "Kwota",
+    "comment": "Komentarz",
+    "csv_url": "URL pliku CSV"
+  },
+
+  "modal": {
+    "locked_title": "Dostęp zablokowany",
+    "locked_desc": "Demo wygasło lub brak subskrypcji.",
+    "open_settings": "Przejdź do ustawień"
+  },
+
+  "errors": {
+    "no_data": "Brak danych",
+    "upload_failed": "Błąd wczytywania",
+    "parse_failed": "Błąd przetwarzania danych"
+  }
 }

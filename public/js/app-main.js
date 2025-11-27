@@ -15,572 +15,17 @@ const USER_KEY = 'otd_user'; // email
 let REMOTE_OK = localStorage.getItem('remote_disabled')==='1' ? false : true;
 
 /* ==== I18N ==== */
-const M = {
-  ru:{ /* ——— RU ——— */
-        'ai.profile_who_solo':"Фриланс / частное лицо",
-    'ai.profile_who_owner':"Предприниматель без команды",
-    'ai.profile_who_team':"Фирма с командой",
-    'ai.profile_niche_ph':"Например: барбершоп, маркетинг, IT-услуги",
-    'ai.profile_goal_survive':"Выжить и не влететь в долги",
-    'ai.profile_goal_stable':"Стабильно держаться на плаву",
-    'ai.profile_goal_grow':"Расти и масштабироваться",
-
-    'ai.ask_title':"Задай вопрос AI-бухгалтеру",
-    'ai.ask_desc':"Спроси, почему не хватает на аренду, где сэкономить или как не получить штраф.",
-    'ai.q_rent':"Почему не хватает на квартиру?",
-    'ai.q_spending':"Где я трачу лишнее?",
-    'ai.q_withdraw':"Сколько можно безопасно вывести?",
-    'ai.q_month':"Хватит ли денег до конца месяца?",
-    'ai.ask_btn':"Спросить",
-    'ai.chat_intro':"Здесь позже будет живой диалог с AI-бухгалтером. Сейчас это прототип интерфейса.",
-
-        'documents.add_what':"Что добавить?",
-    'documents.btn_screenshot':"Скрин / фото",
-    'documents.btn_open_statements':"Открыть выписки",
-    'documents.btn_open_invoices':"Открыть фактуры",
-    'documents.btn_photo_scan':"Фото / скан",
-    'documents.btn_open_cash':"Открыть кассу",
-
-     'ai.profile_who_solo':"Собственник / фрилансер",
-    'ai.profile_who_partner':"Партнёр в бизнесе",
-    'ai.profile_who_team':"Фирма с командой",
-    'ai.profile_niche_ph':"Например: барбершоп, маркетинг, IT-услуги",
-    'ai.profile_goal_survive':"Выжить и не влететь в долги",
-    'ai.profile_goal_stable':"Стабильно держаться на плаву",
-    'ai.profile_goal_grow':"Расти и масштабироваться",
-
-    
-        'ai.q_rent':"Почему не хватает на квартиру?",
-    'ai.q_spending':"Где я трачу лишнее?",
-    'ai.q_withdraw':"Сколько можно безопасно вывести?",
-    'ai.q_month':"Хватит ли денег до конца месяца?",
-    'ai.ask_btn':"Спросить",
-    
-    'spending.title':"Расходы по категориям",
-    'spending.desc':"Видно, куда чаще всего уходят деньги (Żabka, Biedronka, топливо и т.д.).",
-    'spending.add_custom':"+ Своя категория",
-    'spending.empty':"Пока нет данных для разбора.",
-    'spcat.title':"Новая категория расходов",
-    'spcat.desc':"Дай категории понятное название и выбери эмодзи.",
-    'spcat.name_label':"Название",
-    'spcat.name_ph':"Например: Подписки",
-    'spcat.emoji_label':"Эмодзи",
-    'spcat.save':"Сохранить",
-    'spcat.cancel':"Отмена",
-
-    'settings.lang_title':"Язык интерфейса",
-    'settings.lang_desc':"Выбери язык, на котором тебе удобнее работать. Можно менять в любой момент.",
-    
-        'home.tagline':"Premium AI-CFO для владельцев, которые не хотят тонуть в таблицах.",
-    'home.trend_title':"Движение за месяц",
-    'home.trend_empty':"Мало данных, чтобы показать движение.",
-
-    'home.tile_docs_title':"Документы",
-    'home.tile_docs_desc':"Загрузи выписки, фактуры и чеки (CSV, скрин, фото).",
-
-    'home.tile_money_title':"Деньги и платежи",
-    'home.tile_money_desc':"Увидеть, куда ушли деньги и что нужно заплатить.",
-
-    'home.tile_ai_title':"AI-бухгалтер",
-    'home.tile_ai_desc':"Поможет с экономией, масштабированием и штрафами.",
-
-    'home.tile_cash_title':"Касса",
-    'home.tile_cash_desc':"Наличка: голосом или вручную, закрытие дня.",
-
-    'home.tile_accounts_title':"Счета и карты",
-    'home.tile_accounts_desc':"Какие счета подключены и что учитывать в расчётах.",
-
-    'home.tile_reports_title':"Отчёты и экспорт",
-    'home.tile_reports_desc':"Выгрузка CSV и отчёты для бухгалтера и инвестора.",
-
-        // Документы
-    'documents.title':"Документы",
-    'documents.desc':"Здесь ты кидаешь всё сырьё: выписки, фактуры и чеки. OneTapDay разложит по полкам.",
-    'documents.statements':"Выписки",
-    'documents.statements_desc':"Банк: движения по счёту.",
-    'documents.invoices':"Фактуры",
-    'documents.invoices_desc':"Счета от клиентов и поставщиков.",
-    'documents.receipts':"Чеки / расходы",
-    'documents.receipts_desc':"Наличка и мелкие траты.",
-
-    // Отчёты и экспорт
-    'reports.title':"Отчёты и экспорт",
-    'reports.desc':"Скачать CSV и отчёты для бухгалтера или инвестора.",
-    'reports.export_statements':"Экспортировать выписки (CSV)",
-    'reports.export_invoices':"Экспортировать фактуры (CSV)",
-    'reports.export_month':"Книга / отчёт месяца (CSV)",
-
-    // AI-бухгалтер: профиль
-    'ai.top_title':"AI-бухгалтер",
-    'ai.top_desc':"Сначала расскажи пару вещей о себе и бизнесе, чтобы советы были точнее.",
-    'ai.profile_who':"Кто ты?",
-    'ai.profile_niche':"Ниша / чем занимаешься?",
-    'ai.profile_goal':"Что главное сейчас?",
-    'ai.profile_save':"Сохранить профиль",
-    'ai.profile_saved':"Профиль сохранён. AI-бухгалтер будет опираться на эти данные.",
-    'ai.placeholders.goal_input':"Например: «Почему не хватает на квартиру?» или «Где я трачу лишнее?»",
-    tab_dashboard:"Пульт", tab_statement:"Выписка", tab_invoices:"Фактуры", tab_accounts:"Счета", tab_cash:"Касса", tab_settings:"Настройки",
-    gate_locked_title:"Доступ заблокирован",
-    gate_locked_desc:"Демо истекло или нет активной подписки. Перейдите в Настройки, чтобы запустить демо (24 ч) или оплатить доступ.",
-    gate_open_settings:"Открыть Настройки",
-    kpi_due_today:"К оплате сегодня", kpi_unmatched:"Несвязанные транзакции", kpi_banks:"Банки в расчёте", kpi_cash:"Касса (нал)", kpi_total:"Доступно всего", kpi_gap_today:"Разрыв кассы сегодня",
-    btn_sync:"Синхронизация", btn_ai_match:"ИИ-сверка", btn_accept_safe:"Принять безопасные пары", btn_pdf:"PDF отчёт", sync_ts:"Синхронизация: —",
-    minpay_title:"Минимальный платёж (штраф-стоп)", btn_apply_minpay:"Отметить как оплачено",
-    forecast_7d:"Прогноз 7 дней", forecast7d_note:"Считает PLN-счета (включённые) + кассу.",
-    forecast_30d:"Прогноз 30 дней", forecast30_note:"Автопрогноз по выпискам + кассе на 30 дней.",
-    month_summary_title:"Итоги месяца",
-    plan_title:"План платежей под кассу", filter_label:"Фильтр:", filter_today:"Сегодня", filter_7d:"7 дней", filter_all:"Все", exclude_blacklist:"Исключать blacklist",
-    btn_make_plan:"Сформировать", btn_apply_plan:"Применить",
-    plan_th_invoice:"Фактура", plan_th_supplier:"Поставщик", plan_th_due:"Срок", plan_th_amount:"Сумма", plan_th_reason:"Причина",
-    upload_statement:"Загрузить выписку (CSV)", upload_statement_image:"Загрузить скрин выписки (галерея)",
-    placeholder_csv_url:"URL CSV выписки", save_url:"Сохранить URL",
-    statement_columns_note:"Колонки: дата, id транзакции, id счёта/IBAN, контрагент, описание, сумма(±), валюта, статус, saldo?",
-    th_date:"Дата", th_account:"Счёт", th_counterparty:"Контрагент", th_desc:"Описание", th_amount:"Сумма", th_currency:"Валюта", th_status:"Статус", th_actions:"Действия",
-    upload_invoices:"Загрузить счета (CSV)", upload_invoice_images:"Загрузить фото фактуры", invoices_note:"Распознаются № фактуры, суммы и даты.",
-    inv_th_due:"Срок", inv_th_number:"№", inv_th_supplier:"Поставщик", inv_th_amount:"Сумма", inv_th_currency:"Валюта", inv_th_status:"Статус", inv_th_candidate:"Кандидат", inv_th_score:"Score", inv_th_action:"Действие",
-    auto_accounts_title:"Счета из выписки (авто)", auto_accounts_desc:"Редактируй валюту, стартовый баланс и включение в план.",
-    acc_th_account:"Счёт", acc_th_type:"Тип", acc_th_currency:"Валюта", acc_th_balance_calc:"Баланс (расчёт)", acc_th_start_balance:"Стартовый баланс", acc_th_include:"В расчёт",
-    cash_title:"Касса — быстрые операции", cash_note:"Голосовая касса + быстрые кнопки",
-    btn_add_in:"+ Приём", btn_add_out:"− Выдача", btn_close_shift:"Закрыть смену",
-    speech_lang_label:"Язык распознавания:", cash_photo_note:"Фото чека/выписки — распознать сумму и описание.",
-    cash_th_date:"Дата", cash_th_type:"Тип", cash_th_amount:"Сумма", cash_th_source:"Источник", cash_th_comment:"Комментарий",
-    parameters:"Параметры", param_cash_label:"Доступная касса сегодня (PLN):", param_penalty_label:"Пеня, %/день:", param_interval_label:"Интервал синха, мин:",
-    rateEUR_label:"rateEUR:", rateUSD_label:"rateUSD:", blacklist_label:"Blacklist (через запятую):", auto_mode_label:"Авто: из счетов (включённые) + касса",
-    btn_save_settings:"Сохранить", btn_export_settings:"Экспорт настроек", btn_import_settings:"Импорт настроек",
-    btn_clear_all:"Очистить историю (локально)",
-    sub_title:"Подписка / Демо", btn_start_demo:"Запустить демо (24 ч)", btn_pay_sub:"Оплатить подписку", btn_end_demo:"Закончить демо",
-    sub_hint:"Оплата только в Настройках. Если есть ссылka Stripe — положи в localStorage.stripe_link.",
-    ph_amount:"Сумма", ph_comment:"Комментарий"
-  },
-  en:{ /* ——— EN ——— */
-        'ai.profile_who_solo':"Freelancer / individual",
-    'ai.profile_who_owner':"Entrepreneur without a team",
-    'ai.profile_who_team':"Company with a team",
-    'ai.profile_niche_ph':"For example: barbershop, marketing, IT services",
-    'ai.profile_goal_survive':"Survive and avoid going into debt",
-    'ai.profile_goal_stable':"Stay stable and afloat",
-    'ai.profile_goal_grow':"Grow and scale",
-
-    'ai.ask_title':"Ask the AI accountant",
-    'ai.ask_desc':"Ask why there isn’t enough for rent, where to save, or how to avoid penalties.",
-    'ai.q_rent':"Why is there not enough for rent?",
-    'ai.q_spending':"Where am I overspending?",
-    'ai.q_withdraw':"How much can I safely withdraw?",
-    'ai.q_month':"Will the money last until the end of the month?",
-    'ai.ask_btn':"Ask",
-    'ai.chat_intro':"Later this will be a live dialogue with the AI accountant. For now it’s a prototype.",
-
-    
-        'documents.add_what':"What to add?",
-    'documents.btn_screenshot':"Screenshot / photo",
-    'documents.btn_open_statements':"Open statements",
-    'documents.btn_open_invoices':"Open invoices",
-    'documents.btn_photo_scan':"Photo / scan",
-    'documents.btn_open_cash':"Open cash",
-
-        'ai.profile_who_solo':"Owner / freelancer",
-    'ai.profile_who_partner':"Business partner",
-    'ai.profile_who_team':"Company with a team",
-    'ai.profile_niche_ph':"For example: barbershop, marketing, IT services",
-    'ai.profile_goal_survive':"Survive and avoid going into debt",
-    'ai.profile_goal_stable':"Stay stable and afloat",
-    'ai.profile_goal_grow':"Grow and scale",
-
-  
-     'ai.q_rent':"Why is there not enough for rent?",
-    'ai.q_spending':"Where am I overspending?",
-    'ai.q_withdraw':"How much can I safely withdraw?",
-    'ai.q_month':"Will the money last until the end of the month?",
-    'ai.ask_btn':"Ask",
-    
-      'spending.title':"Spending by category",
-    'spending.desc':"See where money most often goes (groceries, fuel, etc.).",
-    'spending.add_custom':"+ Custom category",
-    'spending.empty':"No data to analyse yet.",
-    
-    'settings.lang_title':"Interface language",
-    'settings.lang_desc':"Choose the language you prefer to work in. You can change it anytime.",
-        'home.tagline':"Premium AI-CFO for owners who don't want to drown in spreadsheets.",
-    'home.trend_title':"Movement this month",
-    'home.trend_empty':"Not enough data to show the trend yet.",
-     'spcat.title':"New spending category",
-    'spcat.desc':"Give the category a clear name and pick an emoji.",
-    'spcat.name_label':"Name",
-    'spcat.name_ph':"For example: Subscriptions",
-    'spcat.emoji_label':"Emoji",
-    'spcat.save':"Save",
-    'spcat.cancel':"Cancel",
-
-    'home.tile_docs_title':"Documents",
-    'home.tile_docs_desc':"Upload statements, invoices and receipts (CSV, screenshot, photo).",
-
-    'home.tile_money_title':"Money & payments",
-    'home.tile_money_desc':"See where the money went and what needs to be paid.",
-
-    'home.tile_ai_title':"AI accountant",
-    'home.tile_ai_desc':"Helps with saving, scaling and avoiding penalties.",
-
-    'home.tile_cash_title':"Cash",
-    'home.tile_cash_desc':"Cash: voice or manual input, close-the-day.",
-
-    'home.tile_accounts_title':"Accounts & cards",
-    'home.tile_accounts_desc':"Which accounts are connected and what is included in calculations.",
-
-    'home.tile_reports_title':"Reports & export",
-    'home.tile_reports_desc':"CSV exports and reports for your accountant or investor.",
-
-        // Documents
-    'documents.title':"Documents",
-    'documents.desc':"This is where you drop all the raw data: statements, invoices and receipts. OneTapDay will sort it for you.",
-    'documents.statements':"Statements",
-    'documents.statements_desc':"Bank: account movements.",
-    'documents.invoices':"Invoices",
-    'documents.invoices_desc':"Bills from customers and suppliers.",
-    'documents.receipts':"Receipts / expenses",
-    'documents.receipts_desc':"Cash and small daily spending.",
-
-    // Reports & export
-    'reports.title':"Reports & export",
-    'reports.desc':"Download CSV files and reports for your accountant or investor.",
-    'reports.export_statements':"Export statements (CSV)",
-    'reports.export_invoices':"Export invoices (CSV)",
-    'reports.export_month':"Monthly book / report (CSV)",
-
-    // AI accountant
-    'ai.top_title':"AI accountant",
-    'ai.top_desc':"First tell a few things about you and the business so the advice is more accurate.",
-    'ai.profile_who':"Who are you?",
-    'ai.profile_niche':"Niche / what do you do?",
-    'ai.profile_goal':"What is the main goal now?",
-    'ai.profile_save':"Save profile",
-    'ai.profile_saved':"Profile saved. The AI accountant will use this data.",
-    'ai.placeholders.goal_input':"For example: “Why is there not enough for rent?” or “Where am I overspending?”",
-
-    tab_dashboard:"Dashboard", tab_statement:"Statement", tab_invoices:"Invoices", tab_accounts:"Accounts", tab_cash:"Cash", tab_settings:"Settings",
-    gate_locked_title:"Access locked",
-    gate_locked_desc:"Demo ended or subscription inactive. Go to Settings to start a 24h demo or pay.",
-    gate_open_settings:"Open Settings",
-    kpi_due_today:"Due today", kpi_unmatched:"Unmatched transactions", kpi_banks:"Bank balances", kpi_cash:"Cash (PLN)", kpi_total:"Available total", kpi_gap_today:"Cash gap today",
-    btn_sync:"Sync", btn_ai_match:"AI match", btn_accept_safe:"Accept safe matches", btn_pdf:"PDF report", sync_ts:"Sync: —",
-    minpay_title:"Minimum payment (penalty-stop)", btn_apply_minpay:"Mark as paid",
-    forecast_7d:"7-day forecast", forecast7d_note:"Calculates included PLN accounts + cash.",
-    forecast_30d:"30-day forecast", forecast30_note:"Auto-forecast from statements + cash.",
-    month_summary_title:"Month summary",
-    plan_title:"Payment plan for cash", filter_label:"Filter:", filter_today:"Today", filter_7d:"7 days", filter_all:"All", exclude_blacklist:"Exclude blacklist",
-    btn_make_plan:"Build plan", btn_apply_plan:"Apply plan",
-    plan_th_invoice:"Invoice", plan_th_supplier:"Supplier", plan_th_due:"Due", plan_th_amount:"Amount", plan_th_reason:"Reason",
-    upload_statement:"Upload statement (CSV)", upload_statement_image:"Upload statement screenshot (gallery)",
-    placeholder_csv_url:"CSV statement URL", save_url:"Save URL",
-    statement_columns_note:"Columns: booking date, tx id, account id/IBAN, counterparty, title/description, amount(±), currency, status, balance?",
-    th_date:"Date", th_account:"Account", th_counterparty:"Counterparty", th_desc:"Description", th_amount:"Amount", th_currency:"Currency", th_status:"Status", th_actions:"Actions",
-    upload_invoices:"Upload invoices (CSV)", upload_invoice_images:"Upload invoice photos", invoices_note:"We detect invoice numbers, amounts and dates.",
-    inv_th_due:"Due", inv_th_number:"No", inv_th_supplier:"Supplier", inv_th_amount:"Amount", inv_th_currency:"Currency", inv_th_status:"Status", inv_th_candidate:"Candidate", inv_th_score:"Score", inv_th_action:"Action",
-    auto_accounts_title:"Accounts from statement (auto)", auto_accounts_desc:"Edit currency, start balance and include-in-plan.",
-    acc_th_account:"Account", acc_th_type:"Type", acc_th_currency:"Currency", acc_th_balance_calc:"Balance (calc)", acc_th_start_balance:"Start", acc_th_include:"Include",
-    cash_title:"Cash — quick ops", cash_note:"Voice cash + quick buttons",
-    btn_add_in:"+ In", btn_add_out:"− Out", btn_close_shift:"Close shift",
-    speech_lang_label:"Recognition language:", cash_photo_note:"Receipt/statement photo — detect amount and description.",
-    cash_th_date:"Date", cash_th_type:"Type", cash_th_amount:"Amount", cash_th_source:"Source", cash_th_comment:"Comment",
-    parameters:"Parameters", param_cash_label:"Manual available cash today (PLN):", param_penalty_label:"Penalty, %/day:", param_interval_label:"Sync interval, min:",
-    rateEUR_label:"rateEUR:", rateUSD_label:"rateUSD:", blacklist_label:"Blacklist (comma):", auto_mode_label:"Auto: from included statement accounts + cash",
-    btn_save_settings:"Save", btn_export_settings:"Export settings", btn_import_settings:"Import settings",
-    btn_clear_all:"Clear history (local)",
-    sub_title:"Subscription / Demo", btn_start_demo:"Start demo (24h)", btn_pay_sub:"Pay subscription", btn_end_demo:"End demo",
-    sub_hint:"Payment only in Settings. If you have a Stripe link, put it in localStorage.stripe_link.",
-    ph_amount:"Amount", ph_comment:"Comment"
-  },
-  pl:{ /* ——— PL ——— */
-        'ai.profile_who_solo':"Freelancer / osoba prywatna",
-    'ai.profile_who_owner':"Przedsiębiorca bez zespołu",
-    'ai.profile_who_team':"Firma z zespołem",
-    'ai.profile_niche_ph':"Np. barbershop, marketing, usługi IT",
-    'ai.profile_goal_survive':"Przetrwać i nie wpaść w długi",
-    'ai.profile_goal_stable':"Stabilnie utrzymać się na powierzchni",
-    'ai.profile_goal_grow':"Rosnąć i skalować",
-
-    'ai.ask_title':"Zadaj pytanie AI-księgowemu",
-    'ai.ask_desc':"Zapytaj, czemu nie starcza na czynsz, gdzie oszczędzić albo jak uniknąć kary.",
-    'ai.q_rent':"Dlaczego nie starcza na mieszkanie?",
-    'ai.q_spending':"Gdzie wydaję za dużo?",
-    'ai.q_withdraw':"Ile mogę bezpiecznie wypłacić?",
-    'ai.q_month':"Czy wystarczy pieniędzy do końca miesiąca?",
-    'ai.ask_btn':"Zapytaj",
-    'ai.chat_intro':"Tu później pojawi się żywa rozmowa z AI-księgowym. Teraz to prototyp interfejsu.",
-
-        'documents.add_what':"Co dodać?",
-    'documents.btn_screenshot':"Zrzut / zdjęcie",
-    'documents.btn_open_statements':"Otwórz wyciągi",
-    'documents.btn_open_invoices':"Otwórz faktury",
-    'documents.btn_photo_scan':"Zdjęcie / skan",
-    'documents.btn_open_cash':"Otwórz kasę",
-
-        'ai.profile_who_solo':"Właściciel / freelancer",
-    'ai.profile_who_partner':"Wspólnik w biznesie",
-    'ai.profile_who_team':"Firma z zespołem",
-    'ai.profile_niche_ph':"Np. barbershop, marketing, usługi IT",
-    'ai.profile_goal_survive':"Przetrwać i nie wpaść w długi",
-    'ai.profile_goal_stable':"Stabilnie utrzymać się na powierzchni",
-    'ai.profile_goal_grow':"Rośnąć i skalować",
-
-     'ai.q_rent':"Dlaczego nie starcza na mieszkanie?",
-    'ai.q_spending':"Gdzie wydaję za dużo?",
-    'ai.q_withdraw':"Ile mogę bezpiecznie wypłacić?",
-    'ai.q_month':"Czy wystarczy pieniędzy do końca miesiąca?",
-    'ai.ask_btn':"Zapytaj",
-    
-     'spending.title':"Wydatki według kategorii",
-    'spending.desc':"Widać, gdzie najczęściej uciekają pieniądze (Żabka, Biedronka, paliwo itd.).",
-    'spending.add_custom':"+ Własna kategoria",
-    'spending.empty':"Na razie brak danych do analizy.",
-     'spcat.title':"Nowa kategoria wydatków",
-    'spcat.desc':"Nadaj nazwę kategorii i wybierz emoji.",
-    'spcat.name_label':"Nazwa",
-    'spcat.name_ph':"Np. Subskrypcje",
-    'spcat.emoji_label':"Emoji",
-    'spcat.save':"Zapisz",
-    'spcat.cancel':"Anuluj",
-    
-        'settings.lang_title':"Język interfejsu",
-    'settings.lang_desc':"Wybierz język, w którym najwygodniej Ci pracować. Możesz zmienić go w każdej chwili.",
-    
-        'home.tagline':"Premium AI-CFO dla właścicieli, którzy nie chcą tonąć w tabelkach.",
-    'home.trend_title':"Ruch za miesiąc",
-    'home.trend_empty':"Za mało danych, żeby pokazać ruch.",
-
-    'home.tile_docs_title':"Dokumenty",
-    'home.tile_docs_desc':"Wgraj wyciągi, faktury i paragony (CSV, screen, zdjęcie).",
-
-    'home.tile_money_title':"Pieniądze i płatności",
-    'home.tile_money_desc':"Zobacz, gdzie uciekają pieniądze i co trzeba zapłacić.",
-
-    'home.tile_ai_title':"AI-księgowy",
-    'home.tile_ai_desc':"Pomoże z oszczędzaniem, skalowaniem i unikaniem kar.",
-
-    'home.tile_cash_title':"Kasa",
-    'home.tile_cash_desc':"Gotówka: głosowo lub ręcznie, zamknięcie dnia.",
-
-    'home.tile_accounts_title':"Konta i karty",
-    'home.tile_accounts_desc':"Które konta są podłączone i co liczymy w analizie.",
-
-    'home.tile_reports_title':"Raporty i eksport",
-    'home.tile_reports_desc':"Eksport CSV i raporty dla księgowego lub inwestora.",
-
-        // Dokumenty
-    'documents.title':"Dokumenty",
-    'documents.desc':"Tutaj wrzucasz całe surowe dane: wyciągi, faktury i paragony. OneTapDay poukłada je na półkach.",
-    'documents.statements':"Wyciągi",
-    'documents.statements_desc':"Ruchy na koncie bankowym.",
-    'documents.invoices':"Faktury",
-    'documents.invoices_desc':"Dokumenty od klientów i dostawców.",
-    'documents.receipts':"Paragony / wydatki",
-    'documents.receipts_desc':"Gotówka i drobne koszty.",
-
-    // Raporty i eksport
-    'reports.title':"Raporty i eksport",
-    'reports.desc':"Pobierz pliki CSV i raporty dla księgowego lub inwestora.",
-    'reports.export_statements':"Eksport wyciągów (CSV)",
-    'reports.export_invoices':"Eksport faktur (CSV)",
-    'reports.export_month':"Księga / raport miesiąca (CSV)",
-
-    // AI-księgowy
-    'ai.top_title':"AI-księgowy",
-    'ai.top_desc':"Najpierw powiedz kilka rzeczy o sobie i biznesie, żeby wskazówki były dokładniejsze.",
-    'ai.profile_who':"Kim jesteś?",
-    'ai.profile_niche':"Branża / czym się zajmujesz?",
-    'ai.profile_goal':"Co jest teraz najważniejsze?",
-    'ai.profile_save':"Zapisz profil",
-    'ai.profile_saved':"Profil zapisany. AI-księgowy będzie opierał się na tych danych.",
-    'ai.placeholders.goal_input':"Na przykład: „Dlaczego nie starcza na mieszkanie?” albo „Gdzie wydaję za dużo?”",
-
-    tab_dashboard:"Panel", tab_statement:"Wyciąg", tab_invoices:"Faktury", tab_accounts:"Konta", tab_cash:"Kasa", tab_settings:"Ustawienia",
-    gate_locked_title:"Dostęp zablokowany",
-    gate_locked_desc:"Demo zakończone lub brak subskrypcji. Przejdź do Ustawień, aby uruchomić demo (24h) lub opłacić.",
-    gate_open_settings:"Otwórz Ustawienia",
-    kpi_due_today:"Do zapłaty dziś", kpi_unmatched:"Niesparowane transakcje", kpi_banks:"Bilans banków", kpi_cash:"Kasa (PLN)", kpi_total:"Dostępnie razem", kpi_gap_today:"Brak środków dziś",
-    btn_sync:"Synchronizuj", btn_ai_match:"Dopasowanie AI", btn_accept_safe:"Akceptuj bezpieczne pary", btn_pdf:"Raport PDF", sync_ts:"Synchronizacja: —",
-    minpay_title:"Minimalna płatność (kara-stop)", btn_apply_minpay:"Oznacz jako opłacone",
-    forecast_7d:"Prognoza 7 dni", forecast7d_note:"Liczy włączone konta PLN + kasa.",
-    forecast_30d:"Prognoza 30 dni", forecast30_note:"Autoprognoza z wyciągów + kasa на 30 dni.",
-    month_summary_title:"Podsumowanie miesiąca",
-    plan_title:"Plan płatności pod kasę", filter_label:"Filtr:", filter_today:"Dziś", filter_7d:"7 dni", filter_all:"Wszystko", exclude_blacklist:"Wyklucz blacklistę",
-    btn_make_plan:"Utwórz plan", btn_apply_plan:"Zastosuj plan",
-    plan_th_invoice:"Faktura", plan_th_supplier:"Dostawca", plan_th_due:"Termin", plan_th_amount:"Kwota", plan_th_reason:"Powód",
-    upload_statement:"Załaduj wyciąg (CSV)", upload_statement_image:"Załaduj zrzut wyciągu (galeria)",
-    placeholder_csv_url:"URL CSV wyciągu", save_url:"Zapisz URL",
-    statement_columns_note:"Kolumny: Data księgowania, ID transakcji, ID konta/IBAN, Kontrahent, Tytuł/Opis, Kwota(±), Waluta, Status, Saldo?",
-    th_date:"Data", th_account:"Konto", th_counterparty:"Kontrahent", th_desc:"Opis", th_amount:"Kwota", th_currency:"Waluta", th_status:"Status", th_actions:"Działania",
-    upload_invoices:"Załaduj faktury (CSV)", upload_invoice_images:"Załaduj zdjęcia faktur", invoices_note:"Wykrywamy nr faktury, kwotę i datę.",
-    inv_th_due:"Termin", inv_th_number:"Nr", inv_th_supplier:"Dostawca", inv_th_amount:"Kwota", inv_th_currency:"Waluta", inv_th_status:"Status", inv_th_candidate:"Kandydat", inv_th_score:"Score", inv_th_action:"Akcja",
-    auto_accounts_title:"Konta z wyciągu (auto)", auto_accounts_desc:"Edycja waluty, salda początkowego i uwzględnienia w planie.",
-    acc_th_account:"Konto", acc_th_type:"Typ", acc_th_currency:"Waluta", acc_th_balance_calc:"Saldo (oblicz)", acc_th_start_balance:"Start", acc_th_include:"Uwzględnij",
-    cash_title:"Kasa — szybkie operacje", cash_note:"Głosowa kasa + szybkie przyciski",
-    btn_add_in:"+ Przyjęcie", btn_add_out:"− Wydanie", btn_close_shift:"Zamknij zmianę",
-    speech_lang_label:"Język rozpoznawania:", cash_photo_note:"Zdjęcie paragonu/wyciągu — wykryj kwotę i opis.",
-    cash_th_date:"Data", cash_th_type:"Typ", cash_th_amount:"Kwota", cash_th_source:"Źródło", cash_th_comment:"Komentarz",
-    parameters:"Parametry", param_cash_label:"Ręczna dostępna kasa dziś (PLN):", param_penalty_label:"Kara, %/dzień:", param_interval_label:"Interwał synchronizacji, min:",
-    rateEUR_label:"rateEUR:", rateUSD_label:"rateUSD:", blacklist_label:"Czarna lista (przecinki):", auto_mode_label:"Auto: z kont wyciągu (włączone) + kasa",
-    btn_save_settings:"Zapisz", btn_export_settings:"Eksport ustawień", btn_import_settings:"Import ustawień",
-    btn_clear_all:"Wyczyść historię (lokalnie)",
-    sub_title:"Subskrypcja / Demo", btn_start_demo:"Uruchom demo (24h)", btn_pay_sub:"Opłać subskrypcję", btn_end_demo:"Zakończ demo",
-    sub_hint:"Płatność tylko в Ustawieniach. Jeśli masz link Stripe — ustaw w localStorage.stripe_link.",
-    ph_amount:"Kwota", ph_comment:"Komentarz"
-  },
-  uk:{ /* ——— UK ——— */
-        'ai.profile_who_solo':"Фрилансер / фізична особа",
-    'ai.profile_who_owner':"Підприємець без команди",
-    'ai.profile_who_team':"Компанія з командою",
-    'ai.profile_niche_ph':"Наприклад: барбершоп, маркетинг, IT-послуги",
-    'ai.profile_goal_survive':"Вижити й не залізти в борги",
-    'ai.profile_goal_stable':"Стабільно триматися на плаву",
-    'ai.profile_goal_grow':"Рости й масштабуватися",
-
-    'ai.ask_title':"Постав запитання AI-бухгалтеру",
-    'ai.ask_desc':"Запитай, чому не вистачає на оренду, де зекономити або як уникнути штрафу.",
-    'ai.q_rent':"Чому не вистачає на квартиру?",
-    'ai.q_spending':"Де я витрачаю зайве?",
-    'ai.q_withdraw':"Скільки можна безпечно вивести?",
-    'ai.q_month':"Чи вистачить грошей до кінця місяця?",
-    'ai.ask_btn':"Запитати",
-    'ai.chat_intro':"Тут пізніше буде живий діалог з AI-бухгалтером. Зараз це прототип інтерфейсу.",
-
-        'documents.add_what':"Що додати?",
-    'documents.btn_screenshot':"Скрін / фото",
-    'documents.btn_open_statements':"Відкрити виписки",
-    'documents.btn_open_invoices':"Відкрити рахунки",
-    'documents.btn_photo_scan':"Фото / скан",
-    'documents.btn_open_cash':"Відкрити касу",
-
-      'ai.profile_who_solo':"Власник / фрилансер",
-    'ai.profile_who_partner':"Партнер у бізнесі",
-    'ai.profile_who_team':"Компанія з командою",
-    'ai.profile_niche_ph':"Наприклад: барбершоп, маркетинг, IT-послуги",
-    'ai.profile_goal_survive':"Вижити й не залізти в борги",
-    'ai.profile_goal_stable':"Стабільно триматися на плаву",
-    'ai.profile_goal_grow':"Рости й масштабуватися",
-    
-      'ai.q_rent':"Чому не вистачає на квартиру?",
-    'ai.q_spending':"Де я витрачаю зайве?",
-    'ai.q_withdraw':"Скільки можна безпечно вивести?",
-    'ai.q_month':"Чи вистачить грошей до кінця місяця?",
-    'ai.ask_btn':"Запитати",
-    
-       'spending.title':"Витрати за категоріями",
-    'spending.desc':"Видно, куди найчастіше йдуть гроші (магазини, пальне тощо).",
-    'spending.add_custom':"+ Власна категорія",
-    'spending.empty':"Поки що немає даних для аналізу.",
-      'spcat.title':"Нова категорія витрат",
-    'spcat.desc':"Дай категорії зрозумілу назву та обери емодзі.",
-    'spcat.name_label':"Назва",
-    'spcat.name_ph':"Наприклад: Підписки",
-    'spcat.emoji_label':"Емодзі",
-    'spcat.save':"Зберегти",
-    'spcat.cancel':"Скасувати",
-    
-        'settings.lang_title':"Мова інтерфейсу",
-    'settings.lang_desc':"Обери мову, якою тобі зручніше працювати. Можна змінити в будь-який момент.",
-        'home.tagline':"Premium AI-CFO для власників, які не хочуть тонути в таблицях.",
-    'home.trend_title':"Рух за місяць",
-    'home.trend_empty':"Замало даних, щоб показати рух.",
-
-    'home.tile_docs_title':"Документи",
-    'home.tile_docs_desc':"Завантажуй виписки, рахунки та чеки (CSV, скрін, фото).",
-
-    'home.tile_money_title':"Гроші та платежі",
-    'home.tile_money_desc':"Побачити, куди йдуть гроші і що потрібно оплатити.",
-
-    'home.tile_ai_title':"AI-бухгалтер",
-    'home.tile_ai_desc':"Допоможе з економією, зростанням і уникненням штрафів.",
-
-    'home.tile_cash_title':"Каса",
-    'home.tile_cash_desc':"Готівка: голосом чи вручну, закриття дня.",
-
-    'home.tile_accounts_title':"Рахунки та картки",
-    'home.tile_accounts_desc':"Які рахунки підключені і що враховуємо в розрахунках.",
-
-    'home.tile_reports_title':"Звіти та експорт",
-    'home.tile_reports_desc':"Вигрузка CSV та звіти для бухгалтера й інвестора.",
-
-        // Документи
-    'documents.title':"Документи",
-    'documents.desc':"Тут ти скидаєш всі сирі дані: виписки, рахунки і чеки. OneTapDay розкладе все по поличках.",
-    'documents.statements':"Виписки",
-    'documents.statements_desc':"Банк: рухи по рахунку.",
-    'documents.invoices':"Рахунки / інвойси",
-    'documents.invoices_desc':"Рахунки від клієнтів та постачальників.",
-    'documents.receipts':"Чеки / витрати",
-    'documents.receipts_desc':"Готівка та дрібні витрати.",
-
-    // Звіти та експорт
-    'reports.title':"Звіти та експорт",
-    'reports.desc':"Завантажуй CSV і звіти для бухгалтера або інвестора.",
-    'reports.export_statements':"Експортувати виписки (CSV)",
-    'reports.export_invoices':"Експортувати рахунки (CSV)",
-    'reports.export_month':"Книга / звіт місяця (CSV)",
-
-    // AI-бухгалтер
-    'ai.top_title':"AI-бухгалтер",
-    'ai.top_desc':"Спочатку розкажи кілька речей про себе та бізнес, щоб поради були точнішими.",
-    'ai.profile_who':"Хто ти?",
-    'ai.profile_niche':"Ніша / чим займаєшся?",
-    'ai.profile_goal':"Що зараз головне?",
-    'ai.profile_save':"Зберегти профіль",
-    'ai.profile_saved':"Профіль збережено. AI-бухгалтер буде спиратися на ці дані.",
-    'ai.placeholders.goal_input':"Наприклад: «Чому не вистачає на квартиру?» або «Де я витрачаю зайве?»",
-
-    tab_dashboard:"Пульт", tab_statement:"Виписка", tab_invoices:"Рахунки", tab_accounts:"Рахунки", tab_cash:"Каса", tab_settings:"Налаштування",
-    gate_locked_title:"Доступ заблоковано",
-    gate_locked_desc:"Демо завершено або немає підписки. Перейдіть у Налаштування, щоб запустити демо (24 год) або оплатити доступ.",
-    gate_open_settings:"Відкрити Налаштування",
-    kpi_due_today:"До сплати сьогодні", kpi_unmatched:"Неповʼязані транзакції", kpi_banks:"Баланс банків", kpi_cash:"Каса (PLN)", kpi_total:"Доступно всього", kpi_gap_today:"Розрив каси сьогодні",
-    btn_sync:"Синхронізація", btn_ai_match:"AI-звірка", btn_accept_safe:"Прийняти безпечні пари", btn_pdf:"Звіт PDF", sync_ts:"Синхр.: —",
-    minpay_title:"Мінімальний платіж (штраф-стоп)", btn_apply_minpay:"Позначити як сплачено",
-    forecast_7d:"Прогноз 7 днів", forecast7d_note:"Рахує увімкнені PLN-рахунки + касу.",
-    forecast_30d:"Прогноз 30 днів", forecast30_note:"Автопрогноз з виписок + каси.",
-    month_summary_title:"Підсумки місяця",
-    plan_title:"План платежів під касу", filter_label:"Фільтр:", filter_today:"Сьогодні", filter_7d:"7 днів", filter_all:"Всі", exclude_blacklist:"Виключати blacklist",
-    btn_make_plan:"Сформувати", btn_apply_plan:"Застосувати",
-    plan_th_invoice:"Рахунок", plan_th_supplier:"Постачальник", plan_th_due:"Термін", plan_th_amount:"Сума", plan_th_reason:"Причина",
-    upload_statement:"Завантажити виписку (CSV)", upload_statement_image:"Завантажити скрин виписки (галерея)",
-    placeholder_csv_url:"URL CSV виписки", save_url:"Зберегти URL",
-    statement_columns_note:"Колонки: дата, id транзакції, id рахунку/IBAN, контрагент, опис, сума(±), валюта, статус, баланс?",
-    th_date:"Дата", th_account:"Рахунок", th_counterparty:"Контрагент", th_desc:"Опис", th_amount:"Сума", th_currency:"Валюта", th_status:"Статус", th_actions:"Дії",
-    upload_invoices:"Завантажити рахунки (CSV)", upload_invoice_images:"Завантажити фото рахунків", invoices_note:"Виявляємо № рахунку, суму і дату.",
-    inv_th_due:"Термін", inv_th_number:"№", inv_th_supplier:"Постачальник", inv_th_amount:"Сума", inv_th_currency:"Валюта", inv_th_status:"Статус", inv_th_candidate:"Кандидат", inv_th_score:"Score", inv_th_action:"Дія",
-    auto_accounts_title:"Рахунки з виписки (авто)", auto_accounts_desc:"Редагуйте валюту, початковий баланс і включення до плану.",
-    acc_th_account:"Рахунок", acc_th_type:"Тип", acc_th_currency:"Валюта", acc_th_balance_calc:"Баланс (обр.)", acc_th_start_balance:"Старт", acc_th_include:"Включити",
-    cash_title:"Каса — швидкі операції", cash_note:"Голосова каса + швидкі кнопки",
-    btn_add_in:"+ Прихід", btn_add_out:"− Видаток", btn_close_shift:"Закрити зміну",
-    speech_lang_label:"Мова розпізнавання:", cash_photo_note:"Фото чеку/виписки — розпізнати суму та опис.",
-    cash_th_date:"Дата", cash_th_type:"Тип", cash_th_amount:"Сума", cash_th_source:"Джерело", cash_th_comment:"Коментар",
-    parameters:"Параметри", param_cash_label:"Ручна доступна каса сьогодні (PLN):", param_penalty_label:"Пеня, %/день:", param_interval_label:"Інтервал синхр., хв:",
-    rateEUR_label:"rateEUR:", rateUSD_label:"rateUSD:", blacklist_label:"Чорний список (через кому):", auto_mode_label:"Авто: з рахунків (включені) + каса",
-    btn_save_settings:"Зберегти", btn_export_settings:"Експорт налаштувань", btn_import_settings:"Імпорт налаштувань",
-    btn_clear_all:"Очистити історію (локально)",
-    sub_title:"Підписка / Демо", btn_start_demo:"Запустити демо (24 год)", btn_pay_sub:"Оплатити підписку", btn_end_demo:"Завершити демо",
-    sub_hint:"Оплата лише в Налаштуваннях. Якщо є посилання Stripe — покладіть у localStorage.stripe_link.",
-    ph_amount:"Сума", ph_comment:"Коментар"
-  }
-};
-
-/* PLACEHOLDER APPLIER */
-function applyPlaceholders(lang){
-  const dict = M[lang]||M.pl;
-  document.querySelectorAll('[data-i-ph]').forEach(el=>{
-    const k = el.getAttribute('data-i-ph');
-    if (dict[k]) el.setAttribute('placeholder', dict[k]);
-  });
-}
+// Old i18n system (M.* dictionaries) removed - now using i18n.js with JSON files
 
 /* LANGUAGE APPLY */
 function applyLang(lang){
-  const dict = M[lang]||M.pl;
-  document.querySelectorAll('[data-i]').forEach(el=>{
-    const k = el.getAttribute('data-i'); if (dict[k]) el.textContent = dict[k];
-  });
-  document.querySelectorAll('#langBarMain button').forEach(btn=>btn.classList.toggle('on', btn.dataset.lang===lang));
-  localStorage.setItem('otd_lang', lang);
-  applyPlaceholders(lang);
+  // Use the new i18n system
+  if (window.i18n) {
+    window.i18n.load(lang).then(() => {
+      // Translations are applied automatically by i18n.apply()
   if (typeof renderCashExamples==='function') renderCashExamples(lang);
+    });
+  }
 }
 
 
@@ -1658,11 +1103,16 @@ function isSubActive(){
 }
 
 function demoLeftMs(){
+  // Проверяем локальное состояние
   const t = localStorage.getItem(DEMO_START);
-  if (!t) return 0;
-  const start = new Date(t).getTime();
-  const left  = (start + 24*3600*1000) - Date.now();
-  return left;
+  if (t) {
+    const start = new Date(t).getTime();
+    const left  = (start + 24*3600*1000) - Date.now();
+    if (left > 0) return left;
+  }
+  // Если локальное демо истекло, проверяем серверное состояние
+  // (будет обновлено через syncUserStatus)
+  return 0;
 }
 
 function isDemoActive(){ 
@@ -1723,7 +1173,10 @@ async function fetchSources(){
 
     if(u2){ const r2=await fetch(u2,{cache:'no-store'}); bills = parseCSV(await r2.text()); }
     inferAccounts(); render();
-    const last=$id('lastSync'); if(last) last.textContent = (M[localStorage.getItem('otd_lang')||'pl'].sync_ts||"Synchronizacja: —").replace('—', new Date().toLocaleString());
+    const last=$id('lastSync'); if(last) {
+      const syncText = window.i18n && window.i18n.t ? window.i18n.t('buttons.sync') : "Synchronizacja";
+      last.textContent = `${syncText}: ${new Date().toLocaleString()}`;
+    }
     saveLocal(); pushState();
   }catch(e){
     const last=$id('lastSync'); if(last) last.textContent = 'Error: '+(e?.message||e);
@@ -2511,7 +1964,46 @@ window.appGoSection = function (secId) {
    
 
 
+// Синхронизация статуса пользователя с сервером (для автоматически активированного демо)
+async function syncUserStatus(){
+  try {
+    const resp = await fetch('/me', { credentials: 'include' });
+    if (!resp.ok) return;
+    const data = await resp.json();
+    const user = data && data.user;
+    if (!user) return;
+    
+    // Обновляем локальное состояние демо из серверного ответа
+    if (user.status === 'active' && user.endAt && user.startAt) {
+      const endAt = new Date(user.endAt).getTime();
+      const now = Date.now();
+      if (endAt > now) {
+        // Демо активно
+        localStorage.setItem(DEMO_START, user.startAt);
+        localStorage.setItem(DEMO_USED, user.demoUsed ? '1' : '0');
+      } else {
+        // Демо истекло
+        localStorage.setItem(DEMO_USED, '1');
+        localStorage.removeItem(DEMO_START);
+      }
+    } else if (user.demoUsed) {
+      // Демо использовано
+      localStorage.setItem(DEMO_USED, '1');
+      localStorage.removeItem(DEMO_START);
+    }
+    
+    // Обновляем UI
+    gateAccess();
+    updateSubUI();
+  } catch(e) {
+    console.warn('syncUserStatus error', e);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', async ()=>{
+  // Синхронизируем статус пользователя с сервером (для автоматически активированного демо)
+  await syncUserStatus();
+  
   // Lang bar
   document.querySelectorAll('#langBarMain button').forEach(b=>{
     b.addEventListener('click',()=> applyLang(b.dataset.lang));
@@ -2630,9 +2122,10 @@ quickPairs.forEach(([id,key])=>{
   btn.addEventListener('click', ()=>{
     const inp = document.getElementById('aiChatInput');
     if(!inp) return;
-    const lang = localStorage.getItem('otd_lang') || 'pl';
-    const dict = M[lang] || M.pl;
-    inp.value = dict[key] || '';
+    // Use new i18n system
+    if (window.i18n && window.i18n.t) {
+      inp.value = window.i18n.t(key) || '';
+    }
     const send = document.getElementById('aiChatSend');
     if(send) send.click();
   });
@@ -2872,16 +2365,17 @@ quickPairs.forEach(([id,key])=>{
   });
 
   // Demo/Sub controls
-  $id('startDemo')?.addEventListener('click', ()=>{
+  // Демо теперь активируется автоматически при первом логине
+  // Оставляем обработчик для обратной совместимости, но синхронизируем с сервером
+  $id('startDemo')?.addEventListener('click', async ()=>{
     if (localStorage.getItem(DEMO_USED) === '1') {
       alert('Demo уже было использовано. Доступ только по подписке.');
       return;
     }
-    localStorage.setItem(DEMO_START, new Date().toISOString());
-    localStorage.setItem(DEMO_USED, '1');
+    // Синхронизируем статус с сервером (демо должно было активироваться автоматически при логине)
+    await syncUserStatus();
     updateSubUI();
     gateAccess();
-    // saveLocal триггерит sync в Firebase через saveLocal/pushState
   });
 
   $id('endDemo')?.addEventListener('click', ()=>{

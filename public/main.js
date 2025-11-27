@@ -335,24 +335,40 @@
       const data = resp.body;
       const user = data && (data.user || data);
       if (user && user.email) localStorage.setItem('otd_user', user.email);
+      
+      // Демо теперь активируется автоматически при первом логине на сервере
+      // Обновляем локальное состояние демо из ответа сервера
+      if (user && user.endAt && user.status === 'active') {
+        const demoUntil = new Date(user.endAt).getTime();
+        localStorage.setItem(DEMO_START_KEY, user.startAt || new Date().toISOString());
+        localStorage.setItem(DEMO_USED_KEY, user.demoUsed ? '1' : '0');
+        if (demoUntil > Date.now()) {
+          startDemoCountdown(demoUntil);
+        }
+      }
+      
       if (typeof setStatusAfterAuth === 'function') setStatusAfterAuth(user);
 
       // Sync server state into local after successful auth
       await syncStateFromServerToLocal().catch(()=>null);
 
       if (isReg) {
-        const sd = await tryStartDemo();
-        if (sd.ok) { setTimeout(()=>{ window.location.href = '/app.html'; }, 300); return; }
-        if (sd.status === 401) {
-          alert('Регистрация прошла, но сессия не установлена автоматически. Войдите вручную.');
-          return;
-        } else {
-          alert('Регистрация прошла. Демо не активировано автоматически, можно включить демо вручную.');
-          setTimeout(()=>{ window.location.href = '/app.html'; }, 300);
-          return;
-        }
+        // При регистрации демо активируется автоматически при первом логине
+        // Просто перенаправляем на app.html
+        alert('Регистрация прошла успешно. Демо активируется автоматически при первом входе.');
+        setTimeout(()=>{ window.location.href = '/app.html'; }, 300);
       } else {
-        alert('Вход успешен');
+        // При логине демо уже активировано автоматически (если еще не использовано)
+        if (user && user.status === 'active' && user.endAt) {
+          const demoUntil = new Date(user.endAt).getTime();
+          if (demoUntil > Date.now()) {
+            alert('Вход успешен. Демо активно до ' + new Date(demoUntil).toLocaleString());
+          } else {
+            alert('Вход успешен. Демо истекло.');
+          }
+        } else {
+          alert('Вход успешен');
+        }
         setTimeout(()=>{ window.location.href = '/app.html'; }, 300);
       }
     });

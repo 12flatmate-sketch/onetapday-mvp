@@ -347,6 +347,17 @@ app.post('/login', (req, res) => {
     }
 
     setSessionCookie(res, user.email);
+    
+    // Автоматическая активация демо при первом логине (если еще не использовано)
+    if (!user.demoUsed && user.status !== 'active' && user.status !== 'discount_active') {
+      user.demoUsed = true;
+      user.status = 'active';
+      user.startAt = new Date().toISOString();
+      user.endAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      saveUsers();
+      console.log(`[DEMO] Auto-activated demo for ${user.email} until ${user.endAt}`);
+    }
+    
     expireStatuses(user);
 
     return res.json({ success: true, user: { email: user.email, status: user.status, demoUsed: !!user.demoUsed, startAt: user.startAt, endAt: user.endAt } });
@@ -407,15 +418,18 @@ app.get('/session', async (req, res) => {
   }
 });
 
-// Start demo (authenticated) — one-time
+// Start demo (authenticated) — DEPRECATED: demo now auto-activates on first login
+// Оставлен для обратной совместимости, но демо теперь активируется автоматически при первом логине
 app.post('/start-demo', (req, res) => {
   const user = getUserBySession(req);
   if (!user) return res.status(401).json({ success: false, error: 'Not authenticated' });
 
+  // Если демо уже использовано - возвращаем ошибку
   if (user.demoUsed) {
-    return res.status(400).json({ success: false, error: 'Demo already used' });
+    return res.status(400).json({ success: false, error: 'Demo already used. Demo activates automatically on first login.' });
   }
 
+  // Если демо еще не использовано, активируем его
   user.demoUsed = true;
   user.status = 'active';
   user.startAt = new Date().toISOString();
