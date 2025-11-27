@@ -352,53 +352,53 @@
     <div class="homeLogo">OneTapDay</div>
     <button class="homeMenuBtn" type="button" onclick="appGoSection('ustawienia')">⋯</button>
   </div>
-  <div class="homeSub" data-i="home.tagline"></div>
+  <div class="homeSub" data-i18n="home.tagline"></div>
 
 <div class="trendCard">
   <div class="trendHeader">
-    <span data-i="home.trend_title"></span>
+    <span data-i18n="home.trend_title"></span>
     <span id="trendChange" class="trendChip">—</span>
   </div>
   <div id="trendChart" class="trendChart">
-    <div class="muted small" data-i="home.trend_empty"></div>
+    <div class="muted small" data-i18n="home.trend_empty"></div>
   </div>
 </div>
 
 <div class="homeGrid">
   <button class="homeTile" type="button" onclick="appGoSection('docs')">
     <div class="homeTileIcon">📤</div>
-    <div class="homeTileTitle" data-i="home.tile_docs_title"></div>
-    <div class="homeTileDesc" data-i="home.tile_docs_desc"></div>
+    <div class="homeTileTitle" data-i18n="home.tile_docs_title"></div>
+    <div class="homeTileDesc" data-i18n="home.tile_docs_desc"></div>
   </button>
 
   <button class="homeTile" type="button" onclick="appGoSection('pulpit')">
     <div class="homeTileIcon">💸</div>
-    <div class="homeTileTitle" data-i="home.tile_money_title"></div>
-    <div class="homeTileDesc" data-i="home.tile_money_desc"></div>
+    <div class="homeTileTitle" data-i18n="home.tile_money_title"></div>
+    <div class="homeTileDesc" data-i18n="home.tile_money_desc"></div>
   </button>
 
   <button class="homeTile" type="button" onclick="appGoSection('aiAssist')">
     <div class="homeTileIcon">🧠</div>
-    <div class="homeTileTitle" data-i="home.tile_ai_title"></div>
-    <div class="homeTileDesc" data-i="home.tile_ai_desc"></div>
+    <div class="homeTileTitle" data-i18n="home.tile_ai_title"></div>
+    <div class="homeTileDesc" data-i18n="home.tile_ai_desc"></div>
   </button>
 
   <button class="homeTile" type="button" onclick="appGoSection('kasa')">
     <div class="homeTileIcon">💰</div>
-    <div class="homeTileTitle" data-i="home.tile_cash_title"></div>
-    <div class="homeTileDesc" data-i="home.tile_cash_desc"></div>
+    <div class="homeTileTitle" data-i18n="home.tile_cash_title"></div>
+    <div class="homeTileDesc" data-i18n="home.tile_cash_desc"></div>
   </button>
 
   <button class="homeTile" type="button" onclick="appGoSection('konta')">
     <div class="homeTileIcon">💳</div>
-    <div class="homeTileTitle" data-i="home.tile_accounts_title"></div>
-    <div class="homeTileDesc" data-i="home.tile_accounts_desc"></div>
+    <div class="homeTileTitle" data-i18n="home.tile_accounts_title"></div>
+    <div class="homeTileDesc" data-i18n="home.tile_accounts_desc"></div>
   </button>
 
   <button class="homeTile" type="button" onclick="appGoSection('reports')">
     <div class="homeTileIcon">📊</div>
-    <div class="homeTileTitle" data-i="home.tile_reports_title"></div>
-    <div class="homeTileDesc" data-i="home.tile_reports_desc"></div>
+    <div class="homeTileTitle" data-i18n="home.tile_reports_title"></div>
+    <div class="homeTileDesc" data-i18n="home.tile_reports_desc"></div>
   </button>
  </div>
 </div>
@@ -417,24 +417,24 @@
       <button type="button" id="settingsBtn" class="iconBtn">⋯</button>
     </div>
     <div class="tabs" id="tabs">
-      <div class="tab active" data-sec="pulpit" data-i="tab_dashboard">Panel</div>
-      <div class="tab" data-sec="wyciag" data-i="tab_statement">Wyciąg</div>
-      <div class="tab" data-sec="faktury" data-i="tab_invoices">Faktury</div>
-      <div class="tab" data-sec="konta" data-i="tab_accounts">Konta</div>
-      <div class="tab" data-sec="kasa" data-i="tab_cash">Kasa</div>
-      <div class="tab" data-sec="ustawienia" data-i="tab_settings">Ustawienia</div>
+      <div class="tab active" data-sec="pulpit" data-i18n="tab_dashboard">Panel</div>
+      <div class="tab" data-sec="wyciag" data-i18n="tab_statement">Wyciąg</div>
+      <div class="tab" data-sec="faktury" data-i18n="tab_invoices">Faktury</div>
+      <div class="tab" data-sec="konta" data-i18n="tab_accounts">Konta</div>
+      <div class="tab" data-sec="kasa" data-i18n="tab_cash">Kasa</div>
+      <div class="tab" data-sec="ustawienia" data-i18n="tab_settings">Ustawienia</div>
       
     </div>
   </div>
 
   <!-- ACCESS GATE (hidden if demo/sub active) -->
   <div id="gate" class="gate hidden">
-    <div data-i="gate_locked_title" style="font-weight:700;margin-bottom:6px">Dostęp zablokowany</div>
-    <div class="muted" data-i="gate_locked_desc">
+    <div data-i18n="gate_locked_title" style="font-weight:700;margin-bottom:6px">Dostęp zablokowany</div>
+    <div class="muted" data-i18n="gate_locked_desc">
       Okres demo zakończony lub brak aktywnej subskrypcji. Przejdź do Ustawień, aby uruchomić demo (24h) lub opłacić dostęp.
     </div>
     <div class="row" style="margin-top:8px">
-      <button class="btn secondary" onclick="document.querySelector('[data-sec=ustawienia]').click()" data-i="gate_open_settings">Otwórz Ustawienia</button>
+      <button class="btn secondary" onclick="document.querySelector('[data-sec=ustawienia]').click()" data-i18n="gate_open_settings">Otwórz Ustawienia</button>
     </div>
   </div>
 
@@ -443,19 +443,19 @@
 
     <div class="card" style="margin:10px 0">
       <div style="font-weight:700">OneTapDay • Twój dzień</div>
-      <div class="muted small" data-i="pulpit_intro">
+      <div class="muted small" data-i18n="pulpit_intro">
         Jeden ekran, który mówi Ci, czy dziś jest spokojnie z pieniędzmi.
       </div>
 
       <div style="margin-top:10px; display:flex; flex-wrap:wrap; gap:16px; align-items:flex-end">
         <div style="flex:1; min-width:120px">
-          <div class="muted small" data-i="hero_today_label">Wynik dnia (PLN)</div>
+          <div class="muted small" data-i18n="hero_today_label">Wynik dnia (PLN)</div>
           <div style="font-size:26px; font-weight:700; margin-top:4px">
             <span id="todayNet">—</span>
           </div>
         </div>
         <div style="flex:1; min-width:140px">
-          <div class="muted small" data-i="hero_buffer_label">Bufor bezpieczeństwa</div>
+          <div class="muted small" data-i18n="hero_buffer_label">Bufor bezpieczeństwa</div>
           <div style="margin-top:4px">
             <span id="daysSafe" class="pill">Dni bezpieczeństwa: —</span>
           </div>
@@ -464,13 +464,13 @@
 
       <div style="margin-top:10px; display:flex; flex-wrap:wrap; gap:16px">
         <div style="flex:1; min-width:120px">
-          <div class="muted small" data-i="hero_7d_label">Do zapłaty w 7 dni</div>
+          <div class="muted small" data-i18n="hero_7d_label">Do zapłaty w 7 dni</div>
           <div style="margin-top:4px">
             <span id="oblig7" class="pill">—</span>
           </div>
         </div>
         <div style="flex:1; min-width:120px">
-          <div class="muted small" data-i="hero_30d_label">Do zapłaty w 30 dni</div>
+          <div class="muted small" data-i18n="hero_30d_label">Do zapłaty w 30 dni</div>
           <div style="margin-top:4px">
             <span id="oblig30" class="pill">—</span>
           </div>
@@ -479,88 +479,88 @@
     </div>
 
     <div class="card">
-      <div style="font-weight:700" data-i="ritual_title">Dzisiejszy rytuał</div>
-      <div class="muted small" data-i="ritual_note">AI-CFO odświeża dane i dopasowuje płatności. Ty tylko zatwierdzasz.</div>
+      <div style="font-weight:700" data-i18n="ritual_title">Dzisiejszy rytuał</div>
+      <div class="muted small" data-i18n="ritual_note">AI-CFO odświeża dane i dopasowuje płatności. Ty tylko zatwierdzasz.</div>
       <div class="row" style="margin-top:10px; flex-wrap:wrap; gap:8px">
-        <button id="runDayAI" class="btn" style="flex:1; min-width:180px" data-i="btn_run_day_ai">Zrób dzień z AI-CFO</button>
-        <button id="openAIQuestions" class="btn secondary" style="min-width:160px" data-i="btn_ai_questions">Pytania AI-CFO</button>
-        <button id="closeDay" class="btn secondary" style="min-width:140px" data-i="btn_close_day">Zamknij dzień</button>
+        <button id="runDayAI" class="btn" style="flex:1; min-width:180px" data-i18n="btn_run_day_ai">Zrób dzień z AI-CFO</button>
+        <button id="openAIQuestions" class="btn secondary" style="min-width:160px" data-i18n="btn_ai_questions">Pytania AI-CFO</button>
+        <button id="closeDay" class="btn secondary" style="min-width:140px" data-i18n="btn_close_day">Zamknij dzień</button>
       </div>
     </div>
 
     <div id="aiQuestionsCard" class="card" style="margin-top:10px; display:none">
-      <div style="font-weight:700" data-i="aiq_title">Pytania AI-CFO</div>
+      <div style="font-weight:700" data-i18n="aiq_title">Pytania AI-CFO</div>
       <div id="aiQuestionsText" class="muted small">
         AI-CFO pokaże tu pytania, gdy coś będzie wymagało Twojej decyzji.
       </div>
     </div>
 
     <div class="card owner-hidden" style="margin-top:10px; display:none">
-      <div style="font-weight:700" data-i="forecast_7d">Prognoza 7 dni</div>
-      <div class="muted" data-i="forecast7d_note">Liczy PLN-konta z wyciągu (włączone) + kasa.</div>
+      <div style="font-weight:700" data-i18n="forecast_7d">Prognoza 7 dni</div>
+      <div class="muted" data-i18n="forecast7d_note">Liczy PLN-konta z wyciągu (włączone) + kasa.</div>
       <div id="forecastBars" class="barwrap"></div>
       <div id="forecastMeta" class="muted" style="margin-top:6px">—</div>
     </div>
 
     <div class="card owner-hidden" style="margin-top:10px; display:none">
-      <div style="font-weight:700" data-i="month_summary_title">Podsumowanie miesiąca</div>
+      <div style="font-weight:700" data-i18n="month_summary_title">Podsumowanie miesiąca</div>
       <div id="monthSummary" class="muted">—</div>
     </div>
 
     
 <div class="card" id="spendingCard" style="margin-top:10px">
-  <div style="font-weight:700" data-i="spending.title"></div>
-  <div class="muted small" data-i="spending.desc"></div>
+  <div style="font-weight:700" data-i18n="spending.title"></div>
+  <div class="muted small" data-i18n="spending.desc"></div>
 
   <div id="spendingFilters" class="spFilters"></div>
 
-  <button type="button" id="addSpCatBtn" class="linkBtn small" data-i="spending.add_custom"></button>
+  <button type="button" id="addSpCatBtn" class="linkBtn small" data-i18n="spending.add_custom"></button>
 
-  <div id="spendingStats" class="spStats muted small" style="margin-top:6px" data-i="spending.empty"></div>
+  <div id="spendingStats" class="spStats muted small" style="margin-top:6px" data-i18n="spending.empty"></div>
  </div>
 </div> 
 
 <!-- Modals -->
     <div id="addTodayModal" class="modal-overlay">
       <div class="modal-card">
-        <h3 data-i="add_today_title">Dodaj dzisiejsze ruchy</h3>
-        <div class="muted small" data-i="add_today_note">Szybko dodaj brakujące ruchy, jeśli czegoś nie ma w wyciągu.</div>
+        <h3 data-i18n="add_today_title">Dodaj dzisiejsze ruchy</h3>
+        <div class="muted small" data-i18n="add_today_note">Szybko dodaj brakujące ruchy, jeśli czegoś nie ma w wyciągu.</div>
         <div class="modal-row">
-          <button id="addBankBtn" class="btn secondary" style="width:100%;margin-bottom:6px" data-i="add_today_bank">Ruchy banku</button>
+          <button id="addBankBtn" class="btn secondary" style="width:100%;margin-bottom:6px" data-i18n="add_today_bank">Ruchy banku</button>
         </div>
         <div class="modal-row">
-          <button id="addCashBtn" class="btn secondary" style="width:100%;margin-bottom:6px" data-i="add_today_cash">Ruchy kasy</button>
+          <button id="addCashBtn" class="btn secondary" style="width:100%;margin-bottom:6px" data-i18n="add_today_cash">Ruchy kasy</button>
         </div>
         <div class="modal-row">
-          <button id="addBillsBtn" class="btn secondary" style="width:100%" data-i="add_today_bills">Faktury</button>
+          <button id="addBillsBtn" class="btn secondary" style="width:100%" data-i18n="add_today_bills">Faktury</button>
         </div>
         <div class="modal-actions">
-          <button class="btn secondary" id="addTodayCancel" data-i="add_today_cancel">Zamknij</button>
+          <button class="btn secondary" id="addTodayCancel" data-i18n="add_today_cancel">Zamknij</button>
         </div>
       </div>
     </div>
 
     <div id="closeDayModal" class="modal-overlay">
       <div class="modal-card">
-        <h3 data-i="close_day_title">Podsumowanie dnia</h3>
+        <h3 data-i18n="close_day_title">Podsumowanie dnia</h3>
         <div class="modal-row" id="cd_today">Dziś: —</div>
         <div class="modal-row" id="cd_oblig">Płatności: —</div>
         <div class="modal-row" id="cd_risk">Status: —</div>
         <div class="modal-row" id="cd_target">Cel na jutro: —</div>
         <div class="modal-actions">
-          <button class="btn secondary" id="closeDayCancel" data-i="close_day_cancel">Zamknij</button>
+          <button class="btn secondary" id="closeDayCancel" data-i18n="close_day_cancel">Zamknij</button>
         </div>
       </div>
     </div>
    <div id="addSpCatModal" class="modal-overlay">
   <div class="modal-card">
-    <h3 data-i="spcat.title"></h3>
-    <div class="muted small" style="margin-bottom:8px" data-i="spcat.desc"></div>
+    <h3 data-i18n="spcat.title"></h3>
+    <div class="muted small" style="margin-bottom:8px" data-i18n="spcat.desc"></div>
 
-    <label class="muted small" data-i="spcat.name_label"></label>
-    <input id="spCatName" type="text" class="input" data-i-ph="spcat.name_ph" />
+    <label class="muted small" data-i18n="spcat.name_label"></label>
+    <input id="spCatName" type="text" class="input" data-i18n-ph="spcat.name_ph" />
 
-    <div class="muted small" style="margin-top:8px" data-i="spcat.emoji_label"></div>
+    <div class="muted small" style="margin-top:8px" data-i18n="spcat.emoji_label"></div>
     <div id="spCatEmojiList" class="emojiList">
       <button type="button">🍞</button>
       <button type="button">☕</button>
@@ -572,8 +572,8 @@
     </div>
 
     <div class="modal-row" style="margin-top:12px">
-      <button id="spCatSave" class="btn" style="flex:1" data-i="spcat.save"></button>
-      <button id="spCatCancel" class="btn secondary" style="flex:1" data-i="spcat.cancel"></button>
+      <button id="spCatSave" class="btn" style="flex:1" data-i18n="spcat.save"></button>
+      <button id="spCatCancel" class="btn secondary" style="flex:1" data-i18n="spcat.cancel"></button>
     </div>
   </div>
 </div>
@@ -582,34 +582,34 @@
 <!-- STATEMENT -->
   <div id="docs" class="section">
  <div class="card">
-  <div style="font-weight:700" data-i="documents.title"></div>
-  <div class="muted small" data-i="documents.desc"></div>
-  <div class="homeSub" style="margin:10px 0 0;font-size:12px;padding:0" data-i="documents.add_what"></div>
+  <div style="font-weight:700" data-i18n="documents.title"></div>
+  <div class="muted small" data-i18n="documents.desc"></div>
+  <div class="homeSub" style="margin:10px 0 0;font-size:12px;padding:0" data-i18n="documents.add_what"></div>
   <div class="homeGrid" style="margin-top:10px">
     <div class="homeTile" style="padding:12px 10px;border-radius:14px">
-      <div class="homeTileTitle" data-i="documents.statements"></div>
-      <div class="homeTileDesc" data-i="documents.statements_desc"></div>
+      <div class="homeTileTitle" data-i18n="documents.statements"></div>
+      <div class="homeTileDesc" data-i18n="documents.statements_desc"></div>
       <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
         <button class="btn secondary" id="docTxCsvBtn">CSV</button>
-        <button class="btn secondary" id="docTxImgBtn" data-i="documents.btn_screenshot"></button>
-        <button class="btn ghost small" type="button" onclick="appGoSection('wyciag')" data-i="documents.btn_open_statements"></button>
+        <button class="btn secondary" id="docTxImgBtn" data-i18n="documents.btn_screenshot"></button>
+        <button class="btn ghost small" type="button" onclick="appGoSection('wyciag')" data-i18n="documents.btn_open_statements"></button>
       </div>
     </div>
     <div class="homeTile" style="padding:12px 10px;border-radius:14px">
-      <div class="homeTileTitle" data-i="documents.invoices"></div>
-      <div class="homeTileDesc" data-i="documents.invoices_desc"></div>
+      <div class="homeTileTitle" data-i18n="documents.invoices"></div>
+      <div class="homeTileDesc" data-i18n="documents.invoices_desc"></div>
       <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
         <button class="btn secondary" id="docBillCsvBtn">CSV</button>
-        <button class="btn secondary" id="docBillImgBtn" data-i="documents.btn_screenshot"></button>
-        <button class="btn ghost small" type="button" onclick="appGoSection('faktury')" data-i="documents.btn_open_invoices"></button>
+        <button class="btn secondary" id="docBillImgBtn" data-i18n="documents.btn_screenshot"></button>
+        <button class="btn ghost small" type="button" onclick="appGoSection('faktury')" data-i18n="documents.btn_open_invoices"></button>
       </div>
     </div>
     <div class="homeTile" style="padding:12px 10px;border-radius:14px">
-      <div class="homeTileTitle" data-i="documents.receipts"></div>
-      <div class="homeTileDesc" data-i="documents.receipts_desc"></div>
+      <div class="homeTileTitle" data-i18n="documents.receipts"></div>
+      <div class="homeTileDesc" data-i18n="documents.receipts_desc"></div>
       <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-        <button class="btn secondary" id="docCashImgBtn" data-i="documents.btn_photo_scan"></button>
-        <button class="btn ghost small" type="button" onclick="appGoSection('kasa')" data-i="documents.btn_open_cash"></button>
+        <button class="btn secondary" id="docCashImgBtn" data-i18n="documents.btn_photo_scan"></button>
+        <button class="btn ghost small" type="button" onclick="appGoSection('kasa')" data-i18n="documents.btn_open_cash"></button>
       </div>
     </div>
   </div>
@@ -618,36 +618,36 @@
 
 
   <div id="wyciag" class="section">
-    <div class="muted small" style="margin:6px 0 10px 0" data-i="hint_wyciag">Krok 1: załaduj wyciąg z banku w CSV lub jako zdjęcie. Krok 2: sprawdź, czy operacje się zgadzają.</div>
+    <div class="muted small" style="margin:6px 0 10px 0" data-i18n="hint_wyciag">Krok 1: załaduj wyciąg z banku w CSV lub jako zdjęcie. Krok 2: sprawdź, czy operacje się zgadzają.</div>
     <div class="row">
       <label class="btn ghost">
         <input id="txFile" type="file" accept=".csv" style="display:none"/>
-        <span data-i="upload_statement">Załaduj wyciąg (CSV)</span>
+        <span data-i18n="upload_statement">Załaduj wyciąg (CSV)</span>
       </label>
 
       <label class="btn ghost">
         <input id="txImage" type="file" accept="image/*" multiple style="display:none"/>
-        <span data-i="upload_statement_image">Załaduj zrzut wyciągu (galeria)</span>
+        <span data-i18n="upload_statement_image">Załaduj zrzut wyciągu (galeria)</span>
       </label>
 
       <img id="txLastThumb" class="thumb" style="display:none"/>
 
-      <span class="muted" data-i="statement_columns_note">
+      <span class="muted" data-i18n="statement_columns_note">
         Kolumny: Data księgowania, ID transakcji, ID konta (lub IBAN), Kontrahent, Tytuł/Opis, Kwota(±), Waluta, Status, Saldo?
       </span>
-      <button id="exportTxCSV" class="btn secondary" style="margin-left:12px" data-i="btn_export_tx_csv">Eksport wyciągu (CSV)</button>
+      <button id="exportTxCSV" class="btn secondary" style="margin-left:12px" data-i18n="btn_export_tx_csv">Eksport wyciągu (CSV)</button>
     </div>
     <table id="txTable">
       <thead>
         <tr>
-          <th data-i="th_date">Data</th>
-          <th data-i="th_account">Konto</th>
-          <th data-i="th_counterparty">Kontrahent</th>
-          <th data-i="th_desc">Opis</th>
-          <th data-i="th_amount">Kwota</th>
-          <th data-i="th_currency">Waluta</th>
-          <th data-i="th_status">Status</th>
-          <th data-i="th_actions">Działania</th>
+          <th data-i18n="th_date">Data</th>
+          <th data-i18n="th_account">Konto</th>
+          <th data-i18n="th_counterparty">Kontrahent</th>
+          <th data-i18n="th_desc">Opis</th>
+          <th data-i18n="th_amount">Kwota</th>
+          <th data-i18n="th_currency">Waluta</th>
+          <th data-i18n="th_status">Status</th>
+          <th data-i18n="th_actions">Działania</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -658,31 +658,31 @@
 
   <!-- INVOICES -->
   <div id="faktury" class="section">
-    <div class="muted small" style="margin:6px 0 10px 0" data-i="hint_faktury">Tu widzisz faktury do zapłaty i opłacone. Po dopasowaniu płatności status zmieni się automatycznie.</div>
+    <div class="muted small" style="margin:6px 0 10px 0" data-i18n="hint_faktury">Tu widzisz faktury do zapłaty i opłacone. Po dopasowaniu płatności status zmieni się automatycznie.</div>
     <div class="row" style="align-items:center;margin-bottom:8px">
       <label class="btn ghost">
         <input id="billFile" type="file" accept=".csv" style="display:none"/>
-        <span data-i="upload_invoices">Załaduj faktury (CSV)</span>
+        <span data-i18n="upload_invoices">Załaduj faktury (CSV)</span>
       </label>
       <label class="btn ghost">
         <input id="billImage" type="file" accept="image/*" multiple style="display:none"/>
-        <span data-i="upload_invoice_images">Załaduj zdjęcia faktur</span>
+        <span data-i18n="upload_invoice_images">Załaduj zdjęcia faktur</span>
       </label>
-      <span class="muted" style="margin-left:12px" data-i="invoices_note">Tu wykrywamy numer faktury, kwotę i datę.</span>
-      <button id="exportBillsCSV" class="btn secondary" style="margin-left:12px" data-i="btn_export_bills_csv">Eksport faktur (CSV)</button>
+      <span class="muted" style="margin-left:12px" data-i18n="invoices_note">Tu wykrywamy numer faktury, kwotę i datę.</span>
+      <button id="exportBillsCSV" class="btn secondary" style="margin-left:12px" data-i18n="btn_export_bills_csv">Eksport faktur (CSV)</button>
     </div>
     <table id="billTable">
       <thead>
         <tr>
-          <th data-i="inv_th_due">Termin</th>
-          <th data-i="inv_th_number">Nr</th>
-          <th data-i="inv_th_supplier">Dostawca</th>
-          <th data-i="inv_th_amount">Kwota</th>
-          <th data-i="inv_th_currency">Waluta</th>
-          <th data-i="inv_th_status">Status</th>
-          <th data-i="inv_th_candidate">Kandydat</th>
-          <th data-i="inv_th_score">Score</th>
-          <th data-i="inv_th_action">Działanie</th>
+          <th data-i18n="inv_th_due">Termin</th>
+          <th data-i18n="inv_th_number">Nr</th>
+          <th data-i18n="inv_th_supplier">Dostawca</th>
+          <th data-i18n="inv_th_amount">Kwota</th>
+          <th data-i18n="inv_th_currency">Waluta</th>
+          <th data-i18n="inv_th_status">Status</th>
+          <th data-i18n="inv_th_candidate">Kandydat</th>
+          <th data-i18n="inv_th_score">Score</th>
+          <th data-i18n="inv_th_action">Działanie</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -692,18 +692,18 @@
   <!-- ACCOUNTS -->
   <div id="konta" class="section">
     <div class="card">
-      <div style="font-weight:700" data-i="auto_accounts_title">Konta z wyciągu (auto)</div>
-      <div class="muted" data-i="auto_accounts_desc">Edycja waluty, salda początkowego i uwzględnienia w planie.</div>
+      <div style="font-weight:700" data-i18n="auto_accounts_title">Konta z wyciągu (auto)</div>
+      <div class="muted" data-i18n="auto_accounts_desc">Edycja waluty, salda początkowego i uwzględnienia w planie.</div>
       <div class="tableScroll">
         <table id="autoAcc">
         <thead>
           <tr>
-            <th data-i="acc_th_account">Konto</th>
-            <th data-i="acc_th_type">Typ</th>
-            <th data-i="acc_th_currency">Waluta</th>
-            <th data-i="acc_th_balance_calc">Saldo (oblicz)</th>
-            <th data-i="acc_th_start_balance">Start</th>
-            <th data-i="acc_th_include">Uwzględnij</th>
+            <th data-i18n="acc_th_account">Konto</th>
+            <th data-i18n="acc_th_type">Typ</th>
+            <th data-i18n="acc_th_currency">Waluta</th>
+            <th data-i18n="acc_th_balance_calc">Saldo (oblicz)</th>
+            <th data-i18n="acc_th_start_balance">Start</th>
+            <th data-i18n="acc_th_include">Uwzględnij</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -714,27 +714,27 @@
 
   <!-- CASH -->
   <div id="kasa" class="section">
-    <div class="muted small" style="margin:6px 0 10px 0" data-i="hint_kasa">Tu zapisujesz ruchy gotówki: przyjęcia i wydania. One trafią do podsumowań i księgi.</div>
+    <div class="muted small" style="margin:6px 0 10px 0" data-i18n="hint_kasa">Tu zapisujesz ruchy gotówki: przyjęcia i wydania. One trafią do podsumowań i księgi.</div>
     <div class="card">
-      <div style="font-weight:700" data-i="cash_title">Kasa — szybkie operacje</div>
-      <div class="muted" data-i="cash_note">Głosowa kasa + szybkie przyciski</div>
+      <div style="font-weight:700" data-i18n="cash_title">Kasa — szybkie operacje</div>
+      <div class="muted" data-i18n="cash_note">Głosowa kasa + szybkie przyciski</div>
       <div id="kasaQuickHolder" class="kasa-quick"></div>
 
       <div class="row" style="margin-top:8px;align-items:center">
-        <input id="quickAmt" type="number" step="0.01" placeholder="0.00" data-i-ph="ph_amount" style="width:120px"/>
-        <input id="quickNote" type="text" placeholder="" data-i-ph="ph_comment" style="width:300px"/>
-        <button id="addIn" class="btn secondary" data-i="btn_add_in">+ Przyjęcie</button>
-        <button id="addOut" class="btn secondary" data-i="btn_add_out">− Wydanie</button>
+        <input id="quickAmt" type="number" step="0.01" placeholder="0.00" data-i18n-ph="ph_amount" style="width:120px"/>
+        <input id="quickNote" type="text" placeholder="" data-i18n-ph="ph_comment" style="width:300px"/>
+        <button id="addIn" class="btn secondary" data-i18n="btn_add_in">+ Przyjęcie</button>
+        <button id="addOut" class="btn secondary" data-i18n="btn_add_out">− Wydanie</button>
         <button id="q50" class="btn ghost">+50</button>
         <button id="q100" class="btn ghost">+100</button>
         <button id="q200" class="btn ghost">+200</button>
         <div style="margin-left:12px">
-          <button id="cashClose" class="btn" data-i="btn_close_shift">Zamknij zmianę</button>
+          <button id="cashClose" class="btn" data-i18n="btn_close_shift">Zamknij zmianę</button>
         </div>
       </div>
 
       <div style="margin-top:8px">
-        <label data-i="speech_lang_label">Język rozpoznawania:</label>
+        <label data-i18n="speech_lang_label">Język rozpoznawania:</label>
         <select id="speechLang">
           <option value="pl-PL">PL</option>
           <option value="ru-RU">RU</option>
@@ -747,21 +747,21 @@
 
       <div style="margin-top:12px">
         <input id="cashPhoto" type="file" accept="image/*" style="display:inline-block"/>
-        <span class="muted" data-i="cash_photo_note">Zdjęcie paragonu/wyciągu — wykryj kwotę i opis.</span>
+        <span class="muted" data-i18n="cash_photo_note">Zdjęcie paragonu/wyciągu — wykryj kwotę i opis.</span>
       </div>
 
-      <button id="exportCashCSV" class="btn secondary" style="margin-top:8px" data-i="btn_export_cash_csv">Eksport kasy (CSV)</button>
+      <button id="exportCashCSV" class="btn secondary" style="margin-top:8px" data-i18n="btn_export_cash_csv">Eksport kasy (CSV)</button>
 
       <table id="kasaTable" style="margin-top:12px">
         <thead>
           <tr>
             <th>#</th>
-            <th data-i="cash_th_date">Data</th>
-            <th data-i="cash_th_type">Typ</th>
-            <th data-i="cash_th_amount">Kwota</th>
-            <th data-i="cash_th_source">Źródło</th>
-            <th data-i="cash_th_comment">Komentarz</th>
-            <th data-i="th_actions">Działania</th>
+            <th data-i18n="cash_th_date">Data</th>
+            <th data-i18n="cash_th_type">Typ</th>
+            <th data-i18n="cash_th_amount">Kwota</th>
+            <th data-i18n="cash_th_source">Źródło</th>
+            <th data-i18n="cash_th_comment">Komentarz</th>
+            <th data-i18n="th_actions">Działania</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -772,8 +772,8 @@
   <!-- SETTINGS -->
   <div id="ustawienia" class="section">
     <div class="card">
-     <div style="font-weight:700" data-i="settings.lang_title"></div>
-<div class="muted small" style="margin-top:4px" data-i="settings.lang_desc"></div>
+     <div style="font-weight:700" data-i18n="settings.lang_title"></div>
+<div class="muted small" style="margin-top:4px" data-i18n="settings.lang_desc"></div>
             <div class="lang" id="langBarMain">
               <button data-lang="pl" class="on">PL</button>
               <button data-lang="ru">RU</button>
@@ -784,43 +784,43 @@
 
 
     <div class="card">
-      <div style="font-weight:700" data-i="parameters">Parametry</div>
+      <div style="font-weight:700" data-i18n="parameters">Parametry</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px">
         <div>
-          <label data-i="param_cash_label">Ręczna dostępna kasa dziś (PLN):</label>
+          <label data-i18n="param_cash_label">Ręczna dostępna kasa dziś (PLN):</label>
           <input id="cashPLN" type="text"/><br/>
-          <label data-i="param_penalty_label">Kara, %/dzień:</label>
+          <label data-i18n="param_penalty_label">Kara, %/dzień:</label>
           <input id="penaltyPct" type="text"/><br/>
-          <label data-i="param_interval_label">Interwał synchronizacji, min:</label>
+          <label data-i18n="param_interval_label">Interwał synchronizacji, min:</label>
           <input id="intervalMin" type="text"/>
         </div>
         <div>
-          <label data-i="rateEUR_label">rateEUR:</label> <input id="rateEUR" type="text"/><br/>
-          <label data-i="rateUSD_label">rateUSD:</label> <input id="rateUSD" type="text"/><br/>
-          <label data-i="blacklist_label">Czarna lista (przecinki):</label> <input id="blacklist" type="text"/><br/>
-          <label><input id="autoCash" type="checkbox"/> <span data-i="auto_mode_label">Auto: z kont wyciągu (włączone) + kasa</span></label>
+          <label data-i18n="rateEUR_label">rateEUR:</label> <input id="rateEUR" type="text"/><br/>
+          <label data-i18n="rateUSD_label">rateUSD:</label> <input id="rateUSD" type="text"/><br/>
+          <label data-i18n="blacklist_label">Czarna lista (przecinki):</label> <input id="blacklist" type="text"/><br/>
+          <label><input id="autoCash" type="checkbox"/> <span data-i18n="auto_mode_label">Auto: z kont wyciągu (włączone) + kasa</span></label>
         </div>
       </div>
       <div class="row" style="margin-top:10px">
-        <label style="margin-right:8px" data-i="theme_label">Motyw:</label>
+        <label style="margin-right:8px" data-i18n="theme_label">Motyw:</label>
         <select id="themeSelect">
-          <option value="dark" data-i="theme_dark">Ciemny</option>
-          <option value="light" data-i="theme_light">Jasny</option>
+          <option value="dark" data-i18n="theme_dark">Ciemny</option>
+          <option value="light" data-i18n="theme_light">Jasny</option>
         </select>
       </div>
       <div style="margin-top:10px" class="row">
-        <button id="applySettings" class="btn secondary" data-i="btn_save_settings">Zapisz</button>
-        <button id="clearAll" class="btn ghost" data-i="btn_clear_all">Wyczyść historię (lokalnie)</button>
+        <button id="applySettings" class="btn secondary" data-i18n="btn_save_settings">Zapisz</button>
+        <button id="clearAll" class="btn ghost" data-i18n="btn_clear_all">Wyczyść historię (lokalnie)</button>
       </div>
     </div>
 
     <div class="card">
-      <div style="font-weight:700" data-i="sub_title">Subskrypcja / Demo</div>
+      <div style="font-weight:700" data-i18n="sub_title">Subskrypcja / Demo</div>
       <div class="muted" id="subStatus">—</div>
       <div class="row" style="margin-top:8px">
-        <button id="payNow" class="btn" data-i="btn_pay_sub">Opłać subskrypcję</button>
+        <button id="payNow" class="btn" data-i18n="btn_pay_sub">Opłać subskrypcję</button>
       </div>
-      <div class="hint" style="margin-top:6px" data-i="sub_hint">
+      <div class="hint" style="margin-top:6px" data-i18n="sub_hint">
         Opłata dostępna tylko tutaj. Jeśli masz link Stripe — ustaw <code>localStorage.stripe_link</code>.
       </div>
     </div>
@@ -829,56 +829,56 @@
 
   <div id="aiAssist" class="section">
     <div class="card">
-      <div style="font-weight:700" data-i="ai.top_title"></div>
-      <div class="muted small" data-i="ai.top_desc"></div>
+      <div style="font-weight:700" data-i18n="ai.top_title"></div>
+      <div class="muted small" data-i18n="ai.top_desc"></div>
       <div style="margin-top:10px" id="aiProfileBlock">
-  <div class="muted small" data-i="ai.profile_who"></div>
+  <div class="muted small" data-i18n="ai.profile_who"></div>
   <select id="aiProfileType">
-    <option value="solo" data-i="ai.profile_who_solo"></option>
-    <option value="owner" data-i="ai.profile_who_owner"></option>
-    <option value="team" data-i="ai.profile_who_team"></option>
+    <option value="solo" data-i18n="ai.profile_who_solo"></option>
+    <option value="owner" data-i18n="ai.profile_who_owner"></option>
+    <option value="team" data-i18n="ai.profile_who_team"></option>
   </select>
 
-  <div class="muted small" data-i="ai.profile_niche"></div>
-  <input id="aiProfileNiche" type="text" data-i-ph="ai.profile_niche_ph"/>
+  <div class="muted small" data-i18n="ai.profile_niche"></div>
+  <input id="aiProfileNiche" type="text" data-i18n-ph="ai.profile_niche_ph"/>
 
-  <div class="muted small" data-i="ai.profile_goal"></div>
+  <div class="muted small" data-i18n="ai.profile_goal"></div>
   <select id="aiProfileGoal">
-    <option value="survive" data-i="ai.profile_goal_survive"></option>
-    <option value="stable" data-i="ai.profile_goal_stable"></option>
-    <option value="grow" data-i="ai.profile_goal_grow"></option>
+    <option value="survive" data-i18n="ai.profile_goal_survive"></option>
+    <option value="stable" data-i18n="ai.profile_goal_stable"></option>
+    <option value="grow" data-i18n="ai.profile_goal_grow"></option>
   </select>
-  <button class="btn" id="aiProfileSave" style="margin-top:10px" data-i="ai.profile_save"></button>
-  <div class="muted small" id="aiProfileSaved" style="margin-top:6px;display:none" data-i="ai.profile_saved"></div>
+  <button class="btn" id="aiProfileSave" style="margin-top:10px" data-i18n="ai.profile_save"></button>
+  <div class="muted small" id="aiProfileSaved" style="margin-top:6px;display:none" data-i18n="ai.profile_saved"></div>
 </div>
 <div class="card" style="margin-top:10px">
-  <div style="font-weight:700" data-i="ai.ask_title"></div>
-  <div class="muted small" data-i="ai.ask_desc"></div>
+  <div style="font-weight:700" data-i18n="ai.ask_title"></div>
+  <div class="muted small" data-i18n="ai.ask_desc"></div>
 
   <div class="aiQuickRow" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">
-    <button type="button" class="btn secondary small" id="aiQRent" data-i="ai.q_rent"></button>
-    <button type="button" class="btn secondary small" id="aiQSpending" data-i="ai.q_spending"></button>
-    <button type="button" class="btn secondary small" id="aiQWithdraw" data-i="ai.q_withdraw"></button>
-    <button type="button" class="btn secondary small" id="aiQMonth" data-i="ai.q_month"></button>
+    <button type="button" class="btn secondary small" id="aiQRent" data-i18n="ai.q_rent"></button>
+    <button type="button" class="btn secondary small" id="aiQSpending" data-i18n="ai.q_spending"></button>
+    <button type="button" class="btn secondary small" id="aiQWithdraw" data-i18n="ai.q_withdraw"></button>
+    <button type="button" class="btn secondary small" id="aiQMonth" data-i18n="ai.q_month"></button>
   </div>
 
   <div style="margin-top:8px">
-    <textarea id="aiChatInput" data-i-ph="ai.placeholders.goal_input" style="width:100%;resize:vertical;border-radius:10px;border:1px solid #20262b;background:#0f1214;color:#e6edf3;padding:8px;font-size:13px"></textarea>
-    <button class="btn" id="aiChatSend" style="margin-top:8px" data-i="ai.ask_btn"></button>
+    <textarea id="aiChatInput" data-i18n-ph="ai.placeholders.goal_input" style="width:100%;resize:vertical;border-radius:10px;border:1px solid #20262b;background:#0f1214;color:#e6edf3;padding:8px;font-size:13px"></textarea>
+    <button class="btn" id="aiChatSend" style="margin-top:8px" data-i18n="ai.ask_btn"></button>
   </div>
 
-  <div id="aiChatLog" class="muted small" style="margin-top:8px;max-height:200px;overflow:auto;border-top:1px solid #20262b;padding-top:6px" data-i="ai.chat_intro"></div>
+  <div id="aiChatLog" class="muted small" style="margin-top:8px;max-height:200px;overflow:auto;border-top:1px solid #20262b;padding-top:6px" data-i18n="ai.chat_intro"></div>
 </div>
 
 
   <div id="reports" class="section">
     <div class="card">
-      <div style="font-weight:700" data-i="reports.title"></div>
-      <div class="muted small" data-i="reports.desc"></div>
+      <div style="font-weight:700" data-i18n="reports.title"></div>
+      <div class="muted small" data-i18n="reports.desc"></div>
       <div class="row" style="margin-top:10px;flex-wrap:wrap;gap:8px">
-        <button class="btn secondary" id="reportsTx" data-i="reports.export_statements"></button>
-        <button class="btn secondary" id="reportsBills" data-i="reports.export_invoices"></button>
-        <button class="btn secondary" id="reportsBook" data-i="reports.export_month"></button>
+        <button class="btn secondary" id="reportsTx" data-i18n="reports.export_statements"></button>
+        <button class="btn secondary" id="reportsBills" data-i18n="reports.export_invoices"></button>
+        <button class="btn secondary" id="reportsBook" data-i18n="reports.export_month"></button>
       </div>
     </div>
   </div>
@@ -886,7 +886,7 @@
 <div id="helperFab">?</div>
 <div id="helperPanel">
   <div id="helperPanelHeader">
-    <span data-i="helper_title">AI-pomoc dla właściciela</span>
+    <span data-i18n="helper_title">AI-pomoc dla właściciela</span>
     <button id="helperClose" class="btn ghost" style="padding:2px 6px;font-size:11px">×</button>
   </div>
   <input id="helperSearch" type="text" placeholder="Zadaj pytanie (np. ZUS, synchronizacja)"/>
@@ -900,7 +900,7 @@
     <div class="helper-chip" data-topic="cash">Jak pracować z kasą (gotówką)?</div>
   </div>
   <div id="helperAnswer">
-    <div data-i="helper_intro">Zadaj pytanie lub wybierz temat powyżej. Odpowiemy prostym językiem.</div>
+    <div data-i18n="helper_intro">Zadaj pytanie lub wybierz temat powyżej. Odpowiemy prostym językiem.</div>
   </div>
 </div>
 
@@ -933,7 +933,7 @@
   const analytics = getAnalytics(app);
 </script>
 <script type="module" src="/sync-cloud.js"></script>
-<script src="/js/i18n.js"></script>
+<script src="/i18n_pack/i18n.js"></script>
 </body>
 </html>
 

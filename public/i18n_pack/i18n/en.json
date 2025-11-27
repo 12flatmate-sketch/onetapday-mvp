@@ -1,109 +1,242 @@
 {
   "app": {
     "title": "OneTapDay",
-    "subtitle": "Premium AI-CFO for owners who don’t want to drown in spreadsheets.",
-    "dashboard": {
-      "movement_month": "Movement this month",
-      "no_data": "Not enough data to show movement.",
-      "documents": "Documents",
-      "documents_desc": "Upload statements, invoices and receipts (CSV, photo).",
-      "money": "Money & Payments",
-      "money_desc": "See where money went and what needs to be paid.",
-      "ai": "AI-Accountant",
-      "ai_desc": "Helps with saving, scaling and avoiding penalties.",
-      "cash": "Cash",
-      "cash_desc": "Cash: voice or manual input, close the day.",
-      "accounts": "Accounts & Cards",
-      "accounts_desc": "Which accounts are connected and included in the reports.",
-      "reports": "Reports & Export",
-      "reports_desc": "CSV export and reports for accountant and investor."
-    }
+    "subtitle": "Premium AI-CFO for owners who don't want to drown in spreadsheets."
   },
+
   "nav": {
-    "home": "Dashboard",
+    "home": "Home",
     "transactions": "Statements",
     "bills": "Invoices",
     "cash": "Cash",
-    "ai": "AI"
+    "ai": "AI",
+    "accounts": "Accounts",
+    "reports": "Reports",
+    "settings": "Settings"
   },
-  "ai": {
-    "prototype_note": "This is a prototype. Full AI-Accountant insights will appear later.",
-    "questions": {
-      "overspend": "Where am I overspending?",
-      "scale": "How can I scale my business?",
-      "goal_income": "How much do I need to earn to reach my goal?"
-    },
-    "placeholders": {
-      "goal_input": "Enter your goal, e.g. '20,000 PLN per month'"
-    }
-  }
-}
-{
-  "app": {
-    "dashboard": {
-      "documents": "Documents",
-      "documents_desc": "Upload statements, invoices and receipts.",
-      "money": "Money & Payments",
-      "money_desc": "See where money goes and what must be paid.",
-      "ai": "AI-Accountant",
-      "ai_desc": "Insights and suggestions based on your data.",
-      "cash": "Cash",
-      "cash_desc": "Quick cash operations and daily closing.",
-      "accounts": "Accounts & Cards",
-      "accounts_desc": "Bank accounts included in calculations.",
-      "reports": "Reports & Export",
-      "reports_desc": "CSV export and reports for accountant or investor."
-    }
+
+  "home": {
+    "tagline": "A premium AI-CFO for owners who don't want to drown in spreadsheets.",
+    "trend_title": "Monthly movement",
+    "trend_empty": "Not enough data to show movement.",
+    "tile_docs_title": "Documents",
+    "tile_docs_desc": "Upload statements, invoices, receipts (CSV, photos).",
+    "tile_money_title": "Money & payments",
+    "tile_money_desc": "See where money went and what needs to be paid.",
+    "tile_ai_title": "AI-accountant",
+    "tile_ai_desc": "Helps with savings, scaling and avoiding penalties.",
+    "tile_cash_title": "Cash",
+    "tile_cash_desc": "Cash operations: voice or manual, end-of-day closure.",
+    "tile_accounts_title": "Accounts",
+    "tile_accounts_desc": "Which accounts are connected in reports.",
+    "tile_reports_title": "Reports & export",
+    "tile_reports_desc": "CSV exports for accountant or investor."
   },
+
   "documents": {
     "title": "Documents",
-    "desc": "Upload statements, invoices and receipts.",
+    "desc": "Upload your statements, invoices and receipts here.",
+    "add_what": "What do you want to add?",
+    "btn_screenshot": "Screenshot / photo",
+    "btn_open_statements": "Open statements",
+    "btn_open_invoices": "Open invoices",
+    "btn_photo_scan": "Photo / scan",
+    "btn_open_cash": "Open cash",
     "statements": "Statements",
-    "statements_desc": "Bank account movements.",
+    "statements_desc": "Account movement.",
     "invoices": "Invoices",
-    "invoices_desc": "Bills from clients and suppliers.",
-    "receipts": "Receipts",
+    "invoices_desc": "Client and vendor invoices.",
+    "receipts": "Receipts / expenses",
     "receipts_desc": "Cash and small expenses."
   },
+
+  "money": {
+    "title": "Money & payments",
+    "desc": "Status, movement and obligations."
+  },
+
   "ai": {
-    "top_title": "AI Accountant",
-    "top_desc": "Tell a few things about yourself for better accuracy.",
+    "prototype_note": "This is a prototype. Full AI suggestions will appear later.",
+    "ask_title": "Ask the AI-accountant",
+    "ask_desc": "Ask why rent is tight, where your money goes or how to stay safe.",
+    "q_rent": "Why can't I cover rent?",
+    "q_spending": "Where am I overspending?",
+    "q_withdraw": "How much can I safely withdraw?",
+    "q_month": "Will I last until the end of the month?",
+    "ask_btn": "Ask",
+    "chat_intro": "A full conversation with the AI-accountant will appear here later.",
+
+    "top_title": "AI-accountant",
+    "top_desc": "Tell a bit about yourself to improve suggestions.",
     "profile_who": "Who are you?",
-    "profile_niche": "Niche / business type",
-    "profile_goal": "What is most important now?",
+    "profile_who_solo": "Freelancer / individual",
+    "profile_who_owner": "Business owner",
+    "profile_who_team": "Company with a team",
+    "profile_who_partner": "Business partner",
+    "profile_niche": "What do you do?",
+    "profile_niche_ph": "Example: barbershop, marketing, IT services",
+    "profile_goal": "What is most important right now?",
+    "profile_goal_survive": "Survive and avoid debt",
+    "profile_goal_stable": "Stay stable",
+    "profile_goal_grow": "Grow and scale",
     "profile_save": "Save profile",
-    "profile_saved": "Profile saved. AI will use this data.",
-    "questions": {
-      "overspend": "Where am I overspending?",
-      "scale": "How can I scale?",
-      "goal_income": "How much should I earn to reach my goal?"
-    },
+    "profile_saved": "Profile saved.",
+
     "placeholders": {
-      "goal_input": "What is your goal? For example: “20 000 PLN/month”."
+      "goal_input": "Example: \"20,000 PLN per month\"."
     }
   },
-  "faq": {
-    "ritual": "How to use OneTapDay daily?",
-    "sync": "What does synchronisation mean?",
-    "match": "What are payment matches?",
-    "close_day": "Why close the day?",
-    "risk": "Where does the risk color come from?",
-    "export": "Why export CSV?",
-    "cash": "How to use cash module?"
-  },
+
   "reports": {
-    "title": "Reports & Export",
-    "desc": "CSV and monthly summaries.",
+    "title": "Reports & export",
+    "desc": "Download CSV and monthly reports.",
     "export_statements": "Export statements (CSV)",
     "export_invoices": "Export invoices (CSV)",
-    "export_month": "Book / monthly report (CSV)"
+    "export_month": "Monthly report (CSV)"
   },
+
   "cash": {
-    "new_category": "New category",
+    "title": "Cash — quick operations",
+    "note": "Voice cash + quick buttons.",
+    "btn_add_in": "+ Incoming",
+    "btn_add_out": "– Outgoing",
+    "btn_close_shift": "Close shift",
+    "new_category": "New expense category",
     "name": "Name",
+    "save": "Save",
+    "cancel": "Cancel",
+    "photo_note": "Receipt photo — we'll recognize the amount.",
+    "speech_lang_label": "Recognition language:",
+    "th_date": "Date",
+    "th_type": "Type",
+    "th_amount": "Amount",
+    "th_source": "Source",
+    "th_comment": "Comment"
+  },
+
+  "accounts": {
+    "title": "Accounts",
+    "desc": "Accounts detected from uploaded statements.",
+    "auto_title": "Auto-detected accounts",
+    "auto_desc": "Edit currency, starting balance and inclusion.",
+    "th_account": "Account",
+    "th_type": "Type",
+    "th_currency": "Currency",
+    "th_balance_calc": "Balance (calculated)",
+    "th_start_balance": "Starting balance",
+    "th_include": "Include"
+  },
+
+  "kpi": {
+    "due_today": "Due today",
+    "unmatched": "Unmatched transactions",
+    "banks": "Banks",
+    "cash": "Cash",
+    "total": "Total available",
+    "gap_today": "Cash gap today"
+  },
+
+  "plan": {
+    "title": "Payment plan",
+    "filter_label": "Filter:",
+    "filter_today": "Today",
+    "filter_7d": "7 days",
+    "filter_all": "All",
+    "exclude_blacklist": "Exclude blacklist",
+    "btn_make": "Create",
+    "btn_apply": "Apply",
+    "th_invoice": "Invoice",
+    "th_supplier": "Supplier",
+    "th_due": "Due date",
+    "th_amount": "Amount",
+    "th_reason": "Reason"
+  },
+
+  "spending": {
+    "title": "Spending by category",
+    "desc": "Where money usually goes.",
+    "add_custom": "+ Custom category",
+    "empty": "No data."
+  },
+
+  "spcat": {
+    "title": "New expense category",
+    "desc": "Give the category a name and choose an emoji.",
+    "name_label": "Name",
+    "name_ph": "Example: Subscriptions",
+    "emoji_label": "Emoji",
     "save": "Save",
     "cancel": "Cancel"
   },
-  "ph_amount": "Amount",
-  "ph_comment": "Comment"
+
+  "tables": {
+    "th_date": "Date",
+    "th_account": "Account",
+    "th_counterparty": "Counterparty",
+    "th_desc": "Description",
+    "th_amount": "Amount",
+    "th_currency": "Currency",
+    "th_status": "Status",
+    "th_actions": "Actions",
+    "inv_th_due": "Due date",
+    "inv_th_number": "No.",
+    "inv_th_supplier": "Supplier",
+    "inv_th_amount": "Amount",
+    "inv_th_currency": "Currency",
+    "inv_th_status": "Status",
+    "inv_th_candidate": "Candidate",
+    "inv_th_score": "Score",
+    "inv_th_action": "Action"
+  },
+
+  "settings": {
+    "title": "Settings",
+    "lang_title": "Language",
+    "lang_desc": "You can change it anytime.",
+    "parameters": "Parameters",
+    "param_cash_label": "Available cash today (PLN):",
+    "param_penalty_label": "Penalty %/day:",
+    "param_interval_label": "Sync interval (minutes):",
+    "rateEUR_label": "EUR rate:",
+    "rateUSD_label": "USD rate:",
+    "blacklist_label": "Blacklist (comma-separated):",
+    "auto_mode_label": "Auto: accounts + cash",
+    "btn_save_settings": "Save",
+    "btn_export_settings": "Export",
+    "btn_import_settings": "Import",
+    "btn_clear_all": "Clear history",
+    "sub_title": "Subscription / demo",
+    "btn_start_demo": "Start demo (24h)",
+    "btn_pay_sub": "Pay subscription",
+    "btn_end_demo": "End demo",
+    "sub_hint": "Payments only through settings. If you have a Stripe link — store it in localStorage."
+  },
+
+  "buttons": {
+    "sync": "Sync",
+    "ai_match": "AI matching",
+    "accept_safe": "Accept safe matches",
+    "pdf": "PDF report",
+    "apply_minpay": "Mark as paid",
+    "make_plan": "Create",
+    "apply_plan": "Apply"
+  },
+
+  "placeholders": {
+    "amount": "Amount",
+    "comment": "Comment",
+    "csv_url": "CSV file URL"
+  },
+
+  "modal": {
+    "locked_title": "Access blocked",
+    "locked_desc": "Demo expired or no subscription.",
+    "open_settings": "Open settings"
+  },
+
+  "errors": {
+    "no_data": "No data",
+    "upload_failed": "Upload error",
+    "parse_failed": "Parsing error"
+  }
 }

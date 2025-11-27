@@ -1,0 +1,26 @@
+{
+  "dsfjhdsfjfdsjbj": {
+    "email": "dsfjhdsfjfdsjbj",
+    "salt": "50980af85865784825f074307a020891",
+    "hash": "31b0de2edf32f529bbd584166a8d10e79cc69f159fc0123f00795904e17d9c5ec1ad07bb89cc4c505bf5ce74804eba80af11f86d1af7cfdddd06098dfe2e6510:100000:64:sha512",
+    "status": "none",
+    "startAt": null,
+    "endAt": null,
+    "discountUntil": null,
+    "demoUsed": false,
+    "appState": {},
+    "isAdmin": false
+  },
+  "legunlegun@gmail.com": {
+    "email": "legunlegun@gmail.com",
+    "salt": "9409ea14eafc06560f59018280a1f374",
+    "hash": "a1a3639c2183294ca58227556718c7bf3e846b6b5412158db40aa81adc83d48ec85371870f5822a6160663dd484eebdef798ba83391edbf7a46587bf1de9f3f2:100000:64:sha512",
+    "status": "none",
+    "startAt": null,
+    "endAt": null,
+    "discountUntil": null,
+    "demoUsed": false,
+    "appState": {},
+    "isAdmin": false
+  }
+}
