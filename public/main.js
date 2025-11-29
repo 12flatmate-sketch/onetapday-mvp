@@ -10,7 +10,7 @@
       status_title: 'Статус',
       status_guest: 'Гость — войдите или зарегистрируйтесь.',
       demo_24: 'Демо 24 часа',
-      stripe_2m: 'Оплатить 2 месяца (Stripe)',
+      stripe_2m: 'Оплатить (Stripe)',
       login_tab: 'Вход',
       reg_tab: 'Регистрация'
     },
@@ -21,7 +21,7 @@
       status_title: 'Status',
       status_guest: 'Gość — zaloguj się lub zarejestruj.',
       demo_24: 'Demo 24h',
-      stripe_2m: 'Opłać 2 miesiące (Stripe)',
+      stripe_2m: 'Opłać (Stripe)',
       login_tab: 'Logowanie',
       reg_tab: 'Rejestracja'
     },
@@ -32,7 +32,7 @@
       status_title: 'Status',
       status_guest: 'Guest — log in or sign up.',
       demo_24: '24-hour demo',
-      stripe_2m: 'Pay for 2 months (Stripe)',
+      stripe_2m: 'Pay for (Stripe)',
       login_tab: 'Login',
       reg_tab: 'Sign up'
     },
@@ -43,7 +43,7 @@
       status_title: 'Статус',
       status_guest: 'Гість — увійдіть або зареєструйтесь.',
       demo_24: 'Демо 24 години',
-      stripe_2m: 'Оплатити 2 місяці (Stripe)',
+      stripe_2m: 'Оплатити (Stripe)',
       login_tab: 'Вхід',
       reg_tab: 'Реєстрація'
     }
