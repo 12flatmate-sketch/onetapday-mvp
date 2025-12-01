@@ -1120,21 +1120,31 @@ function isDemoActive(){
 }
 
 function gateAccess(){
-  const isAdmin = localStorage.getItem('otd_isAdmin') === '1';
-  const ok   = isSubActive() || isDemoActive();
   const gate = $id('gate');
   const tabs = document.querySelectorAll('.tabs .tab');
+  const isAdmin = localStorage.getItem('otd_isAdmin') === '1';
+
   if (!gate) return;
 
-  // показываем / прячем баннер
+  // Админ: всегда полный доступ, без баннеров и блокировок
+  if (isAdmin) {
+    gate.classList.add('hidden');
+    if (document && document.body) {
+      document.body.classList.remove('app-locked');
+    }
+    tabs.forEach(t => t.classList.remove('disabled'));
+    return;
+  }
+
+  // Обычные пользователи: проверяем демо / подписку
+  const ok = isSubActive() || isDemoActive();
+
   gate.classList.toggle('hidden', ok);
 
-  // глобальный флаг блокировки на уровне всего приложения
   if (document && document.body) {
     document.body.classList.toggle('app-locked', !ok);
   }
 
-  // табы: только "Ustawienia" остаётся живым
   tabs.forEach(t=>{
     if (t.dataset.sec === 'ustawienia') {
       t.classList.remove('disabled');
@@ -1143,7 +1153,6 @@ function gateAccess(){
     }
   });
 
-  // если нет доступа – насильно кидаем в настройки
   if (!ok){
     const settingsTab = document.querySelector('[data-sec=ustawienia]');
     if (settingsTab) settingsTab.click();
