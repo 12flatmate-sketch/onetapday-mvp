@@ -1120,6 +1120,7 @@ function isDemoActive(){
 }
 
 function gateAccess(){
+  const isAdmin = localStorage.getItem('otd_isAdmin') === '1';
   const ok   = isSubActive() || isDemoActive();
   const gate = $id('gate');
   const tabs = document.querySelectorAll('.tabs .tab');
@@ -1985,7 +1986,14 @@ async function syncUserStatus(){
     const data = await resp.json();
     const user = data && data.user;
     if (!user) return;
-    
+
+    // Сохраняем флаг админа локально
+    if (user.isAdmin) {
+      localStorage.setItem('otd_isAdmin', '1');
+    } else {
+      localStorage.removeItem('otd_isAdmin');
+    }
+
     // Обновляем локальное состояние демо из серверного ответа
     if (user.status === 'active' && user.endAt && user.startAt) {
       const endAt = new Date(user.endAt).getTime();
