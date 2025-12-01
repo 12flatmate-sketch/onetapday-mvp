@@ -1125,14 +1125,27 @@ function gateAccess(){
   const tabs = document.querySelectorAll('.tabs .tab');
   if (!gate) return;
 
+  // показываем / прячем баннер
   gate.classList.toggle('hidden', ok);
+
+  // глобальный флаг блокировки на уровне всего приложения
+  if (document && document.body) {
+    document.body.classList.toggle('app-locked', !ok);
+  }
+
+  // табы: только "Ustawienia" остаётся живым
   tabs.forEach(t=>{
-    if (t.dataset.sec === 'ustawienia') t.classList.remove('disabled');
-    else t.classList.toggle('disabled', !ok);
+    if (t.dataset.sec === 'ustawienia') {
+      t.classList.remove('disabled');
+    } else {
+      t.classList.toggle('disabled', !ok);
+    }
   });
 
+  // если нет доступа – насильно кидаем в настройки
   if (!ok){
-    document.querySelector('[data-sec=ustawienia]')?.click();
+    const settingsTab = document.querySelector('[data-sec=ustawienia]');
+    if (settingsTab) settingsTab.click();
   }
 }
 
