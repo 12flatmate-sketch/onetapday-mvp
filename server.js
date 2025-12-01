@@ -459,14 +459,22 @@ app.post('/activate-discount', (req, res) => {
 
 // whoami / me
 app.get('/me', (req, res) => {
-  const user = getUserBySession(req);
-  if (!user) return res.status(401).json({ success: false, error: 'Not authenticated' });
+  let user = getUserBySession(req);
+  if (!user) {
+    return res.status(401).json({ success: false, error: 'Not authenticated' });
+  }
 
   expireStatuses(user);
+  // гарантируем, что ADMIN_EMAIL всегда поднимается до админа
+  user = ensureAdminFlag(user);
 
-  const safe = Object.assign({}, user); delete safe.hash; delete safe.salt;
+  const safe = Object.assign({}, user);
+  delete safe.hash;
+  delete safe.salt;
+
   return res.json({ success: true, user: safe });
 });
+
 
 // get user by email (used by frontend)
 app.get('/user', (req, res) => {
