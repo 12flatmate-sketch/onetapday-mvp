@@ -59,6 +59,25 @@
     .lang button{padding:4px 8px;border-radius:999px;border:1px solid #20262b;background:#0f1214;color:#9aa3a9;font-size:12px;cursor:pointer}
     .lang button.on{background:#274b32;color:#a8e8c7;border-color:#274b32}
     .gate{background:#2a1f1f;border:1px solid #4d3030;color:#ffb3b3;padding:12px;border-radius:10px;margin-top:10px}
+        .tabs .tab.disabled{
+      opacity:0.4;
+      cursor:default;
+    }
+
+    /* Глобальная блокировка: все секции, кроме настроек, глушим */
+    body.app-locked .section{
+      pointer-events:none;
+      opacity:0.4;
+      filter:grayscale(0.3);
+    }
+
+    /* Настройки всегда доступны, чтобы можно было включить демо/подписку */
+    body.app-locked #ustawienia{
+      pointer-events:auto;
+      opacity:1;
+      filter:none;
+    }
+
     .hint{font-size:12px;color:#9aa3a9}
     .kasa-quick{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
     .kasa-quick button{padding:6px 10px;border-radius:8px;border:1px solid #2a3136;background:#0f1214;color:#e6edf3;cursor:pointer;font-size:13px}
