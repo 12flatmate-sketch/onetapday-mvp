@@ -429,7 +429,9 @@ app.get('/session', async (req, res) => {
       u.demoUsed = true;
       saveUsers();
       console.log(`[SESSION] activated via /session for ${u.email} until ${u.endAt}`);
-    }
+    u.demoUsed = true;      // считаем, что демо уже потрачено
+u.demoStartAt = null;   // если поле есть - обнуляем
+  }
 
     setSessionCookie(res, email);
     return res.json({ success: true, email });
