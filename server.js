@@ -1,4 +1,8 @@
 // server.js — working backend with compatibility for legacy users (sha256), no external jwt dependency
+
+require('dotenv').config();
+const STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID || 'price_1SSHX0KQldLeJYVfxcZe4eKr';
+console.log('[BOOT] STRIPE_PRICE_ID =', STRIPE_PRICE_ID);
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
@@ -317,6 +321,7 @@ app.post('/login', (req, res) => {
 
     if (!email || !password) return res.status(400).json({ success: false, error: 'Missing email or password' });
 
+const u = findUserByEmail(email);
        let user = findUserByEmail(email);
     if (!user) {
       return res.status(401).json({ success: false, error: 'User not found' });
@@ -377,6 +382,7 @@ app.post('/logout', (req, res) => {
 
 // Finalize Stripe session (called by frontend after redirect to app.html?session_id=...)
 // attempts to read checkout session and set cookie for the user (best-effort)
+
 app.get('/session', async (req, res) => {
   const sessionId = req.query && req.query.session_id;
   if (!sessionId) return res.status(400).json({ success: false, error: 'missing session_id' });
@@ -390,7 +396,8 @@ app.get('/session', async (req, res) => {
     if (!email) {
       return res.status(200).json({ success: true, message: 'no email in session' });
     }
-    const u = findUserByEmail(email);
+
+    let u = findUserByEmail(email);
     if (!u) {
       // create user automatically (best-effort) so they get session cookie
       const salt = genSalt(16);
@@ -409,12 +416,26 @@ app.get('/session', async (req, res) => {
         isAdmin: email === ADMIN_EMAIL
       };
       saveUsers();
+      u = users[email];
     }
+
+    // если оплата прошла — активируем на месяц
+    if (session.payment_status === 'paid' || session.status === 'complete') {
+      u.status = 'active';
+      u.startAt = new Date().toISOString();
+      const end = new Date();
+      end.setMonth(end.getMonth() + 1); // 1 месяц
+      u.endAt = end.toISOString();
+      u.demoUsed = true;
+      saveUsers();
+      console.log(`[SESSION] activated via /session for ${u.email} until ${u.endAt}`);
+    }
+
     setSessionCookie(res, email);
     return res.json({ success: true, email });
   } catch (err) {
-    console.error('[SESSION] error', err && err.stack ? err.stack : err);
-    return res.status(500).json({ success: false, error: 'session finalize failed' });
+    console.error('[SESSION] error', err && err.message ? err.message : err);
+    return res.status(500).json({ success: false, error: 'internal error' });
   }
 });
 
@@ -576,7 +597,12 @@ app.post('/create-checkout-session', async (req, res) => {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'subscription',
-      line_items: [{ price: 'price_1SSHX0KQldLeJYVfxcZe4eKr', quantity: 1 }],
+     line_items: [
+  {
+    price: STRIPE_PRICE_ID,
+    quantity: 1
+  }
+],
       customer_email: user.email,
       metadata: { email: user.email },
       success_url: `${req.protocol}://${req.get('host')}/app.html?session_id={CHECKOUT_SESSION_ID}`,
@@ -604,6 +630,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
     console.error('[WEBHOOK] signature verification failed', err && err.message ? err.message : err);
     return res.status(400).send(`Webhook Error: ${err && err.message ? err.message : 'invalid'}`);
   }
+
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
     const email = (session.metadata && session.metadata.email) || (session.customer_details && session.customer_details.email);
@@ -613,8 +640,9 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
         u.status = 'active';
         u.startAt = new Date().toISOString();
         const end = new Date();
-        end.setMonth(end.getMonth() + 2);
-        u.endAt = end.toISOString();
+end.setMonth(end.getMonth() + 1); // один месяц
+u.endAt = end.toISOString();
+
         u.demoUsed = true; // they paid — treat demo as used
         saveUsers();
         console.log(`[WEBHOOK] activated pilot for ${u.email} until ${u.endAt}`);
@@ -735,15 +763,3 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`✅ Server listening on port ${PORT}`);
 });
-
-
-
-
-
-
-
-
-
-
-
-
