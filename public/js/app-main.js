@@ -13,6 +13,7 @@ const DEMO_START = 'otd_demo_started_at';
 const DEMO_USED  = 'otd_demo_used'; // флаг: демо уже один раз запускали
 const USER_KEY = 'otd_user'; // email
 let REMOTE_OK = localStorage.getItem('remote_disabled')==='1' ? false : true;
+let CLOUD_READY = false;
 
 /* ==== I18N ==== */
 // Old i18n system (M.* dictionaries) removed - now using i18n.js with JSON files
@@ -716,6 +717,10 @@ function buildCloudState(){
 
 async function pushCloudState(){
   if (!window.FirebaseSync) return;           // /sync-cloud.js ещё не загрузился
+  if (!CLOUD_READY) {
+    console.log('[cloud] skip push: remote not ready');
+    return;
+  }
   const email = getCloudEmail();
   if (!email) return;                         // нет email → не знаем куда писать
 
@@ -726,6 +731,8 @@ async function pushCloudState(){
     console.warn('[cloud] save error', e);
   }
 }
+
+
 
 function applyCloudState(remote){
   if (!remote || typeof remote !== 'object') return;
@@ -777,9 +784,10 @@ function startCloudSync(){
 
     console.log('[cloud] start for', email);
     try {
-      window.FirebaseSync.subscribeUserState(email, applyCloudState);
-      // сразу же заливаем локальный стейт в облако
-      pushCloudState();
+      window.FirebaseSync.subscribeUserState(email, (remote) => {
+        applyCloudState(remote);   // тянем из облака в локалку
+        CLOUD_READY = true;        // только теперь разрешаем pushCloudState()
+      });
     } catch (e) {
       console.warn('[cloud] subscribe error', e);
     }
@@ -787,6 +795,7 @@ function startCloudSync(){
 
   tryInit();
 }
+
 
 
 /* ==== REMOTE SYNC (optional) ==== */
@@ -2415,21 +2424,22 @@ quickPairs.forEach(([id,key])=>{
     gateAccess();
   });
 
-  $id('payNow')?.addEventListener('click', async ()=>{
-    try{
-      const r = await fetch('/create-checkout-session', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        credentials:'include',
-        body:JSON.stringify({ demo:true })
-      });
-      const j = await r.json();
-      if(j?.url) { location.href=j.url; return; }
-      alert('No Stripe URL from backend');
-    }catch(e){ 
-      alert('Stripe error: '+(e?.message||e)); 
-    }
-  });
+$id('payNow')?.addEventListener('click', async ()=>{
+  try{
+    const r = await fetch('/create-checkout-session', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      credentials:'include',
+      body:JSON.stringify({ demo:true })
+    });
+    const j = await r.json();
+    if(j?.url) { location.href=j.url; return; }
+    alert('No Stripe URL from backend');
+  }catch(e){
+    alert('Stripe error: '+(e?.message||e));
+  }
+});
+
 
 
 
