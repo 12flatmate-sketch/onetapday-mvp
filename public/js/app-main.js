@@ -1175,7 +1175,9 @@ function updateSubUI(){
   const demoUsed = localStorage.getItem(DEMO_USED) === '1';
   let s = '—';
 
-  if (isSubActive()){
+  const hasSub = isSubActive();
+
+  if (hasSub){
     s = `✅ Sub aktywna: ${localStorage.getItem(SUB_FROM)||'—'} → ${localStorage.getItem(SUB_TO)||'—'}`;
   } else if (isDemoActive()){
     const left = demoLeftMs();
@@ -1183,7 +1185,6 @@ function updateSubUI(){
     const m = Math.floor((left%3600000)/60000);
     s = `🧪 Demo aktywne: ~${h}h ${m}m`;
   } else if (demoUsed) {
-    // демо уже было, больше не даём
     s = '⛔ Demo zakończone. Dostęp tylko z subskrypcją.';
   } else {
     s = '⛔ Brak dostępu: włącz demo (24h) lub opłać.';
@@ -1191,6 +1192,7 @@ function updateSubUI(){
 
   el.textContent = s;
 }
+
 
 /* ==== AUTOSYNC ==== */
 let syncTimer=null, syncing=false;
