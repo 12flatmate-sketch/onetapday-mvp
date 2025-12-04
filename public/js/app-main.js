@@ -2005,39 +2005,65 @@ async function syncUserStatus(){
     const user = data && data.user;
     if (!user) return;
 
-    // Сохраняем флаг админа локально
+    // Флаг админа
     if (user.isAdmin) {
       localStorage.setItem('otd_isAdmin', '1');
     } else {
       localStorage.removeItem('otd_isAdmin');
     }
 
-    // Обновляем локальное состояние демо из серверного ответа
+    const dayMs = 24 * 3600 * 1000;
+
     if (user.status === 'active' && user.endAt && user.startAt) {
-      const endAt = new Date(user.endAt).getTime();
-      const now = Date.now();
-      if (endAt > now) {
-        // Демо активно
-        localStorage.setItem(DEMO_START, user.startAt);
-        localStorage.setItem(DEMO_USED, user.demoUsed ? '1' : '0');
+      const start = new Date(user.startAt).getTime();
+      const end   = new Date(user.endAt).getTime();
+      const now   = Date.now();
+      const span  = end - start;
+
+      if (span <= dayMs + 5 * 60 * 1000) {
+        // Короткий период ~24h — считаем как ДЕМО
+        if (end > now) {
+          localStorage.setItem(DEMO_START, user.startAt);
+          localStorage.setItem(DEMO_USED, user.demoUsed ? '1' : '0');
+        } else {
+          localStorage.setItem(DEMO_USED, '1');
+          localStorage.removeItem(DEMO_START);
+        }
+        // Подписку выключаем
+        localStorage.removeItem(SUB_KEY);
+        localStorage.removeItem(SUB_FROM);
+        localStorage.removeItem(SUB_TO);
       } else {
-        // Демо истекло
+        // Длинный период (месяц/6 мес) — ЭТО ПЛАТНАЯ ПОДПИСКА
+        localStorage.setItem(SUB_KEY,  '1');
+        localStorage.setItem(SUB_FROM, user.startAt || '');
+        localStorage.setItem(SUB_TO,   user.endAt   || '');
+        // Демо считаем закрытым
         localStorage.setItem(DEMO_USED, '1');
         localStorage.removeItem(DEMO_START);
       }
     } else if (user.demoUsed) {
-      // Демо использовано
+      // Демо когда-то уже юзали, но подписки нет
       localStorage.setItem(DEMO_USED, '1');
       localStorage.removeItem(DEMO_START);
+      localStorage.removeItem(SUB_KEY);
+      localStorage.removeItem(SUB_FROM);
+      localStorage.removeItem(SUB_TO);
+    } else {
+      // Ни демо, ни подписки
+      localStorage.removeItem(DEMO_START);
+      localStorage.removeItem(SUB_KEY);
+      localStorage.removeItem(SUB_FROM);
+      localStorage.removeItem(SUB_TO);
     }
-    
-    // Обновляем UI
+
     gateAccess();
     updateSubUI();
-  } catch(e) {
+  } catch (e) {
     console.warn('syncUserStatus error', e);
   }
 }
+
 
 document.addEventListener('DOMContentLoaded', async ()=>{
   // Синхронизируем статус пользователя с сервером (для автоматически активированного демо)
