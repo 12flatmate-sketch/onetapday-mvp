@@ -662,16 +662,13 @@ const stateKeys = [
   'rateUSD',
   'blacklist',
   'autoCash',
-  SUB_KEY,
-  SUB_FROM,
-  SUB_TO,
-  DEMO_START,
-  DEMO_USED,
+  // 👇 подписку и демо больше НЕ пушим в Firebase
   'txUrl',
   'billUrl',
   'otd_lang',
   'speechLang'
 ];
+
 
 function ensureTxIds(){
   if(!Array.isArray(tx)) tx = [];
@@ -754,11 +751,22 @@ function applyCloudState(remote){
       accMeta = remote.accMeta;
       localStorage.setItem('accMeta', JSON.stringify(accMeta));
     }
-    if (remote.settings && typeof remote.settings === 'object'){
-      Object.entries(remote.settings).forEach(([k,v])=>{
-        if (typeof v === 'string') localStorage.setItem(k, v);
-      });
-    }
+if (remote.settings && typeof remote.settings === 'object'){
+  const protectedKeys = new Set([
+    SUB_KEY,
+    SUB_FROM,
+    SUB_TO,
+    DEMO_START,
+    DEMO_USED
+  ]);
+
+  Object.entries(remote.settings).forEach(([k, v])=>{
+    // 👇 Никогда не трогаем подписку и демо
+    if (protectedKeys.has(k)) return;
+    if (typeof v === 'string') localStorage.setItem(k, v);
+  });
+}
+
 
     // пересчитать и перерисовать UI
     inferAccounts();
